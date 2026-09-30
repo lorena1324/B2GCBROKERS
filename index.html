@@ -1,1469 +1,338 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>B²GC Brokers — Marketplace privado de cartera</title>
-
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-  <!-- =====================================================
-       SITIO PÚBLICO
-  ====================================================== -->
+<!-- ===== SITIO PÚBLICO ===== -->
+<div id="public-site">
 
-  <div id="public-site">
+  <header class="public-nav">
+    <a class="brand" href="#inicio">B<span class="sup">2</span>GC Brokers</a>
+    <nav class="links">
+      <a href="#inicio">Inicio</a>
+      <a href="#como-funciona">¿Cómo funciona?</a>
+      <a href="#vendedores">Para vendedores</a>
+      <a href="#compradores">Para compradores</a>
+      <a href="#faq">FAQ</a>
+      <a href="#contacto">Contacto</a>
+    </nav>
+    <div class="auth-links">
+      <button type="button" class="btn-text" onclick="openAuth('register')">Registro</button>
+      <button type="button" class="btn btn-ghost btn-small" onclick="openAuth('login')">Iniciar sesión</button>
+    </div>
+  </header>
 
-    <!-- ===================================================
-         NAVBAR
-    ==================================================== -->
-
-    <header class="public-nav">
-
-      <a class="brand" href="#inicio">
-        B<span class="sup">2</span>GC Brokers
-      </a>
-
-      <nav class="links">
-
-        <a href="#inicio">
-          Inicio
-        </a>
-
-        <a href="#como-funciona">
-          ¿Cómo funciona?
-        </a>
-
-        <a href="#originadores">
-          Para originadores
-        </a>
-
-        <a href="#compradores">
-          Para compradores
-        </a>
-
-        <a href="#faq">
-          FAQ
-        </a>
-
-        <a href="#contacto">
-          Contacto
-        </a>
-
-      </nav>
-
-      <div class="auth-links">
-
-        <button
-          type="button"
-          class="btn-text"
-          onclick="openAuth('register')">
-
-          Registro
-
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-ghost btn-small"
-          onclick="openAuth('login')">
-
-          Iniciar sesión
-
-        </button>
-
+  <section class="hero" id="inicio">
+    <div class="hero-inner">
+      <div class="eyebrow">Marketplace de cartera · Colombia</div>
+      <div class="headline-box">
+        <h1>Vender o comprar cartera <span>dejó de tomar meses.</span></h1>
+      </div>
+      <p class="lede">
+        Los vendedores publican portafolios anonimizados; los compradores precalificados
+        compiten por ellos en subasta privada, compra directa o negociación híbrida.
+        Data room auditable, due diligence estandarizado y cierre documental digital.
+      </p>
+      <div class="cta-row">
+        <button type="button" class="btn btn-navy" onclick="openAuth('register')">Registrar mi empresa</button>
+        <a href="#como-funciona" class="btn-text">Ver cómo funciona →</a>
       </div>
 
+      <div class="hero-dashboard">
+        <div class="hero-dashboard-head">
+          <div>
+            <div class="hero-dashboard-title">Mercado de cartera</div>
+            <div class="hero-dashboard-subtitle">Actividad en tiempo real</div>
+          </div>
+          <div class="live">MERCADO ACTIVO</div>
+        </div>
+        <div class="hero-chart">
+          <div class="chart-grid"></div>
+          <div class="chart-line"></div>
+          <div class="chart-point point-1"></div>
+          <div class="chart-point point-2"></div>
+          <div class="chart-point point-3"></div>
+          <div class="chart-point point-4"></div>
+        </div>
+        <div class="hero-value">$18.420 M</div>
+        <div class="hero-change">↗ +12.8% oportunidades activas</div>
+        <div class="hero-mini-stats">
+          <div><strong>47</strong><span>Compradores</span></div>
+          <div><strong>126</strong><span>Operaciones</span></div>
+          <div><strong>82%</strong><span>Cierre</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+  </section>
+
+  <section class="public-portfolios" id="carteras-demo">
+    <div class="section-head public-portfolios-head">
+      <div>
+        <div class="section-kicker">CARTERAS DISPONIBLES</div>
+        <h2>Conoce algunas de las carteras que manejamos.</h2>
+        <p>Información ficticia de prueba para visualizar las principales secciones del marketplace.</p>
+      </div>
+    </div>
+    <div class="public-portfolios-grid">
+      <article class="public-portfolio-card">
+        <div class="public-portfolio-top"><span class="portfolio-tag">01 · CONSUMO</span><span class="portfolio-status">ACTIVA</span></div>
+        <h3>Cartera de consumo</h3>
+        <p>Portafolios de obligaciones de consumo con información anonimizada y procesos de venta estructurados.</p>
+        <div class="public-portfolio-metrics">
+          <div><strong>$4.850 M</strong><span>Valor nominal demo</span></div>
+          <div><strong>2.840</strong><span>Deudores</span></div>
+        </div>
+        <button type="button" class="btn-text" onclick="openAuth('login')">Explorar cartera →</button>
+      </article>
+      <article class="public-portfolio-card">
+        <div class="public-portfolio-top"><span class="portfolio-tag">02 · LIBRANZA</span><span class="portfolio-status">ACTIVA</span></div>
+        <h3>Cartera de libranza</h3>
+        <p>Operaciones con descuento por nómina, preparadas para análisis, negociación y cierre digital.</p>
+        <div class="public-portfolio-metrics">
+          <div><strong>$3.240 M</strong><span>Valor nominal demo</span></div>
+          <div><strong>1.460</strong><span>Deudores</span></div>
+        </div>
+        <button type="button" class="btn-text" onclick="openAuth('login')">Explorar cartera →</button>
+      </article>
+      <article class="public-portfolio-card">
+        <div class="public-portfolio-top"><span class="portfolio-tag">03 · COMERCIAL</span><span class="portfolio-status">ACTIVA</span></div>
+        <h3>Cartera comercial</h3>
+        <p>Portafolios comerciales para procesos híbridos de análisis, ofertas y negociación entre participantes.</p>
+        <div class="public-portfolio-metrics">
+          <div><strong>$6.780 M</strong><span>Valor nominal demo</span></div>
+          <div><strong>860</strong><span>Deudores</span></div>
+        </div>
+        <button type="button" class="btn-text" onclick="openAuth('login')">Explorar cartera →</button>
+      </article>
+    </div>
+  </section>
+
+  <section class="trust-bar">
+    <div class="trust-item"><span class="trust-icon">✓</span>Proceso digital</div>
+    <div class="trust-item"><span class="trust-icon">✓</span>Información anonimizada</div>
+    <div class="trust-item"><span class="trust-icon">✓</span>Compradores precalificados</div>
+    <div class="trust-item"><span class="trust-icon">✓</span>Data room auditable</div>
+  </section>
+
+  <section class="modalidades" id="como-funciona">
+    <div class="section-head">
+      <div class="section-kicker">EL MERCADO</div>
+      <h2>Una plataforma.<br>Tres formas de negociar.</h2>
+      <p>Elige el mecanismo que mejor se adapte a las características de cada operación.</p>
+    </div>
+
+    <article class="modalidad">
+      <div class="modalidad-number">01</div>
+      <div class="modalidad-icon">↗</div>
+      <h3>Subasta privada</h3>
+      <p>Ventana con fecha límite y puja mejorable. El comprador ve su posición, nunca las ofertas ajenas.</p>
+      <div class="modalidad-link">Explorar modalidad →</div>
+    </article>
+
+    <article class="modalidad">
+      <div class="modalidad-number">02</div>
+      <div class="modalidad-icon">◇</div>
+      <h3>Compra directa</h3>
+      <p>Negociación bilateral: oferta, contrapropuesta y aceptación, sin ventana competitiva.</p>
+      <div class="modalidad-link">Explorar modalidad →</div>
+    </article>
+
+    <article class="modalidad">
+      <div class="modalidad-number">03</div>
+      <div class="modalidad-icon">◎</div>
+      <h3>Híbrida</h3>
+      <p>Negociación previa y subasta limitada a los compradores que el vendedor preselecciona.</p>
+      <div class="modalidad-link">Explorar modalidad →</div>
+    </article>
+  </section>
+
+  <section class="split" id="vendedores">
+    <div>
+      <div class="priorities">PARA VENDEDORES</div>
+      <h2>Vende tu cartera con reglas claras.</h2>
+      <p>Tú defines la ventana y el precio de reserva; el motor de subasta se encarga del resto.</p>
+      <ol>
+        <li><strong>Subasta con fecha límite</strong> <span>y cierre automático.</span></li>
+        <li><strong>Compradores precalificados</strong> <span>con acceso controlado al data room.</span></li>
+        <li><strong>Puja mejorable</strong> <span>para descubrir el mejor precio.</span></li>
+        <li><strong>Ofertas confidenciales</strong> <span>entre compradores.</span></li>
+        <li><strong>Adjudicación</strong> <span>a la mayor oferta o a tu elección.</span></li>
+        <li><strong>Trazabilidad</strong> <span>completa de cada puja y acción.</span></li>
+        <li><strong>Cierre documental</strong> <span>digital en un solo lugar.</span></li>
+      </ol>
+    </div>
+
+    <div class="info-box" id="compradores">
+      <div class="info-box-label">PARA COMPRADORES</div>
+      <h2>Encuentra oportunidades antes que los demás.</h2>
+      <p>Explora, analiza y oferta por cartera desde una única plataforma.</p>
+      <p>Conéctate con vendedores, revisa data rooms y participa en procesos competitivos con información estructurada.</p>
+      <div class="info-stats">
+        <div><strong>47+</strong><span>Compradores activos</span></div>
+        <div><strong>126</strong><span>Operaciones</span></div>
+        <div><strong>24/7</strong><span>Acceso digital</span></div>
+      </div>
+      <button type="button" class="btn btn-gold" onclick="openAuth('register')">Quiero participar →</button>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="final-cta-content">
+      <div class="section-kicker">B²GC BROKERS</div>
+      <h2>La próxima operación puede empezar aquí.</h2>
+      <p>Conecta capital y oportunidades en un mercado diseñado para hacerlo más rápido, seguro y transparente.</p>
+      <button type="button" class="btn btn-gold" onclick="openAuth('register')">Registrar mi empresa →</button>
+    </div>
+  </section>
+
+  <footer class="footer" id="faq">
+    <div>
+      <a class="brand" href="#inicio">B<span class="sup">2</span>GC Brokers</a>
+      <p>Marketplace privado de cartera.</p>
+    </div>
+    <div class="footer-links">
+      <a href="#inicio">Inicio</a>
+      <a href="#como-funciona">¿Cómo funciona?</a>
+      <a href="#vendedores">Vendedores</a>
+      <a href="#compradores">Compradores</a>
+    </div>
+    <div id="contacto">
+      <span>CONTACTO</span>
+      <a href="mailto:contacto@b2gcbrokers.co">contacto@b2gcbrokers.co</a>
+      <small>Bogotá, Colombia · 2026</small>
+    </div>
+  </footer>
+</div>
+
+<!-- ===== AUTENTICACIÓN ===== -->
+<div class="overlay hidden" id="auth-overlay">
+  <div class="modal modal-wrap">
+    <button type="button" class="modal-close" onclick="closeAuth()">×</button>
+    <div class="modal-brand">B<span>2</span>GC</div>
+    <h2 id="auth-title">Iniciar sesión</h2>
+    <p class="sub" id="auth-sub">Accede a tu cuenta de B²GC Brokers.</p>
+
+    <div class="role-pick" id="role-pick">
+      <div class="role-opt active" data-role="vendedor" onclick="pickRole(this,'vendedor')">
+        <span class="role-icon">◈</span>
+        <strong>Soy vendedor</strong>
+        <small>Publico y gestiono cartera</small>
+      </div>
+      <div class="role-opt" data-role="comprador" onclick="pickRole(this,'comprador')">
+        <span class="role-icon">◇</span>
+        <strong>Soy comprador</strong>
+        <small>Busco oportunidades</small>
+      </div>
+    </div>
+
+    <div class="field hidden" id="auth-company-field">
+      <label for="auth-company">Nombre de la empresa</label>
+      <input id="auth-company" type="text" placeholder="Mi Empresa S.A.S.">
+    </div>
+
+    <div class="field">
+      <label for="auth-email">Correo corporativo</label>
+      <input id="auth-email" type="email" placeholder="nombre@empresa.com" value="vendedor@demo.b2gc.co">
+    </div>
+
+    <div class="field">
+      <label for="auth-password">Contraseña</label>
+      <input id="auth-password" type="password" placeholder="••••••••" value="Demo123!">
+    </div>
+
+    <div class="demo-credentials" id="demo-credentials">
+      <strong>ENTORNO DE PRUEBAS</strong>
+      <span>Vendedor: vendedor@demo.b2gc.co · Demo123!</span>
+      <span>Comprador: comprador@demo.b2gc.co · Demo123!</span>
+    </div>
+
+    <button type="button" class="btn btn-navy" style="width:100%;" id="auth-submit" onclick="submitAuth()">Entrar a la plataforma →</button>
+
+    <p class="modal-switch" id="auth-switch">
+      ¿Aún no tienes cuenta?
+      <button type="button" class="btn-text" onclick="openAuth('register')">Regístrate</button>
+    </p>
+  </div>
+</div>
+
+<!-- ===== PLATAFORMA PRIVADA ===== -->
+<div id="app-shell" class="hidden">
+  <aside class="sidebar">
+    <a class="brand" href="#">B<span class="sup">2</span>GC Brokers</a>
+    <div class="sidebar-market-status"><span></span>Mercado activo</div>
+    <nav id="sidebar-nav"></nav>
+    <div class="sidebar-footer">
+      <button type="button" class="logout-btn" onclick="exitApp()">← Volver al sitio público</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-kicker">B²GC BROKERS</div>
+        <h1 id="page-h1">Dashboard</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="role-toggle">
+          <button type="button" id="rt-vendedor" onclick="setRole('vendedor')">Vendedor</button>
+          <button type="button" id="rt-comprador" onclick="setRole('comprador')">Comprador</button>
+        </div>
+        <div class="company-chip">
+          <div class="avatar">VD</div>
+          <span id="company-name">Vendedor Demo S.A.S.</span>
+        </div>
+      </div>
     </header>
-
-
-    <!-- ===================================================
-         HERO
-    ==================================================== -->
-
-    <section
-      class="hero"
-      id="inicio">
-
-      <div class="hero-inner">
-
-        <!-- Estado del marketplace -->
-
-        <div class="eyebrow">
-          Marketplace de cartera · Colombia
-        </div>
-
-
-        <!-- Título -->
-
-        <div class="headline-box">
-
-          <h1>
-
-            Vender o comprar cartera
-
-            <span>
-              dejó de tomar meses.
-            </span>
-
-          </h1>
-
-        </div>
-
-
-        <!-- Descripción -->
-
-        <p class="lede">
-
-          Los originadores publican portafolios anonimizados;
-          los compradores precalificados compiten por ellos
-          en subasta privada, compra directa o negociación
-          híbrida.
-
-          Data room auditable, due diligence estandarizado
-          y cierre documental digital.
-
-        </p>
-
-
-        <!-- Acciones -->
-
-        <div class="cta-row">
-
-          <button
-            type="button"
-            class="btn btn-navy"
-            onclick="openAuth('register')">
-
-            Registrar mi empresa
-
-          </button>
-
-
-          <a
-            href="#como-funciona"
-            class="btn-text">
-
-            Ver cómo funciona →
-
-          </a>
-
-        </div>
-
-
-        <!-- =================================================
-             DASHBOARD FLOTANTE DEL HERO
-        ================================================== -->
-
-        <div class="hero-dashboard">
-
-          <div class="hero-dashboard-head">
-
-            <div>
-
-              <div class="hero-dashboard-title">
-                Mercado de cartera
-              </div>
-
-              <div class="hero-dashboard-subtitle">
-                Actividad en tiempo real
-              </div>
-
-            </div>
-
-
-            <div class="live">
-              MERCADO ACTIVO
-            </div>
-
-          </div>
-
-
-          <!-- Gráfico -->
-
-          <div class="hero-chart">
-
-            <div class="chart-grid"></div>
-
-            <div class="chart-line"></div>
-
-            <div class="chart-point point-1"></div>
-
-            <div class="chart-point point-2"></div>
-
-            <div class="chart-point point-3"></div>
-
-            <div class="chart-point point-4"></div>
-
-          </div>
-
-
-          <!-- Valor -->
-
-          <div class="hero-value">
-            $18.420 M
-          </div>
-
-
-          <!-- Crecimiento -->
-
-          <div class="hero-change">
-            ↗ +12.8% oportunidades activas
-          </div>
-
-
-          <!-- Mini estadísticas -->
-
-          <div class="hero-mini-stats">
-
-            <div>
-
-              <strong>
-                47
-              </strong>
-
-              <span>
-                Compradores
-              </span>
-
-            </div>
-
-
-            <div>
-
-              <strong>
-                126
-              </strong>
-
-              <span>
-                Operaciones
-              </span>
-
-            </div>
-
-
-            <div>
-
-              <strong>
-                82%
-              </strong>
-
-              <span>
-                Cierre
-              </span>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- Decoraciones -->
-
-      <div class="hero-orb hero-orb-1"></div>
-
-      <div class="hero-orb hero-orb-2"></div>
-
-    </section>
-
-
-    <!-- ===================================================
-         CARTERAS DESTACADAS DE PRUEBA
-         Se agregan sin alterar el diseño general del sitio.
-    ==================================================== -->
-
-    <section class="public-portfolios" id="carteras-demo">
-
-      <div class="section-head public-portfolios-head">
-        <div>
-          <div class="section-kicker">CARTERAS DISPONIBLES</div>
-          <h2>Conoce algunas de las carteras que manejamos.</h2>
-          <p>Información ficticia de prueba para visualizar las principales secciones del marketplace.</p>
-        </div>
-      </div>
-
-      <div class="public-portfolios-grid">
-
-        <article class="public-portfolio-card">
-          <div class="public-portfolio-top">
-            <span class="portfolio-tag">01 · CONSUMO</span>
-            <span class="portfolio-status">ACTIVA</span>
-          </div>
-          <h3>Cartera de consumo</h3>
-          <p>Portafolios de obligaciones de consumo con información anonimizada y procesos de venta estructurados.</p>
-          <div class="public-portfolio-metrics">
-            <div><strong>$4.850 M</strong><span>Valor nominal demo</span></div>
-            <div><strong>2.840</strong><span>Deudores</span></div>
-          </div>
-          <button type="button" class="btn-text" onclick="openAuth('login')">Explorar cartera →</button>
-        </article>
-
-        <article class="public-portfolio-card">
-          <div class="public-portfolio-top">
-            <span class="portfolio-tag">02 · LIBRANZA</span>
-            <span class="portfolio-status">ACTIVA</span>
-          </div>
-          <h3>Cartera de libranza</h3>
-          <p>Operaciones con descuento por nómina, preparadas para análisis, negociación y cierre digital.</p>
-          <div class="public-portfolio-metrics">
-            <div><strong>$3.240 M</strong><span>Valor nominal demo</span></div>
-            <div><strong>1.460</strong><span>Deudores</span></div>
-          </div>
-          <button type="button" class="btn-text" onclick="openAuth('login')">Explorar cartera →</button>
-        </article>
-
-        <article class="public-portfolio-card">
-          <div class="public-portfolio-top">
-            <span class="portfolio-tag">03 · COMERCIAL</span>
-            <span class="portfolio-status">ACTIVA</span>
-          </div>
-          <h3>Cartera comercial</h3>
-          <p>Portafolios comerciales para procesos híbridos de análisis, ofertas y negociación entre participantes.</p>
-          <div class="public-portfolio-metrics">
-            <div><strong>$6.780 M</strong><span>Valor nominal demo</span></div>
-            <div><strong>860</strong><span>Deudores</span></div>
-          </div>
-          <button type="button" class="btn-text" onclick="openAuth('login')">Explorar cartera →</button>
-        </article>
-
-      </div>
-    </section>
-
-
-    <!-- ===================================================
-         BARRA DE CONFIANZA
-    ==================================================== -->
-
-    <section class="trust-bar">
-
-      <div class="trust-item">
-
-        <span class="trust-icon">
-          ✓
-        </span>
-
-        Proceso digital
-
-      </div>
-
-
-      <div class="trust-item">
-
-        <span class="trust-icon">
-          ✓
-        </span>
-
-        Información anonimizada
-
-      </div>
-
-
-      <div class="trust-item">
-
-        <span class="trust-icon">
-          ✓
-        </span>
-
-        Compradores precalificados
-
-      </div>
-
-
-      <div class="trust-item">
-
-        <span class="trust-icon">
-          ✓
-        </span>
-
-        Data room auditable
-
-      </div>
-
-    </section>
-
-
-    <!-- ===================================================
-         CÓMO FUNCIONA
-    ==================================================== -->
-
-    <section
-      class="modalidades"
-      id="como-funciona">
-
-      <!-- Encabezado -->
-
-      <div class="section-head">
-
-        <div class="section-kicker">
-          EL MERCADO
-        </div>
-
-        <h2>
-
-          Una plataforma.
-
-          <br>
-
-          Tres formas de negociar.
-
-        </h2>
-
-        <p>
-
-          Elige el mecanismo que mejor se adapte
-          a las características de cada operación.
-
-        </p>
-
-      </div>
-
-
-      <!-- =================================================
-           MODALIDAD 01
-      ================================================== -->
-
-      <article class="modalidad">
-
-        <div class="modalidad-number">
-          01
-        </div>
-
-
-        <div class="modalidad-icon">
-          ↗
-        </div>
-
-
-        <h3>
-          Subasta privada
-        </h3>
-
-
-        <p>
-
-          Ventana con fecha límite y puja mejorable.
-          El comprador ve su posición, nunca las
-          ofertas ajenas.
-
-        </p>
-
-
-        <div class="modalidad-link">
-          Explorar modalidad →
-        </div>
-
-      </article>
-
-
-      <!-- =================================================
-           MODALIDAD 02
-      ================================================== -->
-
-      <article class="modalidad">
-
-        <div class="modalidad-number">
-          02
-        </div>
-
-
-        <div class="modalidad-icon">
-          ◇
-        </div>
-
-
-        <h3>
-          Compra directa
-        </h3>
-
-
-        <p>
-
-          Negociación bilateral: oferta,
-          contrapropuesta y aceptación,
-          sin ventana competitiva.
-
-        </p>
-
-
-        <div class="modalidad-link">
-          Explorar modalidad →
-        </div>
-
-      </article>
-
-
-      <!-- =================================================
-           MODALIDAD 03
-      ================================================== -->
-
-      <article class="modalidad">
-
-        <div class="modalidad-number">
-          03
-        </div>
-
-
-        <div class="modalidad-icon">
-          ◎
-        </div>
-
-
-        <h3>
-          Híbrida
-        </h3>
-
-
-        <p>
-
-          Negociación previa y subasta limitada
-          a los compradores que el originador
-          preselecciona.
-
-        </p>
-
-
-        <div class="modalidad-link">
-          Explorar modalidad →
-        </div>
-
-      </article>
-
-    </section>
-
-
-    <!-- ===================================================
-         ORIGINADORES / COMPRADORES
-    ==================================================== -->
-
-    <section
-      class="split"
-      id="originadores">
-
-      <!-- =================================================
-           ORIGINADORES
-      ================================================== -->
-
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<!-- ===== DETALLE DE CARTERA ===== -->
+<div class="detail-overlay hidden" id="detail-overlay">
+  <div class="detail-panel">
+    <div class="detail-head">
       <div>
-
-        <div class="priorities">
-          PRIORIDADES DEL PRODUCTO
-        </div>
-
-
-        <h2>
-
-          Todo el proceso
-          en un solo lugar.
-
-        </h2>
-
-
-        <p>
-
-          Desde la publicación de la cartera hasta
-          el cierre de la operación.
-
-        </p>
-
-
-        <ol>
-
-          <li>
-
-            <strong>
-              Transparencia
-            </strong>
-
-            <span>
-              en cada operación.
-            </span>
-
-          </li>
-
-
-          <li>
-
-            <strong>
-              Velocidad
-            </strong>
-
-            <span>
-              de cierre.
-            </span>
-
-          </li>
-
-
-          <li>
-
-            <strong>
-              Red
-            </strong>
-
-            <span>
-              de compradores calificados.
-            </span>
-
-          </li>
-
-
-          <li>
-
-            <strong>
-              Pricing
-            </strong>
-
-            <span>
-              competitivo.
-            </span>
-
-          </li>
-
-
-          <li>
-
-            <strong>
-              Seguridad
-            </strong>
-
-            <span>
-              de la información.
-            </span>
-
-          </li>
-
-
-          <li>
-
-            <strong>
-              Digitalización
-            </strong>
-
-            <span>
-              completa del proceso.
-            </span>
-
-          </li>
-
-
-          <li>
-
-            <strong>
-              Centralización
-            </strong>
-
-            <span>
-              de operaciones.
-            </span>
-
-          </li>
-
-        </ol>
-
+        <div class="lot-number" id="d-lot">LOTE-0000</div>
+        <h2 id="d-title">Cartera</h2>
       </div>
-
-
-      <!-- =================================================
-           COMPRADORES
-      ================================================== -->
-
-      <div
-        class="info-box"
-        id="compradores">
-
-        <div class="info-box-label">
-          PARA COMPRADORES
-        </div>
-
-
-        <h2>
-
-          Encuentra oportunidades
-          antes que los demás.
-
-        </h2>
-
-
-        <p>
-
-          Publica, negocia y administra tus
-          oportunidades desde una única plataforma.
-
-        </p>
-
-
-        <p>
-
-          Conéctate con originadores, analiza
-          oportunidades y participa en procesos
-          competitivos con información estructurada.
-
-        </p>
-
-
-        <!-- Estadísticas -->
-
-        <div class="info-stats">
-
-          <div>
-
-            <strong>
-              47+
-            </strong>
-
-            <span>
-              Compradores activos
-            </span>
-
-          </div>
-
-
-          <div>
-
-            <strong>
-              126
-            </strong>
-
-            <span>
-              Operaciones
-            </span>
-
-          </div>
-
-
-          <div>
-
-            <strong>
-              24/7
-            </strong>
-
-            <span>
-              Acceso digital
-            </span>
-
-          </div>
-
-        </div>
-
-
-        <button
-          type="button"
-          class="btn btn-gold"
-          onclick="openAuth('register')">
-
-          Quiero participar →
-
-        </button>
-
-      </div>
-
-    </section>
-
-
-    <!-- ===================================================
-         CTA FINAL
-    ==================================================== -->
-
-    <section class="final-cta">
-
-      <div class="final-cta-content">
-
-        <div class="section-kicker">
-          B²GC BROKERS
-        </div>
-
-
-        <h2>
-
-          La próxima operación
-          puede empezar aquí.
-
-        </h2>
-
-
-        <p>
-
-          Conecta capital y oportunidades
-          en un mercado diseñado para hacerlo
-          más rápido, seguro y transparente.
-
-        </p>
-
-
-        <button
-          type="button"
-          class="btn btn-gold"
-          onclick="openAuth('register')">
-
-          Registrar mi empresa →
-
-        </button>
-
-      </div>
-
-    </section>
-
-
-    <!-- ===================================================
-         FOOTER
-    ==================================================== -->
-
-    <footer
-      class="footer"
-      id="faq">
-
-      <!-- Marca -->
-
-      <div>
-
-        <a
-          class="brand"
-          href="#inicio">
-
-          B<span class="sup">2</span>GC Brokers
-
-        </a>
-
-
-        <p>
-          Marketplace privado de cartera.
-        </p>
-
-      </div>
-
-
-      <!-- Enlaces -->
-
-      <div class="footer-links">
-
-        <a href="#inicio">
-          Inicio
-        </a>
-
-        <a href="#como-funciona">
-          ¿Cómo funciona?
-        </a>
-
-        <a href="#originadores">
-          Originadores
-        </a>
-
-        <a href="#compradores">
-          Compradores
-        </a>
-
-      </div>
-
-
-      <!-- Contacto -->
-
-      <div id="contacto">
-
-        <span>
-          CONTACTO
-        </span>
-
-
-        <a href="mailto:contacto@b2gcbrokers.co">
-
-          contacto@b2gcbrokers.co
-
-        </a>
-
-
-        <small>
-          Bogotá, Colombia · 2026
-        </small>
-
-      </div>
-
-    </footer>
-
-  </div>
-
-
-  <!-- =====================================================
-       AUTENTICACIÓN
-  ====================================================== -->
-
-  <div
-    class="overlay hidden"
-    id="auth-overlay">
-
-    <div class="modal modal-wrap">
-
-
-      <!-- Cerrar -->
-
-      <button
-        type="button"
-        class="modal-close"
-        onclick="closeAuth()">
-
-        ×
-
-      </button>
-
-
-      <!-- Logo -->
-
-      <div class="modal-brand">
-
-        B<span>2</span>GC
-
-      </div>
-
-
-      <!-- Título -->
-
-      <h2 id="auth-title">
-        Iniciar sesión
-      </h2>
-
-
-      <p
-        class="sub"
-        id="auth-sub">
-
-        Accede a tu cuenta de
-        B²GC Brokers.
-
-      </p>
-
-
-      <!-- =================================================
-           SELECCIÓN DE ROL
-      ================================================== -->
-
-      <div
-        class="role-pick"
-        id="role-pick">
-
-
-        <!-- Originador -->
-
-        <div
-          class="role-opt active"
-          data-role="originador"
-          onclick="pickRole(this,'originador')">
-
-          <span class="role-icon">
-            ◈
-          </span>
-
-
-          <strong>
-            Soy originador
-          </strong>
-
-
-          <small>
-            Publico y gestiono cartera
-          </small>
-
-        </div>
-
-
-        <!-- Comprador -->
-
-        <div
-          class="role-opt"
-          data-role="comprador"
-          onclick="pickRole(this,'comprador')">
-
-          <span class="role-icon">
-            ◇
-          </span>
-
-
-          <strong>
-            Soy comprador
-          </strong>
-
-
-          <small>
-            Busco oportunidades
-          </small>
-
-        </div>
-
-      </div>
-
-
-      <!-- =================================================
-           CORREO
-      ================================================== -->
-
-      <div class="field">
-
-        <label for="auth-email">
-          Correo corporativo
-        </label>
-
-
-        <input
-          id="auth-email"
-          type="email"
-          placeholder="nombre@empresa.com"
-          value="originador@demo.b2gc.co">
-
-      </div>
-
-
-      <!-- =================================================
-           CONTRASEÑA
-      ================================================== -->
-
-      <div class="field">
-
-        <label for="auth-password">
-          Contraseña
-        </label>
-
-
-        <input
-          id="auth-password"
-          type="password"
-          placeholder="••••••••"
-          value="Demo123!">
-
-      </div>
-
-      <div class="demo-credentials">
-        <strong>ENTORNO DE PRUEBAS</strong>
-        <span>Originador: originador@demo.b2gc.co · Demo123!</span>
-        <span>Comprador: comprador@demo.b2gc.co · Demo123!</span>
-      </div>
-
-
-      <!-- =================================================
-           BOTÓN LOGIN
-      ================================================== -->
-
-      <button
-        type="button"
-        class="btn btn-navy"
-        style="width:100%;"
-        onclick="enterApp()">
-
-        Entrar a la plataforma →
-
-      </button>
-
-
-      <!-- Cambio de autenticación -->
-
-      <p
-        class="modal-switch"
-        id="auth-switch">
-
-        ¿Aún no tienes cuenta?
-
-
-        <button
-          type="button"
-          class="btn-text"
-          onclick="openAuth('register')">
-
-          Regístrate
-
-        </button>
-
-      </p>
-
+      <button type="button" class="detail-close" onclick="closeDetail()">×</button>
     </div>
-
-  </div>
-
-
-  <!-- =====================================================
-       PLATAFORMA PRIVADA
-  ====================================================== -->
-
-  <div
-    id="app-shell"
-    class="hidden">
-
-
-    <!-- ===================================================
-         SIDEBAR
-    ==================================================== -->
-
-    <aside class="sidebar">
-
-
-      <!-- Logo -->
-
-      <a
-        class="brand"
-        href="#">
-
-        B<span class="sup">2</span>GC Brokers
-
-      </a>
-
-
-      <!-- Estado del mercado -->
-
-      <div class="sidebar-market-status">
-
-        <span></span>
-
-        Mercado activo
-
-      </div>
-
-
-      <!-- Navegación dinámica -->
-
-      <nav id="sidebar-nav"></nav>
-
-
-      <!-- Footer sidebar -->
-
-      <div class="sidebar-footer">
-
-        <button
-          type="button"
-          class="logout-btn"
-          onclick="exitApp()">
-
-          ← Volver al sitio público
-
-        </button>
-
-      </div>
-
-    </aside>
-
-
-    <!-- ===================================================
-         CONTENIDO PRINCIPAL
-    ==================================================== -->
-
-    <div class="main">
-
-
-      <!-- =================================================
-           TOPBAR
-      ================================================== -->
-
-      <header class="topbar">
-
-
-        <!-- Página -->
-
-        <div>
-
-          <div class="topbar-kicker">
-            B²GC BROKERS
-          </div>
-
-
-          <h1 id="page-h1">
-            Dashboard
-          </h1>
-
-        </div>
-
-
-        <!-- Parte derecha -->
-
-        <div class="topbar-right">
-
-
-          <!-- Selector de rol -->
-
-          <div class="role-toggle">
-
-            <button
-              type="button"
-              id="rt-originador"
-              onclick="setRole('originador')">
-
-              Originador
-
-            </button>
-
-
-            <button
-              type="button"
-              id="rt-comprador"
-              onclick="setRole('comprador')">
-
-              Comprador
-
-            </button>
-
-          </div>
-
-
-          <!-- Empresa -->
-
-          <div class="company-chip">
-
-            <div class="avatar">
-              CJ
-            </div>
-
-
-            <span id="company-name">
-              CJ Coimport S.A.S.
-            </span>
-
-          </div>
-
-        </div>
-
-      </header>
-
-
-      <!-- =================================================
-           CONTENIDO DINÁMICO
-      ================================================== -->
-
-      <main
-        class="content"
-        id="content">
-
-      </main>
-
+    <div class="tabs">
+      <div class="tab active" data-tab="resumen" onclick="showTab('resumen')">Resumen</div>
+      <div class="tab" data-tab="simulador" onclick="showTab('simulador')">Simulador</div>
+      <div class="tab" data-tab="dataroom" onclick="showTab('dataroom')">Data room</div>
     </div>
-
+    <div class="tab-panel" id="tab-resumen"></div>
+    <div class="tab-panel hidden" id="tab-simulador"></div>
+    <div class="tab-panel hidden" id="tab-dataroom"></div>
   </div>
-
-
-  <!-- =====================================================
-       DETALLE DE CARTERA
-  ====================================================== -->
-
-  <div
-    class="detail-overlay hidden"
-    id="detail-overlay">
-
-
-    <div class="detail-panel">
-
-
-      <!-- =================================================
-           CABECERA DEL LOTE
-      ================================================== -->
-
-      <div class="detail-head">
-
-        <div>
-
-          <div
-            class="lot-number"
-            id="d-lot">
-
-            LOTE-0000
-
-          </div>
-
-
-          <h2 id="d-title">
-            Cartera
-          </h2>
-
-        </div>
-
-
-        <button
-          type="button"
-          class="detail-close"
-          onclick="closeDetail()">
-
-          ×
-
-        </button>
-
-      </div>
-
-
-      <!-- =================================================
-           TABS
-      ================================================== -->
-
-      <div class="tabs">
-
-
-        <!-- Resumen -->
-
-        <div
-          class="tab active"
-          data-tab="resumen"
-          onclick="showTab('resumen')">
-
-          Resumen
-
-        </div>
-
-
-        <!-- Simulador -->
-
-        <div
-          class="tab"
-          data-tab="simulador"
-          onclick="showTab('simulador')">
-
-          Simulador
-
-        </div>
-
-
-        <!-- Data room -->
-
-        <div
-          class="tab"
-          data-tab="dataroom"
-          onclick="showTab('dataroom')">
-
-          Data room
-
-        </div>
-
-      </div>
-
-
-      <!-- =================================================
-           PANEL RESUMEN
-      ================================================== -->
-
-      <div
-        class="tab-panel"
-        id="tab-resumen">
-
-      </div>
-
-
-      <!-- =================================================
-           PANEL SIMULADOR
-      ================================================== -->
-
-      <div
-        class="tab-panel hidden"
-        id="tab-simulador">
-
-      </div>
-
-
-      <!-- =================================================
-           PANEL DATA ROOM
-      ================================================== -->
-
-      <div
-        class="tab-panel hidden"
-        id="tab-dataroom">
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- =====================================================
-       TOAST
-  ====================================================== -->
-
-  <div
-    class="toast"
-    id="toast">
-
-  </div>
-
-
-  <!-- =====================================================
-       JAVASCRIPT PRINCIPAL
-  ====================================================== -->
-
-  <script src="app.js"></script>
-
-
-  <!-- =====================================================
-       ANIMACIONES DE ENTRADA
-  ====================================================== -->
-
-  <script>
-
-    document.addEventListener(
-      "DOMContentLoaded",
-      function () {
-
-        /*
-         * Animación de elementos
-         * cuando aparecen en pantalla.
-         */
-
-        const elements =
-          document.querySelectorAll(
-            ".modalidad, .info-box, .kpi, .cartera-card"
-          );
-
-
-        if ("IntersectionObserver" in window) {
-
-          const observer =
-            new IntersectionObserver(
-              function (entries) {
-
-                entries.forEach(
-                  function (entry) {
-
-                    if (entry.isIntersecting) {
-
-                      entry.target.classList.add(
-                        "visible"
-                      );
-
-                    }
-
-                  }
-                );
-
-              },
-              {
-                threshold: 0.12
-              }
-            );
-
-
-          elements.forEach(
-            function (element) {
-
-              observer.observe(element);
-
-            }
-          );
-
-        } else {
-
-          elements.forEach(
-            function (element) {
-
-              element.classList.add(
-                "visible"
-              );
-
-            }
-          );
-
-        }
-
-      }
-
-    );
-
-  </script>
-
+</div>
+
+<!-- Input de subida único (evita IDs duplicados) -->
+<input id="document-upload-input" type="file" class="hidden-file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg" onchange="handleDocumentUpload(event)">
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var els = document.querySelectorAll(".modalidad, .info-box, .kpi, .cartera-card");
+    if ("IntersectionObserver" in window) {
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("visible"); });
+      }, { threshold: 0.12 });
+      els.forEach(function (el) { obs.observe(el); });
+    } else {
+      els.forEach(function (el) { el.classList.add("visible"); });
+    }
+  });
+</script>
 </body>
-
 </html>
