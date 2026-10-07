@@ -5,6 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>B²GC Brokers — Marketplace privado de cartera</title>
   <link rel="stylesheet" href="style.css">
+
+<style id="b2gc-change-overrides">
+/* B²GC — rediseño operativo de cartera, proceso y subasta */
+.detail-overlay{position:fixed!important;inset:0!important;padding:0!important;z-index:9999!important;background:rgba(9,20,38,.72)!important;backdrop-filter:blur(6px)}
+.detail-panel{width:100%!important;height:100vh!important;max-width:none!important;max-height:none!important;border-radius:0!important;display:flex!important;flex-direction:column!important}
+.detail-head{padding:20px 34px!important;border-bottom:1px solid var(--line)!important;flex:0 0 auto!important}
+.detail-panel .tabs{padding:0 34px!important;flex:0 0 auto!important}
+.detail-panel .tab-panel{flex:1 1 auto!important;overflow:auto!important;padding:28px 34px 42px!important}
+#tab-simulador{background:#f7f9fc}
+.simulator-container{width:100%!important;max-width:1450px!important;margin:0 auto!important}
+.simulator-charts,.sensitivity-card{display:none!important}
+.simulator-top{grid-template-columns:minmax(0,1fr) minmax(260px,360px)!important}
+.process-timeline{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:0;margin:24px 0 30px;position:relative}
+.process-timeline:before{content:"";position:absolute;left:7%;right:7%;top:28px;height:3px;background:#dce3ee;z-index:0}
+.timeline-step{position:relative;text-align:center;z-index:1}
+.timeline-dot{width:58px;height:58px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:#fff;border:3px solid #dce3ee;color:#7a8798;font-weight:800;box-shadow:0 4px 15px rgba(20,40,70,.07)}
+.timeline-step.done .timeline-dot{background:var(--navy);border-color:var(--navy);color:#fff}
+.timeline-step.active .timeline-dot{background:var(--gold,#d9a441);border-color:var(--gold,#d9a441);color:#fff;box-shadow:0 0 0 7px rgba(217,164,65,.14)}
+.timeline-step.pending .timeline-dot{background:#fff}
+.timeline-step strong{display:block;color:var(--navy);font-size:13px}
+.timeline-step small{display:block;color:var(--muted);font-size:11px;margin-top:4px;line-height:1.35}
+.process-summary{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:12px;margin-bottom:20px}
+.process-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
+.process-card .label{font-size:10px;text-transform:uppercase;color:var(--muted-2);letter-spacing:.08em}
+.process-card strong{display:block;color:var(--navy);font-size:20px;margin-top:6px}
+.auction-board{max-width:1450px;margin:0 auto}
+.auction-hero{display:grid;grid-template-columns:1.5fr .8fr;gap:18px;align-items:stretch}
+.auction-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px}
+.auction-status{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;background:#eef6f1;color:#18734b;font-size:11px;font-weight:800;text-transform:uppercase}
+.auction-status.closed{background:#f3f4f6;color:#697386}
+.auction-clock{font-size:38px;font-weight:900;letter-spacing:-1px;color:var(--navy);margin-top:8px}
+.auction-offer-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:20px}
+.auction-offer-row input{width:100%;padding:13px;border:1px solid var(--line);border-radius:10px}
+.auction-rounds{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.auction-round{padding:8px 11px;border:1px solid var(--line);border-radius:9px;font-size:11px;background:#fff}
+.auction-round.active{border-color:var(--gold,#d9a441);background:#fff8e9}
+.auction-history{margin-top:18px}
+.auction-history table{width:100%}
+.empty-auction{padding:30px;text-align:center;border:1px dashed #cfd7e4;border-radius:12px;color:var(--muted)}
+.auction-result{margin-top:18px;padding:18px;border-radius:14px;background:#f7f9fc;border:1px solid var(--line)}
+.auction-result.desierta{background:#fff7f0;border-color:#f0c79d}
+.register-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.register-full{grid-column:1/-1}
+@media(max-width:900px){
+ .process-timeline{grid-template-columns:repeat(3,1fr);row-gap:24px}
+ .process-timeline:before{display:none}
+ .process-summary,.auction-hero,.simulator-top,.register-grid{grid-template-columns:1fr}
+ .detail-head,.detail-panel .tabs,.detail-panel .tab-panel{padding-left:18px!important;padding-right:18px!important}
+ .auction-offer-row{grid-template-columns:1fr}
+}
+</style>
+
 </head>
 <body>
 
@@ -51,21 +103,16 @@
           </div>
           <div class="live">MERCADO ACTIVO</div>
         </div>
-        <div class="tl-card hero-timeline">
-          <div class="tl-head"><strong>LOTE-TEST-001 · Subasta privada</strong><span>Faltan 9 días para el cierre</span></div>
-          <ol class="tl">
-            <li class="done"><i>✓</i>Publicación</li>
-            <li class="done"><i>✓</i>Data room</li>
-            <li class="current"><i>3</i>Subasta</li>
-            <li><i>4</i>Revisión</li>
-            <li><i>5</i>Cierre</li>
-          </ol>
-          <div class="tl-bar"><span style="width:60%"></span></div>
+        <div class="hero-chart">
+          <div class="chart-grid"></div>
+          <div class="chart-line"></div>
+          <div class="chart-point point-1"></div>
+          <div class="chart-point point-2"></div>
+          <div class="chart-point point-3"></div>
+          <div class="chart-point point-4"></div>
         </div>
-        <div class="hero-summary">
-          <div class="hero-value">$18.420 M</div>
-          <div class="hero-change">↗ +12.8% oportunidades activas</div>
-        </div>
+        <div class="hero-value">$18.420 M</div>
+        <div class="hero-change">↗ +12.8% oportunidades activas</div>
         <div class="hero-mini-stats">
           <div><strong>47</strong><span>Compradores</span></div>
           <div><strong>126</strong><span>Operaciones</span></div>
@@ -124,32 +171,6 @@
     <div class="trust-item"><span class="trust-icon">✓</span>Información anonimizada</div>
     <div class="trust-item"><span class="trust-icon">✓</span>Compradores precalificados</div>
     <div class="trust-item"><span class="trust-icon">✓</span>Data room auditable</div>
-  </section>
-
-  <section class="journey" id="proceso">
-    <div class="section-kicker">PROCESO DESDE CERO</div>
-    <h2>Del registro al cierre, paso a paso.</h2>
-    <div class="journey-grid">
-      <div class="journey-col"><h3>◈ Si eres vendedor</h3><ol>
-        <li><b>Registro</b> con NIT y correo corporativo.</li>
-        <li><b>Validación</b> de tu empresa.</li>
-        <li><b>Carga de cartera</b> anonimizada y data room.</li>
-        <li><b>Configura la subasta:</b> precio de reserva y ventana de 15 o 30 min.</li>
-        <li><b>Subasta</b> y adjudicación.</li>
-        <li><b>Cierre documental</b> digital.</li></ol></div>
-      <div class="journey-col"><h3>◇ Si eres comprador</h3><ol>
-        <li><b>Registro</b> y precalificación.</li>
-        <li><b>Acceso al data room</b> tras aceptar el NDA.</li>
-        <li><b>Simulador:</b> define cuánto estás dispuesto a pagar.</li>
-        <li><b>Oferta</b> dentro de la ventana de la cartera.</li>
-        <li><b>Resultado:</b> adjudicada o desierta.</li>
-        <li><b>Cierre documental</b> digital.</li></ol></div>
-    </div>
-    <div class="engine">
-      <div class="engine-card"><strong>1 × 1</strong><span>Las carteras se subastan una por una, en orden de cola.</span></div>
-      <div class="engine-card"><strong>15 o 30 min</strong><span>Cada cartera tiene su propia ventana de ofertas.</span></div>
-      <div class="engine-card"><strong>Desierta</strong><span>Si la ventana cierra sin ofertas, la cartera se declara desierta y se puede republicar.</span></div>
-    </div>
   </section>
 
   <section class="modalidades" id="como-funciona">
@@ -264,13 +285,33 @@
     </div>
 
     <div class="field hidden" id="auth-company-field">
-      <label for="auth-company">Nombre de la empresa</label>
-      <input id="auth-company" type="text" placeholder="Mi Empresa S.A.S.">
+      <div class="register-grid">
+        <div class="field">
+          <label for="auth-company">Razón social</label>
+          <input id="auth-company" type="text" placeholder="Mi Empresa S.A.S.">
+        </div>
+        <div class="field">
+          <label for="auth-nit">NIT</label>
+          <input id="auth-nit" type="text" placeholder="900000000-0">
+        </div>
+        <div class="field">
+          <label for="auth-contact">Nombre del responsable</label>
+          <input id="auth-contact" type="text" placeholder="Nombre completo">
+        </div>
+        <div class="field">
+          <label for="auth-phone">Teléfono</label>
+          <input id="auth-phone" type="tel" placeholder="+57 300 000 0000">
+        </div>
+        <div class="field register-full">
+          <label for="auth-email">Correo corporativo</label>
+          <input id="auth-email" type="email" placeholder="nombre@empresa.com">
+        </div>
+      </div>
     </div>
 
-    <div class="field">
-      <label for="auth-email">Correo corporativo</label>
-      <input id="auth-email" type="email" placeholder="nombre@empresa.com" value="vendedor@demo.b2gc.co">
+    <div class="field" id="auth-login-email-field">
+      <label for="auth-login-email">Correo corporativo</label>
+      <input id="auth-login-email" type="email" placeholder="nombre@empresa.com" value="vendedor@demo.b2gc.co">
     </div>
 
     <div class="field">
@@ -337,11 +378,13 @@
     </div>
     <div class="tabs">
       <div class="tab active" data-tab="resumen" onclick="showTab('resumen')">Resumen</div>
-      <div class="tab" data-tab="simulador" onclick="showTab('simulador')">Simulador</div>
+      <div class="tab" data-tab="simulador" onclick="showTab('simulador')">Simulador y proceso</div>
+      <div class="tab" data-tab="subasta" onclick="showTab('subasta')">Subasta</div>
       <div class="tab" data-tab="dataroom" onclick="showTab('dataroom')">Data room</div>
     </div>
     <div class="tab-panel" id="tab-resumen"></div>
     <div class="tab-panel hidden" id="tab-simulador"></div>
+    <div class="tab-panel hidden" id="tab-subasta"></div>
     <div class="tab-panel hidden" id="tab-dataroom"></div>
   </div>
 </div>
