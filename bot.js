@@ -259,7 +259,7 @@ function syncBot() {
   const root = $("#bot-root");
   if (!root) return;
   const adminOpen = $("#admin-shell") && !$("#admin-shell").classList.contains("hidden");
-  const hide = adminOpen || (appState.loggedIn && currentRole === "originador");
+  const hide = adminOpen || (appState.loggedIn && currentRole === "vendedor");
   root.classList.toggle("hidden", hide);
 }
 

@@ -4,8 +4,12 @@ Prototipo front-end de B²GC Brokers preparado para pruebas manuales con datos c
 
 ## Credenciales
 
-### Originador
-- Correo: `originador@demo.b2gc.co`
+### Administrador
+- Correo: `admin@b2gc.co`
+- Contraseña: `Admin123!`
+
+### Vendedor
+- Correo: `vendedor@demo.b2gc.co`
 - Contraseña: `Demo123!`
 
 ### Comprador
@@ -18,7 +22,12 @@ Prototipo front-end de B²GC Brokers preparado para pruebas manuales con datos c
 - Mis carteras, Oportunidades y Mercado con 5 lotes `LOTE-TEST-*`.
 - Detalle de lote y simulador de oferta.
 - Creación y persistencia de ofertas en `localStorage`.
-- Mis ofertas.
+- Mis ofertas segmentadas por lote, de la más alta a la más baja (el vendedor ve todo el detalle; el comprador ve a los demás postores en anónimo).
+- Carteras en subasta: tiempo de cierre en vivo, estado (en vivo / próxima / cerrada) y progreso de la ventana.
+- Mercado del comprador: favoritas (★) arriba, la más vendida y la que vence más rápido destacadas.
+- Alerta al comprador cuando oferta por debajo de la última ofertada; el vendedor acepta o rechaza cada oferta y ve si supera su tarifa.
+- Línea de proceso del comprador (fase 1 a 6) en el dashboard.
+- Panel de administración con analítica de subastas, tiempos, conversión y asistente IA (reglas sobre datos demo).
 - Negociaciones y adjudicaciones con escenarios demo.
 - Documentos y Data Room con documentos ficticios consultables.
 - Vista de documento de prueba y descarga del contenido demo.

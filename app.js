@@ -5,43 +5,46 @@
 
 /* ===== Variables globales ===== */
 let currentAuthMode = "login";
-let currentRole = "originador";
+let currentRole = "vendedor";
 let currentDetail = null;
 let toastTimer = null;
 let countdownTimer = null;
+let currentPage = "dashboard";
 
 /* ===== Estado ===== */
 const DEMO_STORAGE_KEY = "b2gc_demo_state_v2";
 
 const demoAccounts = {
-  originador: { email: "originador@demo.b2gc.co", password: "Demo123!", company: "Originador Demo S.A.S.", avatar: "OD" },
+  vendedor: { email: "vendedor@demo.b2gc.co", password: "Demo123!", company: "Vendedor Demo S.A.S.", avatar: "VD" },
   comprador: { email: "comprador@demo.b2gc.co", password: "Demo123!", company: "Comprador Demo S.A.S.", avatar: "CD" }
 };
 
 const appState = {
   loggedIn: false,
   demoMode: true,
-  company: "Originador Demo S.A.S.",
-  avatar: "OD",
-  userEmail: demoAccounts.originador.email,
-  originador: { stats: { cartera: "$18.420 M", operaciones: "126", compradores: "47", cierre: "82%" } },
+  company: "Vendedor Demo S.A.S.",
+  avatar: "VD",
+  userEmail: demoAccounts.vendedor.email,
+  vendedor: { stats: { cartera: "$18.420 M", operaciones: "126", compradores: "47", cierre: "82%" } },
   comprador: { stats: { oportunidades: "32", ofertas: "14", adjudicadas: "8", cierre: "76%" } },
   offers: [],
-  uploadedDocuments: []
+  uploadedDocuments: [],
+  decisions: {},  // { idOferta: "Aceptada" | "Rechazada" } — decisión del vendedor
+  favorites: []   // lotes marcados con ★ por el comprador
 };
 
 const originatorLots = [
-  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", originador: "Originador Demo S.A.S.", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
-  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", originador: "Originador Demo S.A.S.", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
-  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", originador: "Originador Demo S.A.S.", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Data room abierto", statusClass: "badge-blue", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" }
+  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", vendedor: "Vendedor Demo S.A.S.", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
+  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Vendedor Demo S.A.S.", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
+  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Vendedor Demo S.A.S.", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Data room abierto", statusClass: "badge-blue", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" }
 ];
 
 const lots = [
-  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", originador: "Entidad Financiera Demo A", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
-  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", originador: "Entidad Financiera Demo B", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
-  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", originador: "Entidad Financiera Demo C", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Precalificación", statusClass: "badge-gold", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" },
-  { id: "LOTE-TEST-004", title: "Cartera hipotecaria — Demo", originador: "Entidad Financiera Demo D", type: "Hipotecaria", amount: "$8.920 M", discount: "12%", debtors: "420", status: "Data room abierto", statusClass: "badge-blue", modality: "Subasta privada", deadline: "30 Sep 2026", score: "A+" },
-  { id: "LOTE-TEST-005", title: "Cartera pyme — Demo", originador: "Originador Demo E", type: "PYME", amount: "$2.160 M", discount: "20%", debtors: "315", status: "Nueva", statusClass: "badge-green", modality: "Compra directa", deadline: "02 Oct 2026", score: "A" }
+  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", vendedor: "Entidad Financiera Demo A", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
+  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Entidad Financiera Demo B", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
+  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Entidad Financiera Demo C", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Precalificación", statusClass: "badge-gold", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" },
+  { id: "LOTE-TEST-004", title: "Cartera hipotecaria — Demo", vendedor: "Entidad Financiera Demo D", type: "Hipotecaria", amount: "$8.920 M", discount: "12%", debtors: "420", status: "Data room abierto", statusClass: "badge-blue", modality: "Subasta privada", deadline: "30 Sep 2026", score: "A+" },
+  { id: "LOTE-TEST-005", title: "Cartera pyme — Demo", vendedor: "Vendedor Demo E", type: "PYME", amount: "$2.160 M", discount: "20%", debtors: "315", status: "Nueva", statusClass: "badge-green", modality: "Compra directa", deadline: "02 Oct 2026", score: "A" }
 ];
 
 const buyerOpportunities = lots.map(lot => ({ ...lot }));
@@ -52,11 +55,11 @@ const DAY = 864e5;
 const SOLD_DEMO = 3977; // M COP ya vendidos (demo)
 
 const lotProfiles = {
-  "LOTE-TEST-001": { obligations: 6120, likes: 128, favs: 41, comments: 17, offers: 6, bestPercent: 82, startsAt: Date.now() + 2 * DAY, endsAt: Date.now() + 9 * DAY },
-  "LOTE-TEST-002": { obligations: 3010, likes: 76, favs: 22, comments: 9, offers: 4, bestPercent: 85, startsAt: Date.now() + 4 * DAY, endsAt: Date.now() + 12 * DAY },
-  "LOTE-TEST-003": { obligations: 1930, likes: 54, favs: 15, comments: 6, offers: 3, bestPercent: 74, startsAt: Date.now() + 6 * DAY, endsAt: Date.now() + 15 * DAY },
-  "LOTE-TEST-004": { obligations: 980, likes: 33, favs: 10, comments: 3, offers: 2, bestPercent: 88, startsAt: Date.now() + 8 * DAY, endsAt: Date.now() + 18 * DAY },
-  "LOTE-TEST-005": { obligations: 720, likes: 21, favs: 7, comments: 2, offers: 1, bestPercent: 80, startsAt: Date.now() + 10 * DAY, endsAt: Date.now() + 20 * DAY }
+  "LOTE-TEST-001": { obligations: 6120, likes: 128, favs: 41, comments: 17, offers: 6, bestPercent: 82, startsAt: Date.now() - 3 * DAY, endsAt: Date.now() + 5 * 36e5 },
+  "LOTE-TEST-002": { obligations: 3010, likes: 76, favs: 22, comments: 9, offers: 4, bestPercent: 85, startsAt: Date.now() - 2 * DAY, endsAt: Date.now() + 2.25 * DAY },
+  "LOTE-TEST-003": { obligations: 1930, likes: 54, favs: 15, comments: 6, offers: 3, bestPercent: 74, startsAt: Date.now() - 1.5 * DAY, endsAt: Date.now() + 4 * DAY },
+  "LOTE-TEST-004": { obligations: 980, likes: 33, favs: 10, comments: 3, offers: 2, bestPercent: 88, startsAt: Date.now() - 1 * DAY, endsAt: Date.now() + 6 * DAY },
+  "LOTE-TEST-005": { obligations: 720, likes: 21, favs: 7, comments: 2, offers: 0, bestPercent: 0, startsAt: Date.now() + 18 * 36e5, endsAt: Date.now() + 8 * DAY }
 };
 const profileOf = lot => lotProfiles[lot.id] || lotProfiles["LOTE-TEST-001"];
 
@@ -86,6 +89,8 @@ function loadDemoState() {
     const saved = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || "null");
     if (saved && Array.isArray(saved.offers)) appState.offers = saved.offers;
     if (saved && Array.isArray(saved.uploadedDocuments)) appState.uploadedDocuments = saved.uploadedDocuments;
+    if (saved && saved.decisions && typeof saved.decisions === "object") appState.decisions = saved.decisions;
+    if (saved && Array.isArray(saved.favorites)) appState.favorites = saved.favorites;
   } catch (error) {
     console.warn("No fue posible cargar el estado demo.", error);
     appState.offers = [];
@@ -93,12 +98,14 @@ function loadDemoState() {
 }
 
 function saveDemoState() {
-  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments }));
+  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites }));
 }
 
 function resetDemoData() {
   appState.offers = [];
   appState.uploadedDocuments = [];
+  appState.decisions = {};
+  appState.favorites = [];
   saveDemoState();
   showToast("Datos de prueba restaurados.");
   if (appState.loggedIn) {
@@ -140,7 +147,9 @@ function tickCountdowns() {
     const [id, kind] = el.dataset.cd.split("|");
     const p = lotProfiles[id];
     if (!p) return;
-    el.textContent = fmtCountdown((kind === "inicio" ? p.startsAt : p.endsAt) - Date.now());
+    const ms = (kind === "inicio" ? p.startsAt : p.endsAt) - Date.now();
+    el.textContent = kind === "inicio" && ms <= 0 ? "En curso" : fmtCountdown(ms);
+    el.classList.toggle("cd-urgent", kind === "cierre" && ms > 0 && ms < DAY);
   });
 }
 
@@ -265,11 +274,12 @@ function setRole(role) {
   if (companyName) companyName.textContent = appState.company;
   if (avatar) avatar.textContent = appState.avatar;
 
-  $("#rt-originador")?.classList.toggle("active", role === "originador");
+  $("#rt-vendedor")?.classList.toggle("active", role === "vendedor");
   $("#rt-comprador")?.classList.toggle("active", role === "comprador");
 
   const h1 = $("#page-h1");
   if (h1) h1.textContent = "Dashboard";
+  currentPage = "dashboard";
 
   buildSidebar();
   renderDashboard();
@@ -279,10 +289,12 @@ function buildSidebar() {
   const nav = $("#sidebar-nav");
   if (!nav) return;
 
-  if (currentRole === "originador") {
+  if (currentRole === "vendedor") {
     nav.innerHTML = `
       <a href="#" class="active" onclick="navigate(event,'dashboard')"><span>▦</span> Dashboard</a>
       <a href="#" onclick="navigate(event,'cartera')"><span>◫</span> Mis carteras</a>
+      <a href="#" onclick="navigate(event,'subastas')"><span>⏱</span> Carteras en subasta</a>
+      <a href="#" onclick="navigate(event,'ofertas')"><span>↕</span> Ofertas recibidas</a>
       <a href="#" onclick="navigate(event,'oportunidades')"><span>◇</span> Interés de compradores</a>
       <a href="#" onclick="navigate(event,'negociaciones')"><span>⇄</span> Negociaciones</a>
       <a href="#" onclick="navigate(event,'documentos')"><span>□</span> Documentos y cierre</a>
@@ -293,6 +305,7 @@ function buildSidebar() {
     nav.innerHTML = `
       <a href="#" class="active" onclick="navigate(event,'dashboard')"><span>▦</span> Dashboard</a>
       <a href="#" onclick="navigate(event,'mercado')"><span>◇</span> Mercado</a>
+      <a href="#" onclick="navigate(event,'subastas')"><span>⏱</span> Carteras en subasta</a>
       <a href="#" onclick="navigate(event,'ofertas')"><span>⇄</span> Mis ofertas</a>
       <a href="#" onclick="navigate(event,'adjudicaciones')"><span>✓</span> Adjudicaciones</a>
       <a href="#" onclick="navigate(event,'dataroom')"><span>□</span> Data room</a>
@@ -308,10 +321,13 @@ function navigate(event, page) {
   $$("#sidebar-nav a").forEach(link => link.classList.remove("active"));
   if (event && event.currentTarget) event.currentTarget.classList.add("active");
 
+  currentPage = page;
   const titles = {
     dashboard: "Dashboard", cartera: "Mis carteras", oportunidades: "Oportunidades", negociaciones: "Negociaciones",
-    documentos: "Documentos", reportes: "Reportes", mercado: "Mercado de oportunidades", ofertas: "Mis ofertas",
-    adjudicaciones: "Adjudicaciones", dataroom: "Data room", pruebas: "Centro de pruebas"
+    documentos: "Documentos", reportes: "Reportes", mercado: "Mercado de oportunidades",
+    ofertas: currentRole === "vendedor" ? "Ofertas recibidas" : "Mis ofertas",
+    adjudicaciones: "Adjudicaciones", dataroom: "Data room", pruebas: "Centro de pruebas",
+    subastas: "Carteras en subasta"
   };
   if (pageTitle) pageTitle.textContent = titles[page] || "Dashboard";
 
@@ -326,9 +342,9 @@ function renderDashboard() {
   const content = $("#content");
   if (!content) return;
 
-  const isOriginator = currentRole === "originador";
+  const isOriginator = currentRole === "vendedor";
   const roleData = isOriginator ? {
-    kicker: "VISTA GENERAL DEL ORIGINADOR",
+    kicker: "VISTA GENERAL DEL VENDEDOR",
     title: "Controla tu cartera y tus procesos de venta.",
     description: "Publica portafolios, revisa compradores, gestiona negociaciones y acompaña el cierre documental."
   } : {
@@ -370,7 +386,7 @@ function kpiCard(label, value, change, direction = "up") {
     </div>`;
 }
 
-/* ----- KPIs del originador ----- */
+/* ----- KPIs del vendedor ----- */
 function renderOriginatorKpis() {
   const total = originatorLots.reduce((s, l) => s + parseLotAmount(l), 0); // M COP
   const usd = total * 1e6 / TRM_DEMO;
@@ -378,8 +394,8 @@ function renderOriginatorKpis() {
   const likes = originatorLots.reduce((s, l) => s + profileOf(l).likes, 0);
   const favs = originatorLots.reduce((s, l) => s + profileOf(l).favs, 0);
   const comments = originatorLots.reduce((s, l) => s + profileOf(l).comments, 0);
-  const nOffers = originatorLots.reduce((s, l) => s + profileOf(l).offers, 0);
-  const best = originatorLots.map(l => ({ lot: l, p: profileOf(l).bestPercent })).sort((a, b) => b.p - a.p)[0];
+  const nOffers = originatorLots.reduce((s, l) => s + bidsFor(l.id).length, 0);
+  const best = originatorLots.map(l => ({ lot: l, p: topBid(l.id)?.percent || 0 })).sort((a, b) => b.p - a.p)[0];
   const bestValue = parseLotAmount(best.lot) * best.p / 100;
   const n = getNotif();
 
@@ -403,8 +419,8 @@ function renderOriginatorKpis() {
     </div>
 
     <div class="kpi-card" style="cursor:pointer" onclick="toggleCountdown()" title="Clic para alternar inicio ⇄ cierre">
-      <div class="label"><span id="cd-label">Tiempo para inicio de subasta</span> ⇄</div>
-      <div class="value" id="cd-main" data-cd="${featured.id}|inicio" style="font-size:20px">—</div>
+      <div class="label"><span id="cd-label">Tiempo para cierre de subasta</span> ⇄</div>
+      <div class="value" id="cd-main" data-cd="${featured.id}|cierre" style="font-size:20px">—</div>
       <div class="change" style="color:var(--muted)" onclick="event.stopPropagation()">
         Avisar por:
         <label><input type="checkbox" ${n.sms ? "checked" : ""} onchange="setNotif('sms',this.checked)"> SMS</label>
@@ -414,103 +430,98 @@ function renderOriginatorKpis() {
     </div>`;
 }
 
-/* ----- Gráficas del originador: solo Distribución por tipo y Estado de operaciones ----- */
+/* ----- Gráficas del vendedor ----- */
 function renderOriginatorCharts() {
   const donut = [["Consumo", 42], ["Libranza", 28], ["Comercial", 18], ["Hipotecaria", 12]];
   const statuses = [["En mercado", 36, "active"], ["En negociación", 18, "negotiation"], ["Cerradas", 72, "completed"]];
-  const max = Math.max(...statuses.map(s => s[1]));
   return `
     <div class="dashboard-chart-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+      <div class="dashboard-chart-card dashboard-chart-large">
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">SUBASTAS</div><h3>Mejor oferta vs. tu tarifa</h3><p>La línea dorada marca la tarifa mínima que fijaste para cada lote.</p></div><button class="chart-period" onclick="navigate(null,'ofertas')">Ver ofertas →</button></div>
+        ${renderReserveChart(originatorLots)}
+      </div>
       <div class="dashboard-chart-card">
         <div class="dashboard-chart-header"><div><div class="chart-kicker">TU PORTAFOLIO</div><h3>Distribución por tipo</h3></div></div>
-        <div class="portfolio-donut-wrap"><div class="portfolio-donut role-originador"><div class="portfolio-donut-center"><strong>126</strong><span>operaciones</span></div></div></div>
-        <div class="portfolio-legend">${donut.map((d, i) => `<div><i class="legend-${i}"></i><span>${d[0]}</span><strong>${d[1]}%</strong></div>`).join("")}</div>
+        ${svgDonut(donut, "126", "operaciones", "dv")}
       </div>
       <div class="dashboard-chart-card">
         <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Estado de tus operaciones</h3></div></div>
-        <div class="status-summary">${statuses.map(s => `<div class="status-row"><div class="status-name"><span class="status-dot ${s[2]}"></span>${s[0]}</div><strong>${s[1]}</strong></div><div class="status-progress"><span style="width:${s[1] / max * 100}%"></span></div>`).join("")}</div>
+        ${renderStatusBars(statuses)}
       </div>
     </div>`;
 }
 
-/* ----- Gráficas del comprador (sin cambios) ----- */
+/* ----- Gráficas del comprador ----- */
 function renderDashboardCharts(role) {
-  const data = {
-    lineKicker: "MERCADO PARA TI", lineTitle: "Valor de oportunidades", lineSubtitle: "Valor nominal de las oportunidades que puedes analizar",
-    values: [10800, 11600, 12150, 13400, 14200, 15100, 15950],
-    donutKicker: "MERCADO DISPONIBLE", donutTitle: "Tipos de oportunidad", donutTotal: "32", donutLabel: "oportunidades",
-    donut: [["Consumo", 34], ["Libranza", 27], ["Comercial", 23], ["Hipotecaria", 16]],
-    activityTitle: "Actividad de compras",
-    statusTitle: "Tu pipeline de compra",
-    statuses: [["Disponibles", 32, "active"], ["Con oferta", 14, "negotiation"], ["Adjudicadas", 8, "completed"]]
-  };
-
-  const max = 20000;
-  const points = data.values.map((v, i) => [(700 / (data.values.length - 1)) * i, 245 - (v / max) * 205]);
-  const linePath = points.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-  const areaPath = `${linePath} L700,260 L0,260 Z`;
-  const months = ["Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep"];
-  const maxStatus = Math.max(...data.statuses.map(s => s[1]));
-
+  const donut = [["Consumo", 34], ["Libranza", 27], ["Comercial", 23], ["Hipotecaria", 16]];
+  const statuses = [["Disponibles", 32, "active"], ["Con oferta", 14, "negotiation"], ["Adjudicadas", 8, "completed"]];
   return `
     <div class="dashboard-chart-grid">
       <div class="dashboard-chart-card dashboard-chart-large">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">${data.lineKicker}</div><h3>${data.lineTitle}</h3><p>${data.lineSubtitle}</p></div><div class="chart-period">Mar — Sep 2026</div></div>
-        <div class="line-chart">
-          <div class="line-chart-y"><span>20.000 M</span><span>15.000 M</span><span>10.000 M</span><span>5.000 M</span><span>0</span></div>
-          <div class="line-chart-area"><div class="chart-lines"><span></span><span></span><span></span><span></span><span></span></div>
-            <svg viewBox="0 0 700 260" preserveAspectRatio="none" class="market-line-svg" aria-label="${escapeHtml(data.lineTitle)}">
-              <defs><linearGradient id="marketGradient-${role}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-opacity=".22"/><stop offset="100%" stop-opacity="0"/></linearGradient></defs>
-              <path class="market-area" fill="url(#marketGradient-${role})" d="${areaPath}"></path>
-              <path class="market-line" d="${linePath}"></path>
-              <circle cx="${points.at(-1)[0]}" cy="${points.at(-1)[1]}" r="6" class="chart-current-point"></circle>
-            </svg>
-            <div class="line-chart-x">${months.map(m => `<span>${m}</span>`).join("")}</div>
-          </div>
-        </div>
+        ${renderBuyerProcess()}
       </div>
-
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">${data.donutKicker}</div><h3>${data.donutTitle}</h3></div></div>
-        <div class="portfolio-donut-wrap"><div class="portfolio-donut role-${role}"><div class="portfolio-donut-center"><strong>${data.donutTotal}</strong><span>${data.donutLabel}</span></div></div></div>
-        <div class="portfolio-legend">${data.donut.map((item, i) => `<div><i class="legend-${i}"></i><span>${item[0]}</span><strong>${item[1]}%</strong></div>`).join("")}</div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">MERCADO DISPONIBLE</div><h3>Tipos de oportunidad</h3></div></div>
+        ${svgDonut(donut, "32", "oportunidades", "dc")}
       </div>
-
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">ACTIVIDAD</div><h3>${data.activityTitle}</h3></div></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">ACTIVIDAD</div><h3>Actividad de compras</h3></div><div class="chart-period">Mar — Sep</div></div>
         <div class="activity-chart">${renderActivityBars(role)}</div>
       </div>
-
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>${data.statusTitle}</h3></div></div>
-        <div class="status-summary">${data.statuses.map(item => `<div class="status-row"><div class="status-name"><span class="status-dot ${item[2]}"></span>${item[0]}</div><strong>${item[1]}</strong></div><div class="status-progress"><span style="width:${Math.min(100, item[1] / maxStatus * 100)}%"></span></div>`).join("")}</div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Tu pipeline de compra</h3></div></div>
+        ${renderStatusBars(statuses)}
       </div>
     </div>`;
 }
 
+function renderStatusBars(statuses) {
+  const total = statuses.reduce((s, x) => s + x[1], 0);
+  return `<div class="status-summary premium">${statuses.map(([name, value, cls]) => `
+    <div class="status-item">
+      <div class="status-row"><div class="status-name"><span class="status-dot ${cls}"></span>${name}</div><strong>${value}<small>${Math.round(value / total * 100)}%</small></strong></div>
+      <div class="status-progress ${cls}"><span style="width:${value / total * 100}%"></span></div>
+    </div>`).join("")}
+    <div class="status-total"><span>Total</span><strong>${total}</strong></div>
+  </div>`;
+}
+
 function renderActivityBars(role) {
-  const values = role === "originador" ? [48, 55, 62, 70, 66, 81, 88] : [38, 46, 58, 52, 70, 64, 84];
+  const values = role === "vendedor" ? [48, 55, 62, 70, 66, 81, 88] : [38, 46, 58, 52, 70, 64, 84];
   const labels = ["Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep"];
   return values.map((value, index) => `
-    <div class="activity-column">
-      <div class="activity-value" style="height:${value}%"></div>
+    <div class="activity-column ${index === values.length - 1 ? "current" : ""}">
+      <div class="activity-value" style="height:${value}%"><b>${value}</b></div>
       <span>${labels[index]}</span>
     </div>`).join("");
 }
 
 /* ----- Tabla de lotes ----- */
 function renderLotsCard() {
-  if (currentRole === "originador") return renderOriginatorLotsCard();
+  if (currentRole === "vendedor") return renderOriginatorLotsCard();
 
+  const fav = new Set(appState.favorites);
+  const items = [...buyerOpportunities].sort((a, b) => (fav.has(b.id) - fav.has(a.id)) || endKey(a) - endKey(b));
   return `
     <div class="card">
-      <div class="card-header"><div><h3>Oportunidades disponibles</h3><p>Lotes que puedes analizar y ofertar</p></div>
+      <div class="card-header"><div><h3>Oportunidades disponibles</h3><p>Tus favoritas primero, luego las que cierran antes</p></div>
         <button class="btn btn-ghost btn-small" onclick="navigate(event,'mercado')">Ver todo</button>
       </div>
       <div class="table-wrap"><table><thead><tr>
-        <th>Lote</th><th>Tipo</th><th>Valor</th><th>Descuento</th><th>Modalidad</th><th>Estado</th><th></th>
+        <th></th><th>Lote</th><th>Tipo</th><th>Valor</th><th>Oferta más alta</th><th>Tiempo de subasta</th><th>Estado</th><th></th>
       </tr></thead><tbody>
-        ${buyerOpportunities.map(lot => `<tr><td><strong style="color:var(--navy);">${lot.id}</strong></td><td>${lot.type}</td><td><strong>${lot.amount}</strong></td><td>${lot.discount}</td><td>${lot.modality}</td><td><span class="badge ${lot.statusClass}">${lot.status}</span></td><td><button class="btn btn-ghost btn-small" onclick="openDetail('${lot.id}')">Ver</button></td></tr>`).join("")}
+        ${items.map(lot => {
+          const top = topBid(lot.id);
+          return `<tr>
+            <td>${favButton(lot.id)}</td>
+            <td><strong style="color:var(--navy);">${lot.id}</strong>${lot.id === topSellerId() ? ' <span class="chip chip-hot">Más vendida</span>' : ""}</td>
+            <td>${lot.type}</td><td><strong>${lot.amount}</strong></td>
+            <td>${top ? top.percent + "%" : "—"}</td>
+            <td><small class="cd-label">${cdLabel(lot.id)}</small> ${cdHtml(lot.id)}</td>
+            <td><span class="badge ${lot.statusClass}">${lot.status}</span></td>
+            <td><button class="btn btn-ghost btn-small" onclick="openDetail('${lot.id}')">Ver</button></td>
+          </tr>`;
+        }).join("")}
       </tbody></table></div>
     </div>`;
 }
@@ -522,15 +533,17 @@ function renderOriginatorLotsCard() {
         <button class="btn btn-ghost btn-small" onclick="navigate(event,'cartera')">Ver todo</button>
       </div>
       <div class="table-wrap"><table><thead><tr>
-        <th>Lote</th><th>Valor</th><th>Mejor oferta</th><th>Cuenta regresiva</th><th>Modalidad</th><th>Estado</th><th></th>
+        <th>Lote</th><th>Valor</th><th>Tarifa</th><th>Mejor oferta</th><th>Cuenta regresiva</th><th>Modalidad</th><th>Estado</th><th></th>
       </tr></thead><tbody>
         ${originatorLots.map(lot => {
-          const p = profileOf(lot);
+          const top = topBid(lot.id);
+          const reserve = reserveOf(lot.id);
           return `<tr>
             <td><strong style="color:var(--navy);">${lot.id}</strong></td>
             <td><strong>${lot.amount}</strong></td>
-            <td>${fmtM(parseLotAmount(lot) * p.bestPercent / 100)} · ${p.bestPercent}%</td>
-            <td data-cd="${lot.id}|cierre">—</td>
+            <td>${reserve}%</td>
+            <td>${top ? `${fmtM(parseLotAmount(lot) * top.percent / 100)} · ${top.percent}% ${reserveBadge(top.percent, reserve)}` : "Sin ofertas"}</td>
+            <td>${cdHtml(lot.id)}</td>
             <td>${lot.modality}</td>
             <td><span class="badge ${lot.statusClass}">${lot.status}</span></td>
             <td><button class="btn btn-ghost btn-small" onclick="openDetail('${lot.id}')">Ver</button></td>
@@ -547,9 +560,9 @@ function renderPage(page) {
   const content = $("#content");
   if (!content) return;
 
-  const isOrig = currentRole === "originador";
+  const isOrig = currentRole === "vendedor";
   const data = {
-    cartera: { title: "Mis carteras", description: "Portafolios publicados por el originador demo." },
+    cartera: { title: "Mis carteras", description: "Portafolios publicados por el vendedor demo." },
     oportunidades: { title: isOrig ? "Interés de compradores" : "Oportunidades", description: isOrig ? "Compradores demo que han mostrado interés en tus portafolios." : "Oportunidades disponibles para analizar y ofertar." },
     negociaciones: { title: isOrig ? "Negociaciones con compradores" : "Mis negociaciones", description: isOrig ? "Seguimiento a propuestas recibidas y contrapropuestas de tus portafolios." : "Seguimiento a tus propuestas y contrapropuestas." },
     mercado: { title: "Mercado de oportunidades", description: "Lotes demo disponibles para explorar y ofertar." },
@@ -559,13 +572,15 @@ function renderPage(page) {
   const current = data[page] || data.reportes;
 
   if (page === "pruebas") { content.innerHTML = renderTestCenter(); runSelfTests(false); return; }
-  if (page === "ofertas") { content.innerHTML = renderOffersPage(); return; }
+  if (page === "ofertas") { content.innerHTML = renderOffersPage(); startCountdowns(); return; }
+  if (page === "subastas") { content.innerHTML = renderAuctionsPage(); startCountdowns(); return; }
+  if (!isOrig && ["oportunidades", "mercado"].includes(page)) { content.innerHTML = renderMarketPage(current.title, current.description); startCountdowns(); return; }
 
   if (["cartera", "oportunidades", "mercado"].includes(page)) {
     const items = isOrig ? originatorLots : buyerOpportunities;
     content.innerHTML = `
       <div class="card page-card">
-        <div class="section-kicker">DATOS DE PRUEBA · ${isOrig ? "ORIGINADOR" : "COMPRADOR"}</div>
+        <div class="section-kicker">DATOS DE PRUEBA · ${isOrig ? "VENDEDOR" : "COMPRADOR"}</div>
         <h2>${current.title}</h2>
         <p>${current.description}</p>
         <div class="test-lot-grid">
@@ -575,6 +590,7 @@ function renderPage(page) {
               <h3>${lot.title}</h3>
               <span>${lot.type} · ${lot.modality}</span>
               <strong>${lot.amount}</strong>
+              <div class="test-lot-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id)}</div>
               <div class="test-lot-meta">
                 <span class="badge ${lot.statusClass}">${lot.status}</span>
                 <span>${fmtN(profileOf(lot).obligations)} obligaciones</span>
@@ -583,6 +599,7 @@ function renderPage(page) {
             </article>`).join("")}
         </div>
       </div>`;
+    startCountdowns();
     return;
   }
 
@@ -595,7 +612,7 @@ function renderPage(page) {
           { id: "NEG-ORIG-002", lotId: "LOTE-TEST-003", amount: "$5.220 M", status: "Contrapropuesta", date: "15 Sep 2026", counterparty: "Inversiones Demo Capital" }
         ]
         : [
-          { id: "NEG-COMP-001", lotId: "LOTE-TEST-002", amount: "$2.754 M", status: "En revisión", date: "16 Sep 2026", counterparty: "Originador Demo S.A.S." },
+          { id: "NEG-COMP-001", lotId: "LOTE-TEST-002", amount: "$2.754 M", status: "En revisión", date: "16 Sep 2026", counterparty: "Vendedor Demo S.A.S." },
           { id: "NEG-COMP-002", lotId: "LOTE-TEST-003", amount: "$5.017 M", status: "Contrapropuesta", date: "15 Sep 2026", counterparty: "Entidad Financiera Demo C" }
         ];
 
@@ -606,7 +623,7 @@ function renderPage(page) {
         <p>${current.description}</p>
         <div class="table-wrap page-table"><table>
           <thead><tr><th>Proceso</th><th>Lote</th><th>Contraparte</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead>
-          <tbody>${rows.map(row => `<tr><td><strong>${row.id}</strong></td><td>${row.lotId}</td><td>${row.counterparty || "Originador / contraparte demo"}</td><td>${row.amount}</td><td><span class="badge badge-blue">${row.status}</span></td><td>${row.date}</td></tr>`).join("")}</tbody>
+          <tbody>${rows.map(row => `<tr><td><strong>${row.id}</strong></td><td>${row.lotId}</td><td>${row.counterparty || "Vendedor / contraparte demo"}</td><td>${row.amount}</td><td><span class="badge badge-blue">${row.status}</span></td><td>${row.date}</td></tr>`).join("")}</tbody>
         </table></div>
       </div>`;
     return;
@@ -805,7 +822,7 @@ function removeUploadedDocument(documentId) {
    ADJUDICACIONES, REPORTES, OFERTAS, PRUEBAS
    ========================================================= */
 function renderAdjudicationsPage() {
-  const isOrig = currentRole === "originador";
+  const isOrig = currentRole === "vendedor";
   const adjudications = isOrig
     ? [
       { id: "ADJ-ORIG-001", lot: "LOTE-TEST-001", buyer: "Comprador Demo S.A.S.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
@@ -813,30 +830,30 @@ function renderAdjudicationsPage() {
       { id: "ADJ-ORIG-003", lot: "LOTE-TEST-003", buyer: "Inversiones Demo Capital", value: "$5.220 M", status: "Documental", date: "16 Sep 2026" }
     ]
     : [
-      { id: "ADJ-COMP-001", lot: "LOTE-TEST-001", buyer: "Originador Demo S.A.S.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
+      { id: "ADJ-COMP-001", lot: "LOTE-HIST-018", buyer: "Vendedor Demo S.A.S.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
       { id: "ADJ-COMP-002", lot: "LOTE-TEST-004", buyer: "Entidad Financiera Demo D", value: "$7.850 M", status: "En cierre", date: "14 Sep 2026" },
-      { id: "ADJ-COMP-003", lot: "LOTE-TEST-002", buyer: "Originador Demo S.A.S.", value: "$2.754 M", status: "Documental", date: "15 Sep 2026" }
+      { id: "ADJ-COMP-003", lot: "LOTE-TEST-002", buyer: "Vendedor Demo S.A.S.", value: "$2.754 M", status: "Documental", date: "15 Sep 2026" }
     ];
   return `
     <div class="card page-card">
-      <div class="section-kicker">CIERRES · ${isOrig ? "ORIGINADOR" : "COMPRADOR"}</div>
+      <div class="section-kicker">CIERRES · ${isOrig ? "VENDEDOR" : "COMPRADOR"}</div>
       <h2>${isOrig ? "Cierres de mis portafolios" : "Mis adjudicaciones"}</h2>
       <p>${isOrig ? "Operaciones de tus portafolios que avanzan hacia cierre." : "Operaciones adjudicadas a tu cuenta de comprador demo."}</p>
-      <div class="table-wrap page-table"><table><thead><tr><th>Adjudicación</th><th>Lote</th><th>${isOrig ? "Comprador" : "Originador"}</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+      <div class="table-wrap page-table"><table><thead><tr><th>Adjudicación</th><th>Lote</th><th>${isOrig ? "Comprador" : "Vendedor"}</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
         ${adjudications.map(item => `<tr><td><strong>${item.id}</strong></td><td>${item.lot}</td><td>${item.buyer}</td><td>${item.value}</td><td><span class="badge badge-green">${item.status}</span></td><td>${item.date}</td></tr>`).join("")}
       </tbody></table></div>
     </div>`;
 }
 
 function renderReportsPage() {
-  const isOriginator = currentRole === "originador";
+  const isOriginator = currentRole === "vendedor";
   const items = isOriginator ? originatorLots : buyerOpportunities;
   const totalNominal = items.reduce((sum, lot) => sum + parseLotAmount(lot), 0);
   const active = items.filter(lot => /activa|nueva|abierto/i.test(lot.status)).length;
   const negotiations = items.filter(lot => /negociación/i.test(lot.status)).length;
   return `
     <div class="card page-card">
-      <div class="section-kicker">REPORTES · ${isOriginator ? "ORIGINADOR" : "COMPRADOR"}</div>
+      <div class="section-kicker">REPORTES · ${isOriginator ? "VENDEDOR" : "COMPRADOR"}</div>
       <h2>${isOriginator ? "Reportes de cartera" : "Reportes de inversión"}</h2>
       <p>${isOriginator ? "Indicadores calculados sobre tus portafolios ficticios y su actividad comercial." : "Indicadores calculados sobre oportunidades, ofertas y adjudicaciones ficticias."}</p>
       <div class="report-kpi-grid">
@@ -851,33 +868,95 @@ function renderReportsPage() {
     </div>`;
 }
 
-const receivedOffersDemo = [
-  { id: "OF-REC-001", lotId: "LOTE-TEST-001", buyer: "Comprador Demo S.A.S.", amount: "$3.977 M", percent: 82, status: "En revisión", date: "16 Sep 2026" },
-  { id: "OF-REC-002", lotId: "LOTE-TEST-002", buyer: "Fondo Demo Andino", amount: "$2.754 M", percent: 85, status: "Contrapropuesta", date: "15 Sep 2026" },
-  { id: "OF-REC-003", lotId: "LOTE-TEST-003", buyer: "Inversiones Demo Capital", amount: "$5.017 M", percent: 74, status: "Recibida", date: "14 Sep 2026" }
-];
-
+/* ----- Mis ofertas / Ofertas recibidas: segmentadas por lote, de la más alta a la más baja ----- */
 function renderOffersPage() {
-  const isBuyer = currentRole === "comprador";
-  const submittedForOriginator = (appState.offers || [])
-    .filter(offer => originatorLots.some(lot => lot.id === offer.lotId))
-    .map(offer => ({ ...offer, buyer: offer.buyer || "Comprador Demo S.A.S." }));
+  return currentRole === "comprador" ? renderBuyerOffersPage() : renderSellerOffersPage();
+}
 
-  const offers = isBuyer
-    ? appState.offers
-    : [...submittedForOriginator, ...receivedOffersDemo.filter(received => !submittedForOriginator.some(s => s.lotId === received.lotId && s.amount === received.amount))];
+function renderSellerOffersPage() {
+  const groups = originatorLots.map(lot => ({ lot, bids: bidsFor(lot.id), reserve: reserveOf(lot.id) }));
+  const all = groups.flatMap(g => g.bids.map(b => ({ ...b, reserve: g.reserve })));
+  const above = all.filter(b => b.percent >= b.reserve).length;
+  const below = all.filter(b => b.belowLast).length;
+  const pending = all.filter(b => !b.decision).length;
 
   return `
     <div class="card page-card">
-      <div class="section-kicker">${isBuyer ? "ACTIVIDAD DEL COMPRADOR" : "ACTIVIDAD DEL ORIGINADOR"}</div>
-      <h2>${isBuyer ? "Mis ofertas" : "Ofertas recibidas"}</h2>
-      <p>${isBuyer ? "Registra y consulta las ofertas creadas durante el testeo." : "Consulta las propuestas recibidas sobre tus portafolios de prueba."}</p>
-      ${offers.length ? `
-        <div class="table-wrap page-table"><table>
-          <thead><tr><th>Oferta</th><th>Lote</th><th>${isBuyer ? "Valor" : "Comprador"}</th><th>${isBuyer ? "Porcentaje" : "Valor"}</th><th>Estado</th><th>Fecha</th></tr></thead>
-          <tbody>${offers.map(offer => `<tr><td><strong>${offer.id}</strong></td><td>${offer.lotId}</td><td>${isBuyer ? offer.amount : offer.buyer}</td><td>${isBuyer ? `${offer.percent}%` : offer.amount}</td><td><span class="badge badge-green">${offer.status}</span></td><td>${offer.date || "16 Sep 2026"}</td></tr>`).join("")}</tbody>
-        </table></div>` : `
-        <div class="page-placeholder"><strong>Aún no hay ofertas creadas</strong><span>Entra a Mercado, abre un lote y usa “Presentar oferta” para generar una oferta de prueba.</span></div>`}
+      <div class="section-kicker">ACTIVIDAD DEL VENDEDOR</div>
+      <h2>Ofertas recibidas</h2>
+      <p>Todas las ofertas con el detalle completo del comprador, ordenadas de la más alta a la más baja. Acepta o rechaza cada una.</p>
+      <div class="report-kpi-grid">
+        <div class="report-kpi"><span>Ofertas recibidas</span><strong>${all.length}</strong><small>${originatorLots.length} lotes</small></div>
+        <div class="report-kpi"><span>Sobre tu tarifa</span><strong>${above}</strong><small>${all.length ? Math.round(above / all.length * 100) : 0}% del total</small></div>
+        <div class="report-kpi warn"><span>Bajo la última ofertada</span><strong>${below}</strong><small>Quedaron bajo la oferta más alta previa</small></div>
+        <div class="report-kpi"><span>Pendientes de decisión</span><strong>${pending}</strong><small>Aceptar o rechazar</small></div>
+      </div>
+      ${groups.map(({ lot, bids, reserve }) => `
+        <section class="offer-group">
+          <div class="offer-group-head">
+            <div><div class="lot-number">${lot.id}</div><h3>${lot.title}</h3><span>${lot.amount} · ${lot.modality} · Tarifa ${reserve}%</span></div>
+            <div class="offer-group-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
+          </div>
+          ${bids.length ? `<div class="table-wrap page-table"><table>
+            <thead><tr><th>#</th><th>Comprador</th><th>Oferta</th><th>Valor</th><th>vs. tarifa</th><th>Alerta</th><th>Fecha</th><th>Decisión</th></tr></thead>
+            <tbody>${bids.map((b, i) => `<tr class="${b.decision === "Rechazada" ? "row-muted" : ""}">
+              <td><span class="rank ${i === 0 ? "first" : ""}">${i + 1}</span></td>
+              <td><strong>${escapeHtml(b.buyer)}</strong>${b.note ? `<br><small style="color:var(--muted-2)">“${escapeHtml(b.note)}”</small>` : ""}</td>
+              <td><strong>${b.percent}%</strong></td>
+              <td>${fmtM(parseLotAmount(lot) * b.percent / 100)}</td>
+              <td>${reserveBadge(b.percent, reserve, true)}</td>
+              <td>${b.belowLast ? `<span class="chip chip-warn">⚠ Bajo la última (${b.prevBest}%)</span>` : `<span class="chip chip-ok">Mejora la puja</span>`}</td>
+              <td>${fmtWhen(b)}</td>
+              <td>${b.decision
+                ? `<span class="badge ${b.decision === "Aceptada" ? "badge-green" : "badge-red"}">${b.decision}</span> <button class="btn-text" onclick="decideOffer('${b.id}',null)">Deshacer</button>`
+                : `<div class="decision-actions"><button class="btn btn-blue-soft btn-small" onclick="decideOffer('${b.id}','Aceptada')">Aceptar</button><button class="btn btn-danger-soft btn-small" onclick="decideOffer('${b.id}','Rechazada')">Rechazar</button></div>`}</td>
+            </tr>`).join("")}</tbody>
+          </table></div>` : `<div class="page-placeholder"><strong>Sin ofertas todavía</strong><span>Cuando un comprador oferte, aparecerá aquí.</span></div>`}
+        </section>`).join("")}
+    </div>`;
+}
+
+function renderBuyerOffersPage() {
+  const myLots = [...new Set((appState.offers || []).map(o => o.lotId))].map(lotById).filter(Boolean);
+  if (!myLots.length) {
+    return `
+      <div class="card page-card">
+        <div class="section-kicker">ACTIVIDAD DEL COMPRADOR</div>
+        <h2>Mis ofertas</h2>
+        <div class="page-placeholder"><strong>Aún no has ofertado</strong><span>Entra a una cartera en subasta y usa “Presentar oferta”. Aquí verás todas las ofertas del lote, de la más alta a la más baja, con los demás postores en anónimo.</span>
+          <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'subastas')">Ver carteras en subasta →</button></div>
+      </div>`;
+  }
+
+  return `
+    <div class="card page-card">
+      <div class="section-kicker">ACTIVIDAD DEL COMPRADOR</div>
+      <h2>Mis ofertas</h2>
+      <p>Todas las ofertas de cada subasta en la que participas, de la más alta a la más baja. Los demás postores aparecen en anónimo.</p>
+      ${myLots.map(lot => {
+        const bids = bidsFor(lot.id);
+        const alias = anonymizer(lot.id);
+        const myBest = bids.findIndex(b => b.own) + 1;
+        return `
+        <section class="offer-group">
+          <div class="offer-group-head">
+            <div><div class="lot-number">${lot.id}</div><h3>${lot.title}</h3>
+              <span>Tu mejor posición: <strong>${myBest} de ${bids.length}</strong> · ${bidderCount(lot.id)} postores</span></div>
+            <div class="offer-group-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
+          </div>
+          <div class="table-wrap page-table"><table>
+            <thead><tr><th>#</th><th>Postor</th><th>Oferta</th><th>Valor</th><th>Fecha</th><th>Estado</th></tr></thead>
+            <tbody>${bids.map((b, i) => `<tr class="${b.own ? "row-own" : ""}">
+              <td><span class="rank ${i === 0 ? "first" : ""}">${i + 1}</span></td>
+              <td>${b.own ? "<strong>Tú</strong>" : alias(b.buyer)}</td>
+              <td><strong>${b.percent}%</strong></td>
+              <td>${fmtM(parseLotAmount(lot) * b.percent / 100)}</td>
+              <td>${fmtWhen(b)}</td>
+              <td>${b.own ? ownStatusBadge(b) : '<span style="color:var(--muted-2)">—</span>'}</td>
+            </tr>`).join("")}</tbody>
+          </table></div>
+        </section>`;
+      }).join("")}
     </div>`;
 }
 
@@ -898,7 +977,7 @@ function renderTestCenter() {
       </div>
       <div id="test-results" class="test-results"></div>
       <div class="test-credentials">
-        <div><strong>Originador demo</strong><span>originador@demo.b2gc.co</span><span>Demo123!</span></div>
+        <div><strong>Vendedor demo</strong><span>vendedor@demo.b2gc.co</span><span>Demo123!</span></div>
         <div><strong>Comprador demo</strong><span>comprador@demo.b2gc.co</span><span>Demo123!</span></div>
       </div>
     </div>`;
@@ -953,6 +1032,7 @@ function openDetail(lotId) {
   renderSimulator(lot);
   renderDataRoom(lot);
   showTab("resumen");
+  startCountdowns();
 }
 
 function closeDetail() {
@@ -984,6 +1064,7 @@ function renderDetailSummary(lot) {
     </div>`;
 
   panel.innerHTML = `
+    ${renderAuctionBanner(lot)}
     <div class="summary-metrics">
       ${detailMetric("Valor nominal", lot.amount)}
       ${detailMetric("Número de deudores", lot.debtors)}
@@ -1014,7 +1095,7 @@ function renderDetailSummary(lot) {
 
     <div style="margin-top:25px;">
       <button class="btn btn-navy" onclick="makeOffer('${lot.id}')">
-        ${currentRole === "comprador" ? "Presentar oferta" : "Gestionar operación"}
+        ${currentRole === "comprador" ? "Presentar oferta" : "Ver ofertas recibidas"}
       </button>
     </div>`;
 }
@@ -1251,12 +1332,16 @@ function makeOffer(lotId) {
   if (!lot) return;
 
   if (currentRole !== "comprador") {
-    showToast("La presentación de ofertas está disponible para compradores.");
+    closeDetail();
+    navigate(null, "ofertas");
     return;
   }
 
   $("#offer-overlay")?.remove();
   const numericValue = parseLotAmount(lot);
+  const top = topBid(lot.id);
+  const closed = auctionState(lot.id) === "cerrada";
+  const start = top ? Math.min(100, +(top.percent + 0.5).toFixed(1)) : 82;
 
   const overlay = document.createElement("div");
   overlay.id = "offer-overlay";
@@ -1264,29 +1349,52 @@ function makeOffer(lotId) {
   overlay.innerHTML = `
     <div class="offer-modal">
       <button class="detail-close" type="button" aria-label="Cerrar" onclick="closeOfferModal()">×</button>
-      <div class="section-kicker">NUEVA OFERTA · DEMO</div>
+      <div class="section-kicker">NUEVA OFERTA · ${lot.modality.toUpperCase()}</div>
       <h2>Presentar oferta</h2>
       <p>${lot.id} · ${lot.title}</p>
+      <div class="offer-auction-strip">
+        <div><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id)}</div>
+        <div><small>Última oferta más alta</small><strong>${top ? top.percent + "%" : "Sin ofertas"}</strong></div>
+        <div><small>Postores</small><strong>${bidderCount(lot.id)}</strong></div>
+      </div>
       <div class="offer-summary"><span>Valor nominal</span><strong>${lot.amount}</strong></div>
       <label class="offer-field"><span>Porcentaje de compra</span>
-        <input id="offer-form-percent" type="number" min="0.1" max="100" step="0.1" value="82">
+        <input id="offer-form-percent" type="number" min="0.1" max="100" step="0.1" value="${start}" ${closed ? "disabled" : ""}>
       </label>
+      <div id="offer-alert" class="offer-alert hidden" role="alert"></div>
       <label class="offer-field"><span>Comentario</span>
-        <textarea id="offer-form-note" rows="3" placeholder="Comentario opcional para esta prueba"></textarea>
+        <textarea id="offer-form-note" rows="3" placeholder="Comentario opcional para el vendedor"></textarea>
       </label>
       <div class="offer-preview"><span>Valor estimado</span><strong id="offer-form-value">$0 M</strong></div>
       <div class="offer-actions">
         <button class="btn btn-ghost" onclick="closeOfferModal()">Cancelar</button>
-        <button class="btn btn-navy" onclick="submitOffer('${lot.id}')">Guardar oferta</button>
+        <button class="btn btn-navy" id="offer-submit" onclick="submitOffer('${lot.id}')" ${closed ? "disabled" : ""}>${closed ? "Subasta cerrada" : "Enviar oferta"}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  startCountdowns();
 
   const input = $("#offer-form-percent");
   const updatePreview = () => {
     const percent = Math.min(100, Math.max(0.1, Number(input?.value) || 0.1));
     const output = $("#offer-form-value");
     if (output) output.textContent = fmtM(numericValue * percent / 100);
+
+    const alertBox = $("#offer-alert");
+    const submit = $("#offer-submit");
+    if (!alertBox || closed) return;
+    alertBox.classList.remove("hidden", "warn", "ok");
+    if (top && percent < top.percent) {
+      alertBox.classList.add("warn");
+      alertBox.innerHTML = `<strong>⚠ Tu oferta está por debajo de la última ofertada (${top.percent}%).</strong><span>Puedes enviarla, pero el vendedor decidirá si la acepta o la rechaza.</span>`;
+      if (submit) submit.textContent = "Enviar de todas formas";
+    } else {
+      alertBox.classList.add("ok");
+      alertBox.innerHTML = top
+        ? `<strong>✓ Superas la última oferta (${top.percent}%).</strong><span>Quedarías en el primer lugar de la subasta.</span>`
+        : `<strong>✓ Serías la primera oferta de esta cartera.</strong>`;
+      if (submit) submit.textContent = "Enviar oferta";
+    }
   };
   input?.addEventListener("input", updatePreview);
   updatePreview();
@@ -1299,16 +1407,21 @@ function submitOffer(lotId) {
   const note = ($("#offer-form-note")?.value || "").trim();
 
   if (!lot || !percent) { showToast("Ingresa un porcentaje válido."); return; }
+  if (auctionState(lot.id) === "cerrada") { showToast("La subasta de este lote ya cerró."); return; }
 
+  const top = topBid(lot.id);
+  const belowLast = !!(top && percent < top.percent);
   const offerValue = parseLotAmount(lot) * percent / 100;
+  const nextNumber = appState.offers.reduce((max, o) => Math.max(max, Number(String(o.id).split("-").pop()) || 0), 0) + 1;
   const offer = {
-    id: `OF-TEST-${String(appState.offers.length + 1).padStart(3, "0")}`,
+    id: `OF-TEST-${String(nextNumber).padStart(3, "0")}`,
     lotId: lot.id,
     amount: fmtM(offerValue),
     percent: +percent.toFixed(1),
     note,
-    status: "Enviada",
+    status: belowLast ? "Bajo la última · pendiente del vendedor" : "Enviada",
     date: new Date().toLocaleDateString("es-CO"),
+    at: Date.now(),
     buyer: appState.company || "Comprador Demo S.A.S.",
     submittedByRole: currentRole
   };
@@ -1317,7 +1430,10 @@ function submitOffer(lotId) {
   saveDemoState();
   closeOfferModal();
   closeDetail();
-  showToast(`Oferta ${offer.id} guardada en el entorno demo.`);
+  showToast(belowLast
+    ? `Oferta ${offer.id} enviada por debajo de la última (${top.percent}%). El vendedor decidirá.`
+    : `Oferta ${offer.id} enviada. Vas de primero.`);
+  if (currentPage === "ofertas" || currentPage === "subastas") renderPage(currentPage);
 }
 
 function closeOfferModal() { $("#offer-overlay")?.remove(); }

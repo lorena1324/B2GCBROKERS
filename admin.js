@@ -25,7 +25,11 @@ const REQUIRED_DOCS = [
 
 /* ===== Almacenamiento ===== */
 function loadCompanies() {
-  try { return JSON.parse(localStorage.getItem(COMPANIES_KEY) || "[]"); } catch { return []; }
+  try {
+    // Migración: el rol "originador" ahora se llama "vendedor"
+    return JSON.parse(localStorage.getItem(COMPANIES_KEY) || "[]")
+      .map(c => c.role === "originador" ? { ...c, role: "vendedor" } : c);
+  } catch { return []; }
 }
 function saveCompanies(list) {
   localStorage.setItem(COMPANIES_KEY, JSON.stringify(list));
@@ -129,8 +133,8 @@ function openRegister() {
       <p class="sub">Verificamos cada empresa antes de darle acceso. Cuando aprobemos tu solicitud, te asignaremos tu usuario.</p>
 
       <div class="role-pick" id="reg-role-pick">
-        <div class="role-opt active" data-role="originador" onclick="pickRegRole(this)">
-          <strong>Soy originador</strong><small>Publico y vendo cartera</small>
+        <div class="role-opt active" data-role="vendedor" onclick="pickRegRole(this)">
+          <strong>Soy vendedor</strong><small>Publico y vendo cartera</small>
         </div>
         <div class="role-opt" data-role="comprador" onclick="pickRegRole(this)">
           <strong>Soy comprador</strong><small>Busco oportunidades</small>
@@ -200,7 +204,7 @@ function pickRegFile(key, input) {
 
 async function submitRegistration() {
   const v = id => ($(id)?.value || "").trim();
-  const role = $("#reg-role-pick .role-opt.active")?.dataset.role || "originador";
+  const role = $("#reg-role-pick .role-opt.active")?.dataset.role || "vendedor";
   const data = {
     name: v("#reg-name"), nit: v("#reg-nit"), contactName: v("#reg-contact"),
     city: v("#reg-city"), email: v("#reg-email").toLowerCase(), phone: v("#reg-phone")
@@ -256,6 +260,9 @@ async function submitRegistration() {
    PANEL DE ADMINISTRACIÓN
    ========================================================= */
 let adminFilter = null; // se decide al abrir: pendientes si hay, si no todas
+let adminView = "solicitudes"; // "solicitudes" | "subastas"
+
+function setAdminView(view) { adminView = view; renderAdmin(); }
 
 function openAdminPanel() {
   appState.loggedIn = false;
@@ -285,6 +292,7 @@ const STATUS_CLASS = { pendiente: "badge-gold", aprobada: "badge-green", rechaza
 function renderAdmin() {
   const shell = $("#admin-shell");
   if (!shell) return;
+  if (adminView === "subastas") { renderAdminAnalytics(shell); return; }
   const all = loadCompanies();
   if (!adminFilter) adminFilter = all.some(c => c.status === "pendiente") ? "pendiente" : "todas";
   const count = s => all.filter(c => c.status === s).length;
@@ -292,13 +300,7 @@ function renderAdmin() {
   const tabs = [["pendiente", "Pendientes"], ["aprobada", "Aprobadas"], ["rechazada", "Rechazadas"], ["suspendida", "Suspendidas"], ["todas", "Todas"]];
 
   shell.innerHTML = `
-    <header class="admin-top">
-      <a class="brand" href="#">B<span class="sup">2</span>GC Brokers <em class="admin-tag">ADMIN</em></a>
-      <div class="admin-top-right">
-        <span class="admin-user">${escapeHtml(ADMIN_ACCOUNT.name)}</span>
-        <button class="btn btn-ghost btn-small" onclick="closeAdminPanel()">← Salir</button>
-      </div>
-    </header>
+    ${adminHeader()}
 
     <main class="admin-main">
       <div class="section-kicker">GESTIÓN DE ACCESOS</div>
@@ -325,7 +327,7 @@ function renderAdmin() {
             <td><strong style="color:var(--navy)">${c.id}</strong></td>
             <td><strong>${escapeHtml(c.name)}</strong><br><small style="color:var(--muted-2)">${escapeHtml(c.city || "—")}</small></td>
             <td>${escapeHtml(c.nit)}</td>
-            <td>${c.role === "originador" ? "Originador" : "Comprador"}</td>
+            <td>${c.role === "vendedor" ? "Vendedor" : "Comprador"}</td>
             <td>${escapeHtml(c.contactName)}<br><small style="color:var(--muted-2)">${escapeHtml(c.email)}</small></td>
             <td>${new Date(c.createdAt).toLocaleDateString("es-CO")}</td>
             <td><span class="badge ${STATUS_CLASS[c.status]}">${STATUS_LABEL[c.status]}</span></td>
@@ -358,7 +360,7 @@ function openReview(id) {
   el.innerHTML = `
     <div class="modal modal-wrap review-modal">
       <button type="button" class="modal-close" onclick="closeReview()">×</button>
-      <div class="section-kicker">${c.id} · ${c.role === "originador" ? "ORIGINADOR" : "COMPRADOR"}</div>
+      <div class="section-kicker">${c.id} · ${c.role === "vendedor" ? "VENDEDOR" : "COMPRADOR"}</div>
       <h2 style="margin-bottom:4px">${escapeHtml(c.name)}</h2>
       <span class="badge ${STATUS_CLASS[c.status]}">${STATUS_LABEL[c.status]}</span>
 
@@ -514,7 +516,7 @@ function seedDemoRequests() {
   const list = loadCompanies();
   const base = [
     ["Inversiones Andina S.A.S.", "901234567-1", "comprador", "Laura Gómez", "laura@andina.co", "Bogotá"],
-    ["Financiera del Valle S.A.", "800765432-9", "originador", "Carlos Ruiz", "carlos@fvalle.co", "Cali"],
+    ["Financiera del Valle S.A.", "800765432-9", "vendedor", "Carlos Ruiz", "carlos@fvalle.co", "Cali"],
     ["Fondo Capital Norte", "900111222-3", "comprador", "Ana Pérez", "ana@capitalnorte.co", "Medellín"]
   ];
   let added = 0;
@@ -537,3 +539,165 @@ function seedDemoRequests() {
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") { closeRegister(); closeReview(); }
 });
+
+/* =========================================================
+   ADMIN · SUBASTAS Y CONVERSIÓN
+   Vista a fondo de tiempos de subasta, ofertas y conversión,
+   con un asistente de IA (modelo de reglas sobre los datos
+   demo; en producción conectarlo al histórico real).
+   ========================================================= */
+
+function adminHeader() {
+  return `
+    <header class="admin-top">
+      <a class="brand" href="#">B<span class="sup">2</span>GC Brokers <em class="admin-tag">ADMIN</em></a>
+      <nav class="admin-nav">
+        <button class="${adminView === "solicitudes" ? "active" : ""}" onclick="setAdminView('solicitudes')">Solicitudes de empresas</button>
+        <button class="${adminView === "subastas" ? "active" : ""}" onclick="setAdminView('subastas')">Subastas y conversión</button>
+      </nav>
+      <div class="admin-top-right">
+        <span class="admin-user">${escapeHtml(ADMIN_ACCOUNT.name)}</span>
+        <button class="btn btn-ghost btn-small" onclick="closeAdminPanel()">← Salir</button>
+      </div>
+    </header>`;
+}
+
+// Subastas ya cerradas — DEMO. [lote, tipo, días de duración, ofertas, postores, horas a 1.ª oferta, adjudicada, % final, tarifa %]
+const AUCTION_HISTORY = [
+  ["LOTE-HIST-011", "Consumo", 5, 7, 4, 6, true, 83, 80],
+  ["LOTE-HIST-012", "Libranza", 10, 4, 3, 30, true, 83, 82],
+  ["LOTE-HIST-013", "Comercial", 7, 6, 4, 12, true, 75, 72],
+  ["LOTE-HIST-014", "Hipotecaria", 14, 3, 2, 52, false, 84, 87],
+  ["LOTE-HIST-015", "PYME", 7, 5, 3, 9, true, 81, 78],
+  ["LOTE-HIST-016", "Consumo", 3, 4, 3, 4, false, 77, 79],
+  ["LOTE-HIST-017", "Libranza", 12, 2, 2, 70, false, 80, 84],
+  ["LOTE-HIST-018", "Consumo", 6, 8, 5, 5, true, 84, 80],
+  ["LOTE-HIST-019", "PYME", 7, 3, 2, 20, false, 74, 78],
+  ["LOTE-HIST-020", "Comercial", 9, 5, 4, 14, true, 76, 73]
+].map(([id, type, days, offers, bidders, firstBidH, won, final, reserve]) => ({ id, type, days, offers, bidders, firstBidH, won, final, reserve }));
+
+const avg = arr => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
+const winRate = arr => arr.length ? arr.filter(h => h.won).length / arr.length * 100 : 0;
+
+/* Probabilidad de cierre de una subasta en curso (modelo de reglas) */
+function closeProbability(lot) {
+  const top = topBid(lot.id);
+  const reserve = reserveOf(lot.id);
+  let score = 25 + Math.min(bidderCount(lot.id), 5) * 8;
+  if (top) score += top.percent >= reserve ? 25 : -10 + (top.percent - reserve) * 3;
+  if (auctionState(lot.id) === "proxima") score -= 15;
+  return Math.round(Math.min(97, Math.max(5, score)));
+}
+
+function aiInsights(live) {
+  const short = AUCTION_HISTORY.filter(h => h.days <= 7), long = AUCTION_HISTORY.filter(h => h.days > 7);
+  const fast = AUCTION_HISTORY.filter(h => h.firstBidH <= 12), slow = AUCTION_HISTORY.filter(h => h.firstBidH > 12);
+  const out = [
+    { tone: "ok", title: "Duración ideal de subasta", text: `Las subastas de 7 días o menos convierten ${winRate(short).toFixed(0)}% frente a ${winRate(long).toFixed(0)}% de las más largas. Recomienda ventanas de 5 a 7 días.` },
+    { tone: "info", title: "La primera oferta marca el resultado", text: `Cuando la primera oferta llega en menos de 12 h, se adjudica el ${winRate(fast).toFixed(0)}% (vs ${winRate(slow).toFixed(0)}%). Avisa a quienes tienen la cartera en favoritos apenas abra la subasta.` }
+  ];
+  live.forEach(lot => {
+    const top = topBid(lot.id);
+    const left = profileOf(lot).endsAt - Date.now();
+    if (!top) out.push({ tone: "warn", title: `${lot.id} sin ofertas`, text: "Aún no recibe ofertas. Sugerencia: destacarla en el mercado y avisar a quienes la marcaron como favorita." });
+    else if (top.percent < reserveOf(lot.id)) out.push({ tone: "warn", title: `${lot.id} bajo tarifa`, text: `La mejor oferta (${top.percent}%) está bajo la tarifa del vendedor (${reserveOf(lot.id)}%). Sugerencia: extender 48 h o revisar la tarifa con el vendedor.` });
+    else if (left < DAY) out.push({ tone: "ok", title: `${lot.id} cierra en menos de 24 h`, text: `Tiene oferta sobre tarifa (${top.percent}%) y ${bidderCount(lot.id)} postores: probabilidad de cierre ${closeProbability(lot)}%.` });
+  });
+  const pendingBelow = lots.flatMap(l => bidsFor(l.id)).filter(b => b.belowLast && !b.decision).length;
+  if (pendingBelow) out.push({ tone: "info", title: "Ofertas bajo la última ofertada", text: `${pendingBelow} ofertas quedaron por debajo de la última y esperan que el vendedor las acepte o rechace.` });
+  return out;
+}
+
+function renderAdminAnalytics(shell) {
+  const live = lots.filter(l => auctionState(l.id) === "vivo");
+  const upcoming = lots.filter(l => auctionState(l.id) === "proxima");
+  const bids = lots.flatMap(l => bidsFor(l.id));
+  const bidders = new Set(bids.map(b => b.buyer)).size;
+  const accepted = bids.filter(b => b.decision === "Aceptada").length;
+  const rejected = bids.filter(b => b.decision === "Rechazada").length;
+  const won = AUCTION_HISTORY.filter(h => h.won);
+
+  const views = lots.reduce((s, l) => s + profileOf(l).likes + profileOf(l).favs + profileOf(l).comments, 0);
+  const favs = lots.reduce((s, l) => s + profileOf(l).favs, 0);
+  const funnel = [["Visualizaciones", views], ["Favoritos", favs], ["Ofertas", bids.length], ["Sobre tarifa", bids.filter(b => b.percent >= reserveOf(b.lotId)).length], ["Adjudicadas", won.length]];
+
+  const buckets = [["3–5 días", h => h.days <= 5], ["6–7 días", h => h.days > 5 && h.days <= 7], ["8–14 días", h => h.days > 7]]
+    .map(([label, fn]) => { const g = AUCTION_HISTORY.filter(fn); return { label, conv: winRate(g), n: g.length, firstBid: avg(g.map(h => h.firstBidH)) }; });
+
+  const icon = { ok: "✓", warn: "!", info: "i" };
+
+  shell.innerHTML = `
+    ${adminHeader()}
+    <main class="admin-main">
+      <div class="section-kicker">ANALÍTICA DE SUBASTAS</div>
+      <h2 class="admin-h2">Subastas, tiempos y conversión</h2>
+      <p class="admin-sub">Todo el detalle de las subastas en curso y del histórico: tiempos, ofertas, tarifas y conversión.</p>
+
+      <div class="kpi-grid">
+        ${kpiCard("Subastas en vivo", live.length, `${upcoming.length} próximas`, "up")}
+        ${kpiCard("Ofertas en curso", bids.length, `${bidders} postores únicos`, "up")}
+        ${kpiCard("Conversión histórica", winRate(AUCTION_HISTORY).toFixed(0) + "%", `${won.length} de ${AUCTION_HISTORY.length} subastas adjudicadas`, "up")}
+        ${kpiCard("Duración promedio", avg(AUCTION_HISTORY.map(h => h.days)).toFixed(1) + " días", `1.ª oferta en ${avg(AUCTION_HISTORY.map(h => h.firstBidH)).toFixed(0)} h en promedio`, "up")}
+      </div>
+
+      <div class="ai-card">
+        <div class="ai-card-head"><div class="ai-avatar">✦</div><div><strong>Asistente IA · tiempos y conversión</strong><span>Análisis automático del histórico y de las subastas en curso (modelo de reglas sobre datos demo)</span></div></div>
+        <div class="ai-insights">${aiInsights(live).map(i => `<div class="ai-insight ${i.tone}"><b>${icon[i.tone]}</b><div><strong>${escapeHtml(i.title)}</strong><span>${escapeHtml(i.text)}</span></div></div>`).join("")}</div>
+      </div>
+
+      <div class="dashboard-chart-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div class="dashboard-chart-card">
+          <div class="dashboard-chart-header"><div><div class="chart-kicker">EMBUDO</div><h3>Conversión del mercado</h3><p>De la visualización a la adjudicación</p></div></div>
+          <div class="funnel">${funnel.map(([label, v], i) => `
+            <div class="funnel-row"><span>${label}</span><div class="funnel-track"><b style="width:${Math.max(4, v / funnel[0][1] * 100)}%"></b></div><strong>${fmtN(v)}</strong>
+            <small>${i ? (v / funnel[i - 1][1] * 100).toFixed(0) + "%" : ""}</small></div>`).join("")}</div>
+        </div>
+        <div class="dashboard-chart-card">
+          <div class="dashboard-chart-header"><div><div class="chart-kicker">TIEMPOS</div><h3>Conversión según duración</h3><p>Subastas cerradas agrupadas por días de duración</p></div></div>
+          <div class="activity-chart" style="grid-template-columns:repeat(3,minmax(0,1fr))">${buckets.map((b, i) => `
+            <div class="activity-column ${i === 1 ? "current" : ""}">
+              <div class="activity-value" style="height:${Math.max(6, b.conv)}%"><b>${b.conv.toFixed(0)}%</b></div>
+              <span>${b.label}<br>${b.n} subastas · 1.ª oferta ${b.firstBid.toFixed(0)} h</span>
+            </div>`).join("")}</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="card-header"><div><h3>Subastas en curso y próximas</h3><p>Decisiones de los vendedores: ${accepted} aceptadas · ${rejected} rechazadas</p></div></div>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Lote</th><th>Estado</th><th>Tiempo</th><th>Duración</th><th>Ofertas</th><th>Postores</th><th>Más alta</th><th>Tarifa</th><th>Bajo la última</th><th>Prob. de cierre</th>
+        </tr></thead><tbody>
+          ${[...live, ...upcoming].map(lot => {
+            const p = profileOf(lot), top = topBid(lot.id), lb = bidsFor(lot.id);
+            const prob = closeProbability(lot);
+            const st = auctionState(lot.id);
+            return `<tr>
+              <td><strong style="color:var(--navy)">${lot.id}</strong><br><small style="color:var(--muted-2)">${lot.type} · ${escapeHtml(lot.vendedor)}</small></td>
+              <td><span class="state-chip ${st}">${st === "vivo" ? "<i></i> En vivo" : "Próxima"}</span></td>
+              <td><small class="cd-label">${cdLabel(lot.id)}</small> ${cdHtml(lot.id)}</td>
+              <td>${((p.endsAt - p.startsAt) / DAY).toFixed(1)} días</td>
+              <td>${lb.length}</td><td>${bidderCount(lot.id)}</td>
+              <td>${top ? top.percent + "%" : "—"}</td>
+              <td>${reserveOf(lot.id)}% ${top ? reserveBadge(top.percent, reserveOf(lot.id)) : ""}</td>
+              <td>${lb.filter(b => b.belowLast).length}</td>
+              <td><div class="prob"><div><b style="width:${prob}%"></b></div><strong>${prob}%</strong></div></td>
+            </tr>`;
+          }).join("")}
+        </tbody></table></div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="card-header"><div><h3>Histórico de subastas</h3><p>Base del análisis de conversión</p></div></div>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Lote</th><th>Tipo</th><th>Duración</th><th>1.ª oferta</th><th>Ofertas</th><th>Postores</th><th>% final</th><th>Tarifa</th><th>Resultado</th>
+        </tr></thead><tbody>
+          ${AUCTION_HISTORY.map(h => `<tr>
+            <td><strong>${h.id}</strong></td><td>${h.type}</td><td>${h.days} días</td><td>${h.firstBidH} h</td><td>${h.offers}</td><td>${h.bidders}</td>
+            <td>${h.final}%</td><td>${h.reserve}%</td>
+            <td><span class="badge ${h.won ? "badge-green" : "badge-red"}">${h.won ? "Adjudicada" : "Desierta"}</span></td>
+          </tr>`).join("")}
+        </tbody></table></div>
+      </div>
+    </main>`;
+  startCountdowns();
+}
