@@ -39,6 +39,7 @@ const lotById = id => lots.find(l => l.id === id);
 const reserveOf = lotId => lotReserve[lotId] ?? 80;
 
 function auctionState(lotId) {
+  if (typeof operationForLot === "function" && operationForLot(lotId)) return "cerrada"; // ya adjudicada
   const p = lotProfiles[lotId];
   if (!p) return "cerrada";
   const now = Date.now();
@@ -85,6 +86,8 @@ function anonymizer(lotId) {
 
 /* ===== Piezas de interfaz ===== */
 function cdHtml(lotId, cls = "") {
+  const op = typeof operationForLot === "function" && operationForLot(lotId);
+  if (op) return `<span class="cd ${cls}">${op.status === "Cerrada" ? "Vendida" : "Adjudicada"}</span>`;
   const kind = auctionState(lotId) === "proxima" ? "inicio" : "cierre";
   return `<span class="cd ${cls}" data-cd="${lotId}|${kind}">—</span>`;
 }
@@ -113,6 +116,10 @@ function fmtWhen(b) {
 }
 
 function ownStatusBadge(b) {
+  const op = typeof operationForLot === "function" && operationForLot(b.lotId);
+  if (op) return op.offerId === b.id
+    ? `<span class="badge badge-green">Adjudicada</span> <button class="btn-text" onclick="openOperation('${op.id}')">Ir al cierre →</button>`
+    : '<span class="badge badge-red">No adjudicada</span>';
   if (b.decision === "Aceptada") return '<span class="badge badge-green">Aceptada por el vendedor</span>';
   if (b.decision === "Rechazada") return '<span class="badge badge-red">Rechazada</span>';
   if (b.belowLast) return '<span class="badge badge-gold">Bajo la última · en revisión</span>';
@@ -295,6 +302,10 @@ function buyerProcesses() {
     const d = appState.decisions?.[o.id];
     const phase = d === "Aceptada" ? 5 : auctionState(o.lotId) === "vivo" ? 4 : 3;
     map[o.lotId] = { ...map[o.lotId], phase: Math.max(map[o.lotId]?.phase || 0, phase) };
+  });
+  (appState.operations || []).filter(op => op.status !== "Cancelada" && op.buyer === appState.company).forEach(op => {
+    const phase = op.status === "Cerrada" || op.steps.firmaComprador ? 6 : 5;
+    map[op.lotId] = { ...map[op.lotId], phase: Math.max(map[op.lotId]?.phase || 0, phase) };
   });
   return Object.entries(map)
     .map(([id, v]) => ({ id, phase: v.phase, title: v.title || lotById(id)?.title || id }))

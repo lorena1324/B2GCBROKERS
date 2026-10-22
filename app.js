@@ -30,7 +30,8 @@ const appState = {
   offers: [],
   uploadedDocuments: [],
   decisions: {},  // { idOferta: "Aceptada" | "Rechazada" } — decisión del vendedor
-  favorites: []   // lotes marcados con ★ por el comprador
+  favorites: [],  // lotes marcados con ★ por el comprador
+  operations: []  // operaciones en cierre (ver cierre.js)
 };
 
 const originatorLots = [
@@ -91,6 +92,7 @@ function loadDemoState() {
     if (saved && Array.isArray(saved.uploadedDocuments)) appState.uploadedDocuments = saved.uploadedDocuments;
     if (saved && saved.decisions && typeof saved.decisions === "object") appState.decisions = saved.decisions;
     if (saved && Array.isArray(saved.favorites)) appState.favorites = saved.favorites;
+    if (saved && Array.isArray(saved.operations)) appState.operations = saved.operations;
   } catch (error) {
     console.warn("No fue posible cargar el estado demo.", error);
     appState.offers = [];
@@ -98,7 +100,7 @@ function loadDemoState() {
 }
 
 function saveDemoState() {
-  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites }));
+  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites, operations: appState.operations }));
 }
 
 function resetDemoData() {
@@ -106,7 +108,9 @@ function resetDemoData() {
   appState.uploadedDocuments = [];
   appState.decisions = {};
   appState.favorites = [];
+  appState.operations = [];
   saveDemoState();
+  if (typeof syncLotStatuses === "function") syncLotStatuses();
   showToast("Datos de prueba restaurados.");
   if (appState.loggedIn) {
     const page = document.querySelector("#page-h1")?.textContent || "";
@@ -266,6 +270,7 @@ function exitApp() {
    ========================================================= */
 function setRole(role) {
   currentRole = role;
+  if (typeof closeOperation === "function") closeOperation();
   const account = (appState.session && !appState.session.demo) ? appState.session : demoAccounts[role];
   if (account) { appState.company = account.company; appState.avatar = account.avatar; }
 
@@ -297,7 +302,8 @@ function buildSidebar() {
       <a href="#" onclick="navigate(event,'ofertas')"><span>↕</span> Ofertas recibidas</a>
       <a href="#" onclick="navigate(event,'oportunidades')"><span>◇</span> Interés de compradores</a>
       <a href="#" onclick="navigate(event,'negociaciones')"><span>⇄</span> Negociaciones</a>
-      <a href="#" onclick="navigate(event,'documentos')"><span>□</span> Documentos y cierre</a>
+      <a href="#" onclick="navigate(event,'cierre')"><span>✍</span> Cierre de operaciones</a>
+      <a href="#" onclick="navigate(event,'documentos')"><span>□</span> Documentos</a>
       <a href="#" onclick="navigate(event,'reportes')"><span>▥</span> Reportes</a>
       <a href="#" onclick="navigate(event,'pruebas')"><span>✓</span> Pruebas</a>
       <div class="sidebar-market-status"><div class="status-title">Mercado activo</div><p>47 compradores conectados</p></div>`;
@@ -307,6 +313,7 @@ function buildSidebar() {
       <a href="#" onclick="navigate(event,'mercado')"><span>◇</span> Mercado</a>
       <a href="#" onclick="navigate(event,'subastas')"><span>⏱</span> Carteras en subasta</a>
       <a href="#" onclick="navigate(event,'ofertas')"><span>⇄</span> Mis ofertas</a>
+      <a href="#" onclick="navigate(event,'cierre')"><span>✍</span> Cierre de operaciones</a>
       <a href="#" onclick="navigate(event,'adjudicaciones')"><span>✓</span> Adjudicaciones</a>
       <a href="#" onclick="navigate(event,'dataroom')"><span>□</span> Data room</a>
       <a href="#" onclick="navigate(event,'reportes')"><span>▥</span> Reportes</a>
@@ -327,7 +334,7 @@ function navigate(event, page) {
     documentos: "Documentos", reportes: "Reportes", mercado: "Mercado de oportunidades",
     ofertas: currentRole === "vendedor" ? "Ofertas recibidas" : "Mis ofertas",
     adjudicaciones: "Adjudicaciones", dataroom: "Data room", pruebas: "Centro de pruebas",
-    subastas: "Carteras en subasta"
+    subastas: "Carteras en subasta", cierre: "Cierre de operaciones"
   };
   if (pageTitle) pageTitle.textContent = titles[page] || "Dashboard";
 
@@ -573,6 +580,7 @@ function renderPage(page) {
 
   if (page === "pruebas") { content.innerHTML = renderTestCenter(); runSelfTests(false); return; }
   if (page === "ofertas") { content.innerHTML = renderOffersPage(); startCountdowns(); return; }
+  if (page === "cierre") { content.innerHTML = renderClosingPage(); return; }
   if (page === "subastas") { content.innerHTML = renderAuctionsPage(); startCountdowns(); return; }
   if (!isOrig && ["oportunidades", "mercado"].includes(page)) { content.innerHTML = renderMarketPage(current.title, current.description); startCountdowns(); return; }
 
@@ -839,6 +847,7 @@ function renderAdjudicationsPage() {
       <div class="section-kicker">CIERRES · ${isOrig ? "VENDEDOR" : "COMPRADOR"}</div>
       <h2>${isOrig ? "Cierres de mis portafolios" : "Mis adjudicaciones"}</h2>
       <p>${isOrig ? "Operaciones de tus portafolios que avanzan hacia cierre." : "Operaciones adjudicadas a tu cuenta de comprador demo."}</p>
+      ${renderOpsMiniTable()}
       <div class="table-wrap page-table"><table><thead><tr><th>Adjudicación</th><th>Lote</th><th>${isOrig ? "Comprador" : "Vendedor"}</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
         ${adjudications.map(item => `<tr><td><strong>${item.id}</strong></td><td>${item.lot}</td><td>${item.buyer}</td><td>${item.value}</td><td><span class="badge badge-green">${item.status}</span></td><td>${item.date}</td></tr>`).join("")}
       </tbody></table></div>
@@ -891,10 +900,10 @@ function renderSellerOffersPage() {
         <div class="report-kpi warn"><span>Bajo la última ofertada</span><strong>${below}</strong><small>Quedaron bajo la oferta más alta previa</small></div>
         <div class="report-kpi"><span>Pendientes de decisión</span><strong>${pending}</strong><small>Aceptar o rechazar</small></div>
       </div>
-      ${groups.map(({ lot, bids, reserve }) => `
+      ${groups.map(({ lot, bids, reserve, op = operationForLot(lot.id) }) => `
         <section class="offer-group">
           <div class="offer-group-head">
-            <div><div class="lot-number">${lot.id}</div><h3>${lot.title}</h3><span>${lot.amount} · ${lot.modality} · Tarifa ${reserve}%</span></div>
+            <div><div class="lot-number">${lot.id} ${op ? `<span class="badge ${lot.statusClass}">${lot.status}</span>` : ""}</div><h3>${lot.title}</h3><span>${lot.amount} · ${lot.modality} · Tarifa ${reserve}%</span></div>
             <div class="offer-group-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
           </div>
           ${bids.length ? `<div class="table-wrap page-table"><table>
@@ -907,9 +916,13 @@ function renderSellerOffersPage() {
               <td>${reserveBadge(b.percent, reserve, true)}</td>
               <td>${b.belowLast ? `<span class="chip chip-warn">⚠ Bajo la última (${b.prevBest}%)</span>` : `<span class="chip chip-ok">Mejora la puja</span>`}</td>
               <td>${fmtWhen(b)}</td>
-              <td>${b.decision
-                ? `<span class="badge ${b.decision === "Aceptada" ? "badge-green" : "badge-red"}">${b.decision}</span> <button class="btn-text" onclick="decideOffer('${b.id}',null)">Deshacer</button>`
-                : `<div class="decision-actions"><button class="btn btn-blue-soft btn-small" onclick="decideOffer('${b.id}','Aceptada')">Aceptar</button><button class="btn btn-danger-soft btn-small" onclick="decideOffer('${b.id}','Rechazada')">Rechazar</button></div>`}</td>
+              <td>${op
+                ? (op.offerId === b.id
+                  ? `<span class="badge badge-green">Adjudicada · ${op.id}</span> <button class="btn-text" onclick="openOperation('${op.id}')">Ver cierre →</button>`
+                  : '<span class="badge">No adjudicada</span>')
+                : b.decision
+                  ? `<span class="badge ${b.decision === "Aceptada" ? "badge-green" : "badge-red"}">${b.decision}</span> <button class="btn-text" onclick="decideOffer('${b.id}',null)">Deshacer</button>`
+                  : `<div class="decision-actions"><button class="btn btn-blue-soft btn-small" onclick="uiAdjudicate('${b.id}')">Aceptar y adjudicar</button><button class="btn btn-danger-soft btn-small" onclick="decideOffer('${b.id}','Rechazada')">Rechazar</button></div>`}</td>
             </tr>`).join("")}</tbody>
           </table></div>` : `<div class="page-placeholder"><strong>Sin ofertas todavía</strong><span>Cuando un comprador oferte, aparecerá aquí.</span></div>`}
         </section>`).join("")}
@@ -972,6 +985,7 @@ function renderTestCenter() {
       </div>
       <div class="test-actions">
         <button class="btn btn-navy" onclick="runSelfTests(true)">Ejecutar pruebas</button>
+        <button class="btn btn-gold" onclick="runClosingFlowTest(true)">Simular operación completa</button>
         <button class="btn btn-ghost" onclick="resetDemoData()">Restaurar datos</button>
         <button class="btn btn-ghost" onclick="showToast('Estado guardado en localStorage.')">Ver persistencia</button>
       </div>
@@ -999,6 +1013,8 @@ function runSelfTests(showFeedback = true) {
   assert("Los archivos cargados se manejan como arreglo", Array.isArray(appState.uploadedDocuments));
   assert("Cada lote tiene perfil (obligaciones y cuenta regresiva)", lots.every(lot => lotProfiles[lot.id]));
   assert("La composición de tipos suma 100%", Math.abs(composition.tipos.reduce((s, t) => s + t[1], 0) - 1) < 0.001 && Math.abs(composition.tipos.reduce((s, t) => s + t[2], 0) - 1) < 0.001);
+
+  assert("Una operación completa cierra de punta a punta", runClosingFlowTest(false).ok);
 
   const target = $("#test-results");
   if (target) {

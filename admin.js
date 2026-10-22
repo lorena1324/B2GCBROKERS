@@ -687,6 +687,24 @@ function renderAdminAnalytics(shell) {
       </div>
 
       <div class="card" style="margin-top:18px">
+        <div class="card-header"><div><h3>Operaciones en cierre</h3><p>Seguimiento de firmas, pago, entrega y paz y salvo</p></div></div>
+        ${(appState.operations || []).filter(o => o.status !== "Cancelada").length ? `<div class="table-wrap"><table><thead><tr>
+          <th>Operación</th><th>Lote</th><th>Vendedor</th><th>Comprador</th><th>Valor</th><th>Avance</th><th>Siguiente paso</th><th>Estado</th>
+        </tr></thead><tbody>
+          ${(appState.operations || []).filter(o => o.status !== "Cancelada").map(o => {
+            const st = nextStep(o);
+            return `<tr>
+              <td><strong>${o.id}</strong></td><td>${o.lotId}</td><td>${escapeHtml(o.seller)}</td><td>${escapeHtml(o.buyer)}</td>
+              <td>${fmtM(o.value)}</td>
+              <td><div class="prob"><div><b style="width:${stepsDone(o) / CLOSING_STEPS.length * 100}%"></b></div><strong>${stepsDone(o)}/${CLOSING_STEPS.length}</strong></div></td>
+              <td>${st ? `${st.label} · ${st.role}` : "—"}</td>
+              <td><span class="badge ${o.status === "Cerrada" ? "badge-green" : "badge-gold"}">${o.status}</span></td>
+            </tr>`;
+          }).join("")}
+        </tbody></table></div>` : `<div class="page-placeholder" style="margin:22px"><strong>Sin operaciones en cierre</strong><span>Aparecerán cuando un vendedor adjudique una oferta.</span></div>`}
+      </div>
+
+      <div class="card" style="margin-top:18px">
         <div class="card-header"><div><h3>Histórico de subastas</h3><p>Base del análisis de conversión</p></div></div>
         <div class="table-wrap"><table><thead><tr>
           <th>Lote</th><th>Tipo</th><th>Duración</th><th>1.ª oferta</th><th>Ofertas</th><th>Postores</th><th>% final</th><th>Tarifa</th><th>Resultado</th>

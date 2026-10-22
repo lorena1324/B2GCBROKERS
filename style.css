@@ -4875,3 +4875,59 @@ tr.row-muted td { opacity: .55; }
 @media (max-width: 900px) {
   .admin-top { height: auto; flex-wrap: wrap; gap: 10px; padding: 12px 16px; }
 }
+
+/* =========================================================
+   CIERRE DE OPERACIONES
+   ========================================================= */
+.op-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-top: 22px; }
+.op-inline { margin: 18px 0 8px; }
+.op-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: var(--shadow-xs); cursor: pointer; transition: var(--transition); }
+.op-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.op-card.my-turn { border-color: #fde3b0; background: linear-gradient(180deg, #fffaf0, #fff 50%); }
+.op-card.closed { border-color: #a6f4c5; background: linear-gradient(180deg, #f0fdf6, #fff 50%); }
+.op-card-head { display: flex; justify-content: space-between; gap: 12px; }
+.op-card-head h3 { margin: 3px 0; color: var(--navy); font-size: 15px; }
+.op-card-head span { color: var(--muted); font-size: 11px; }
+.op-card-value { text-align: right; }
+.op-card-value strong { display: block; color: var(--navy); font-size: 18px; white-space: nowrap; }
+.op-card-value small { color: var(--muted-2); font-size: 10px; }
+.op-mini-steps { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.op-mini-steps i { height: 6px; border-radius: 99px; background: #e8edf5; }
+.op-mini-steps i.done { background: linear-gradient(90deg, var(--blue), #7aa2f7); }
+.op-mini-steps i.current { background: var(--gold); animation: pulseText 1.4s ease-in-out infinite; }
+.op-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; }
+.op-card-foot .chip { background: var(--paper-2); color: var(--ink-2); }
+.op-card-foot .chip.chip-warn { background: var(--gold-light); color: #a15c07; }
+
+.op-modal { max-width: 640px; max-height: 92vh; overflow-y: auto; }
+.op-parties { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 16px 0; }
+.op-parties > div { padding: 12px 14px; border-radius: 12px; background: var(--paper); }
+.op-parties small { display: block; color: var(--muted-2); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; }
+.op-parties strong { color: var(--navy); font-size: 13px; }
+.op-success { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; padding: 16px; border-radius: 16px; background: linear-gradient(135deg, #ecfdf3, #d1fadf); color: #05603a; }
+.op-success .success-mark { width: 40px; height: 40px; margin: 0; font-size: 20px; flex: 0 0 auto; }
+.op-success strong { display: block; }
+.op-success span { font-size: 12px; }
+.op-steps { list-style: none; margin: 8px 0 0; padding: 0; }
+.op-steps li { position: relative; display: flex; gap: 12px; padding: 0 0 16px; }
+.op-steps li:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: #e8edf5; }
+.op-steps li.done:not(:last-child)::before { background: var(--blue); }
+.op-step-dot { flex: 0 0 28px; display: grid; place-items: center; height: 28px; border-radius: 50%; background: var(--paper-2); color: var(--muted); font-size: 11px; font-weight: 800; }
+.op-steps li.done .op-step-dot { background: var(--blue); color: #fff; }
+.op-steps li.current .op-step-dot { background: var(--gold); color: #fff; box-shadow: 0 0 0 4px rgba(216, 155, 43, .2); }
+.op-steps li > div { flex: 1; min-width: 0; padding-top: 4px; }
+.op-steps strong { display: block; color: var(--navy); font-size: 13px; }
+.op-steps small { color: var(--muted); font-size: 11px; }
+.op-form { display: grid; gap: 10px; margin-top: 10px; padding: 14px; border: 1px solid #fde3b0; border-radius: 14px; background: #fffcf5; }
+.op-form.waiting { border-color: var(--line); background: var(--paper); color: var(--muted); font-size: 12px; }
+.op-form .chip { justify-self: start; }
+.op-form .btn { justify-self: start; }
+.op-form .offer-field { margin: 0; }
+.op-note { color: var(--muted-2); font-size: 10px; }
+.op-log { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line-light); }
+.op-log > div { display: grid; grid-template-columns: 140px 1fr; gap: 10px; padding: 6px 0; font-size: 11px; color: var(--ink-2); }
+.op-log small { color: var(--muted-2); }
+@media (max-width: 640px) {
+  .op-parties { grid-template-columns: 1fr; }
+  .op-log > div { grid-template-columns: 1fr; gap: 2px; }
+}

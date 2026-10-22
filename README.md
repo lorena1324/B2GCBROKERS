@@ -27,6 +27,8 @@ Prototipo front-end de B²GC Brokers preparado para pruebas manuales con datos c
 - Mercado del comprador: favoritas (★) arriba, la más vendida y la que vence más rápido destacadas.
 - Alerta al comprador cuando oferta por debajo de la última ofertada; el vendedor acepta o rechaza cada oferta y ve si supera su tarifa.
 - Línea de proceso del comprador (fase 1 a 6) en el dashboard.
+- Cierre de operaciones de punta a punta: el vendedor adjudica una oferta y la operación avanza por firma del vendedor, firma del comprador, pago, confirmación del pago, entrega de la cartera y paz y salvo. Cada paso tiene responsable y validaciones; al final se descarga el acta de cierre.
+- En **Pruebas → Simular operación completa** se ejecuta automáticamente una operación entera (con casos de error) y luego se restauran los datos.
 - Panel de administración con analítica de subastas, tiempos, conversión y asistente IA (reglas sobre datos demo).
 - Negociaciones y adjudicaciones con escenarios demo.
 - Documentos y Data Room con documentos ficticios consultables.
@@ -35,6 +37,17 @@ Prototipo front-end de B²GC Brokers preparado para pruebas manuales con datos c
 - Reemplazo y eliminación de archivos cargados.
 - Reportes calculados a partir de los lotes demo.
 - Centro de pruebas con validaciones automáticas y restauración del escenario.
+
+## Cómo cerrar una operación (paso a paso)
+
+1. Entra como **comprador**, abre una cartera en **Carteras en subasta** y presenta una oferta.
+2. Cambia a **vendedor** (selector arriba a la derecha) → **Ofertas recibidas** → **Aceptar y adjudicar**.
+3. En **Cierre de operaciones**, el vendedor firma el contrato.
+4. Cambia a **comprador**: firma y registra el pago (referencia y valor exacto adjudicado).
+5. Cambia a **vendedor**: confirma el pago y entrega la cartera.
+6. Cambia a **comprador**: confirma la recepción. La operación queda **Cerrada** y el lote **Vendida**.
+
+Si la contraparte es un comprador demo, el botón **Simular respuesta** completa su paso.
 
 ## Documentos de prueba
 
