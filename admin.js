@@ -122,7 +122,7 @@ const ENTITY_OPTIONS = {
   comprador: [["casa_cobranza", "Casa de cobranza"], ["otro", "Otro comprador de cartera"]]
 };
 
-function openRegister() {
+function openRegister(role) {
   $("#register-overlay")?.remove();
 
   const overlay = document.createElement("div");
@@ -166,6 +166,7 @@ function openRegister() {
     </div>`;
   overlay.addEventListener("click", e => { if (e.target === overlay) closeRegister(); });
   document.body.appendChild(overlay);
+  if (role === "comprador") pickRegRole($('#reg-role-pick .role-opt[data-role="comprador"]'));
 }
 
 function closeRegister() { $("#register-overlay")?.remove(); }
@@ -261,10 +262,10 @@ function renderAdmin() {
       <p class="admin-sub">Revisa el RUT, la Cámara de Comercio y la cédula del representante legal; luego aprueba y entrega el usuario a la empresa.</p>
 
       <div class="kpi-grid">
-        ${kpiCard("Pendientes de revisión", count("pendiente"), "Requieren tu atención", "up")}
-        ${kpiCard("Empresas aprobadas", count("aprobada"), "Con usuario activo", "up")}
-        ${kpiCard("Rechazadas", count("rechazada"), "No cumplieron requisitos", "down")}
-        ${kpiCard("Total de solicitudes", all.length, "Histórico en este navegador", "up")}
+        ${kpiCard("Pendientes de revisión", count("pendiente"), "Requieren tu atención", "up", "setAdminFilter('pendiente')")}
+        ${kpiCard("Empresas aprobadas", count("aprobada"), "Con usuario activo", "up", "setAdminFilter('aprobada')")}
+        ${kpiCard("Rechazadas", count("rechazada"), "No cumplieron requisitos", "down", "setAdminFilter('rechazada')")}
+        ${kpiCard("Total de solicitudes", all.length, "Histórico en este navegador", "up", "setAdminFilter('todas')")}
       </div>
 
       <div class="admin-tabs">
@@ -587,10 +588,10 @@ function renderAdminAnalytics(shell) {
       <p class="admin-sub">Todo el detalle de las subastas en curso y del histórico: tiempos, ofertas, tarifas y conversión.</p>
 
       <div class="kpi-grid">
-        ${kpiCard("Subastas en vivo", live.length, `${upcoming.length} próximas`, "up")}
-        ${kpiCard("Ofertas en curso", bids.length, `${bidders} postores únicos`, "up")}
-        ${kpiCard("Conversión histórica", winRate(AUCTION_HISTORY).toFixed(0) + "%", `${won.length} de ${AUCTION_HISTORY.length} subastas adjudicadas`, "up")}
-        ${kpiCard("Duración promedio", avg(AUCTION_HISTORY.map(h => h.days)).toFixed(1) + " días", `1.ª oferta en ${avg(AUCTION_HISTORY.map(h => h.firstBidH)).toFixed(0)} h en promedio`, "up")}
+        ${kpiCard("Subastas en vivo", live.length, `${upcoming.length} próximas`, "up", "scrollToId('admin-live')")}
+        ${kpiCard("Ofertas en curso", bids.length, `${bidders} postores únicos`, "up", "scrollToId('admin-live')")}
+        ${kpiCard("Conversión histórica", winRate(AUCTION_HISTORY).toFixed(0) + "%", `${won.length} de ${AUCTION_HISTORY.length} subastas adjudicadas`, "up", "scrollToId('admin-history')")}
+        ${kpiCard("Duración promedio", avg(AUCTION_HISTORY.map(h => h.days)).toFixed(1) + " días", `1.ª oferta en ${avg(AUCTION_HISTORY.map(h => h.firstBidH)).toFixed(0)} h en promedio`, "up", "scrollToId('admin-history')")}
       </div>
 
       <div class="ai-card">
@@ -615,7 +616,7 @@ function renderAdminAnalytics(shell) {
         </div>
       </div>
 
-      <div class="card" style="margin-top:18px">
+      <div class="card" id="admin-live" style="margin-top:18px">
         <div class="card-header"><div><h3>Subastas en curso y próximas</h3><p>Decisiones de los vendedores: ${accepted} aceptadas · ${rejected} rechazadas</p></div></div>
         <div class="table-wrap"><table><thead><tr>
           <th>Lote</th><th>Estado</th><th>Tiempo</th><th>Duración</th><th>Ofertas</th><th>Postores</th><th>Más alta</th><th>Tarifa</th><th>Bajo la última</th><th>Prob. de cierre</th>
@@ -657,7 +658,7 @@ function renderAdminAnalytics(shell) {
         </tbody></table></div>` : `<div class="page-placeholder" style="margin:22px"><strong>Sin operaciones en cierre</strong><span>Aparecerán cuando un vendedor adjudique una oferta.</span></div>`}
       </div>
 
-      <div class="card" style="margin-top:18px">
+      <div class="card" id="admin-history" style="margin-top:18px">
         <div class="card-header"><div><h3>Histórico de subastas</h3><p>Base del análisis de conversión</p></div></div>
         <div class="table-wrap"><table><thead><tr>
           <th>Lote</th><th>Tipo</th><th>Duración</th><th>1.ª oferta</th><th>Ofertas</th><th>Postores</th><th>% final</th><th>Tarifa</th><th>Resultado</th>

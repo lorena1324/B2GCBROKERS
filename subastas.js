@@ -172,6 +172,32 @@ function renderAuctionBanner(lot) {
     </div>`;
 }
 
+/* ===== Filtro por tipo (desde la dona del dashboard) ===== */
+let typeFilter = null;
+
+function filterByType(type) {
+  typeFilter = type;
+  navigate(null, currentRole === "vendedor" ? "cartera" : "mercado");
+  showToast(`Mostrando carteras de tipo ${type}.`);
+}
+
+function clearTypeFilter() { typeFilter = null; rerenderCurrent(); }
+
+const typeFilterChip = () => `<div class="filter-chip">Tipo: <strong>${escapeHtml(typeFilter)}</strong><button type="button" onclick="clearTypeFilter()" aria-label="Quitar filtro">×</button></div>`;
+
+function openActivityMonth(month, count) {
+  navigate(null, "ofertas");
+  showToast(`${month}: ${count} movimientos de compra. Aquí están tus ofertas.`);
+}
+
+/* Fila de la línea de proceso: abre la operación, la cartera o el histórico */
+function openProcess(id) {
+  const op = typeof operationForLot === "function" && operationForLot(id);
+  if (op) { navigate(null, "cierre"); openOperation(op.id); return; }
+  if (lotById(id)) { openDetail(id); return; }
+  navigate(null, "adjudicaciones");
+}
+
 /* ===== Mercado del comprador ===== */
 let marketSort = "populares";
 function setMarketSort(sort) { marketSort = sort; rerenderCurrent(); }
@@ -205,7 +231,7 @@ function renderMarketPage(title, description) {
     valor: (a, b) => parseLotAmount(b) - parseLotAmount(a),
     favoritas: (a, b) => popularity(b) - popularity(a)
   };
-  let items = [...buyerOpportunities];
+  let items = buyerOpportunities.filter(l => !typeFilter || l.type === typeFilter);
   if (marketSort === "favoritas") items = items.filter(l => fav.has(l.id));
   items.sort((a, b) => (fav.has(b.id) - fav.has(a.id)) || sorters[marketSort](a, b));
 
@@ -217,11 +243,12 @@ function renderMarketPage(title, description) {
       <h2>${title}</h2>
       <p>${description} Tus favoritas (★) siempre aparecen arriba.</p>
       ${spotlightCards(buyerOpportunities)}
+      ${typeFilter ? typeFilterChip() : ""}
       <div class="sort-chips">${chip("populares", "Más vendidas")}${chip("vence", "Vencen primero")}${chip("valor", "Mayor valor")}${chip("favoritas", `★ Favoritas (${fav.size})`)}</div>
       ${items.length ? `<div class="test-lot-grid market-grid">${items.map(lot => {
         const top = topBid(lot.id);
         return `
-          <article class="test-lot-card market-card ${fav.has(lot.id) ? "is-fav" : ""}">
+          <article class="test-lot-card market-card clickable ${fav.has(lot.id) ? "is-fav" : ""}" role="button" tabindex="0" onclick="openDetail('${lot.id}')">
             <div class="market-card-top"><div class="lot-number">${lot.id}</div>${favButton(lot.id)}</div>
             <div class="market-card-tags">
               ${lot.id === topId ? '<span class="chip chip-hot">🔥 Más vendida</span>' : ""}
@@ -237,9 +264,11 @@ function renderMarketPage(title, description) {
               <div><small>Postores</small><b>${bidderCount(lot.id)}</b></div>
               <div><small>Ofertas</small><b>${bidsFor(lot.id).length}</b></div>
             </div>
-            <button class="btn btn-navy btn-small" onclick="openDetail('${lot.id}')">Entrar a la subasta →</button>
+            <button class="btn btn-navy btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">Entrar a la subasta →</button>
           </article>`;
-      }).join("")}</div>` : `<div class="page-placeholder"><strong>Aún no tienes favoritas</strong><span>Marca una cartera con ☆ para verla aquí y arriba del mercado.</span></div>`}
+      }).join("")}</div>` : typeFilter && marketSort !== "favoritas"
+        ? `<div class="page-placeholder"><strong>No hay carteras de tipo ${escapeHtml(typeFilter)} ahora</strong><span>Quita el filtro para ver todo el mercado.</span><button class="btn btn-ghost btn-small" style="margin-top:12px" onclick="clearTypeFilter()">Ver todo</button></div>`
+        : `<div class="page-placeholder"><strong>Aún no tienes favoritas</strong><span>Marca una cartera con ☆ para verla aquí y arriba del mercado.</span></div>`}
     </div>`;
 }
 
@@ -252,7 +281,7 @@ function auctionCard(lot, seller) {
   const reserve = reserveOf(lot.id);
   const stateLabel = { vivo: "<i></i> En vivo", proxima: "Próxima", cerrada: "Cerrada" }[st];
   return `
-    <article class="auction-card state-${st}">
+    <article class="auction-card state-${st} clickable" role="button" tabindex="0" onclick="openDetail('${lot.id}')">
       <div class="auction-card-head"><span class="state-chip ${st}">${stateLabel}</span>${seller ? "" : favButton(lot.id)}</div>
       <div class="lot-number">${lot.id}</div>
       <h3>${lot.title}</h3>
@@ -266,7 +295,7 @@ function auctionCard(lot, seller) {
         ${seller ? `<div><small>Tarifa</small><b>${reserve}%</b></div>` : `<div><small>Ofertas</small><b>${bidsFor(lot.id).length}</b></div>`}
       </div>
       ${seller && top ? `<div style="margin-top:10px">${reserveBadge(top.percent, reserve, true)}</div>` : ""}
-      <button class="btn btn-navy btn-small" onclick="openDetail('${lot.id}')">${seller ? "Ver subasta" : "Entrar a la subasta"} →</button>
+      <button class="btn btn-navy btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">${seller ? "Ver subasta" : "Entrar a la subasta"} →</button>
     </article>`;
 }
 
@@ -326,7 +355,7 @@ function renderBuyerProcess() {
     <div class="process">
       <div class="process-row process-head"><div></div><div class="process-track labels">${PHASES.map((p, i) => `<label style="left:${i / last * 100}%"><b>${i + 1}</b>${p}</label>`).join("")}</div><div></div></div>
       ${rows.map(r => `
-        <div class="process-row">
+        <div class="process-row clickable" role="button" tabindex="0" title="Abrir ${r.id}" onclick="openProcess('${r.id}')">
           <div class="process-info"><strong>${r.id}</strong><span>${escapeHtml(r.title)}</span></div>
           <div class="process-track">
             <div class="process-fill" style="width:${(r.phase - 1) / last * 100}%"></div>
@@ -348,7 +377,7 @@ function svgDonut(data, centerValue, centerLabel, idp = "d") {
     let acc = 0;
     return data.map(([label, value], i) => {
       const len = C * value / total;
-      const seg = `<circle class="${cls}" cx="100" cy="100" r="${r}" stroke="${colorOf(i)}" stroke-dasharray="${Math.max(0, len - gap).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" style="animation-delay:${i * .12}s">${cls === "donut-seg" ? `<title>${label}: ${value}%</title>` : ""}</circle>`;
+      const seg = `<circle class="${cls}" ${cls === "donut-seg" ? `onclick="filterByType('${escapeHtml(label)}')" role="button" aria-label="Ver ${escapeHtml(label)}"` : ""} cx="100" cy="100" r="${r}" stroke="${colorOf(i)}" stroke-dasharray="${Math.max(0, len - gap).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" style="animation-delay:${i * .12}s">${cls === "donut-seg" ? `<title>${label}: ${value}%</title>` : ""}</circle>`;
       acc += len;
       return seg;
     }).join("");
@@ -375,7 +404,7 @@ function svgDonut(data, centerValue, centerLabel, idp = "d") {
       <div class="donut-premium-center"><strong>${centerValue}</strong><span>${centerLabel}</span></div>
     </div>
     <div class="legend-premium">${data.map(([label, value], i) => `
-      <div><i style="background:linear-gradient(135deg,${CHART_COLORS[i % 5][0]},${CHART_COLORS[i % 5][1]})"></i><span>${label}</span>
+      <div class="clickable" role="button" tabindex="0" title="Ver carteras de tipo ${escapeHtml(label)}" onclick="filterByType('${escapeHtml(label)}')"><i style="background:linear-gradient(135deg,${CHART_COLORS[i % 5][0]},${CHART_COLORS[i % 5][1]})"></i><span>${label}</span>
         <div class="legend-bar"><b style="width:${value / Math.max(...data.map(d => d[1])) * 100}%;background:linear-gradient(90deg,${CHART_COLORS[i % 5][0]},${CHART_COLORS[i % 5][1]})"></b></div><strong>${value}%</strong></div>`).join("")}
     </div>`;
 }
@@ -390,7 +419,7 @@ function renderReserveChart(pool) {
         const reserve = reserveOf(lot.id);
         const ok = top && top.percent >= reserve;
         return `
-          <div class="reserve-row">
+          <div class="reserve-row clickable" role="button" tabindex="0" title="Abrir ${lot.id}" onclick="openDetail('${lot.id}')">
             <div class="reserve-label"><strong>${lot.id}</strong><span>${lot.type} · ${bidsFor(lot.id).length} ofertas</span></div>
             <div class="reserve-track">
               ${top ? `<div class="reserve-bar ${ok ? "ok" : "low"}" style="width:${x(top.percent)}%"><b>${top.percent}%</b></div>` : ""}

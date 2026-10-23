@@ -503,15 +503,15 @@ function renderRealDashboard() {
   const live = pool.filter(l => auctionState(l.id) === "vivo").length;
   const bids = seller ? originatorLots.flatMap(l => bidsFor(l.id)) : appState.offers;
   const kpis = seller ? [
-    ["Carteras publicadas", originatorLots.length, `${live} en subasta ahora`],
-    ["Valor publicado", fmtM(originatorLots.reduce((s, l) => s + parseLotAmount(l), 0)), "Saldo nominal"],
-    ["Ofertas recibidas", bids.length, `${bids.filter(b => !b.decision).length} sin decisión`],
-    ["Operaciones cerradas", closed.length, `${fmtM(closed.reduce((s, o) => s + o.value, 0))} vendidos`]
+    ["Carteras publicadas", originatorLots.length, `${live} en subasta ahora`, "navigate(null,'cartera')"],
+    ["Valor publicado", fmtM(originatorLots.reduce((s, l) => s + parseLotAmount(l), 0)), "Saldo nominal", "navigate(null,'subastas')"],
+    ["Ofertas recibidas", bids.length, `${bids.filter(b => !b.decision).length} sin decisión`, "navigate(null,'ofertas')"],
+    ["Operaciones cerradas", closed.length, `${fmtM(closed.reduce((s, o) => s + o.value, 0))} vendidos`, "navigate(null,'cierre')"]
   ] : [
-    ["Carteras disponibles", buyerOpportunities.length, `${live} en subasta ahora`],
-    ["Mis ofertas", bids.length, `${new Set(bids.map(b => b.lotId)).size} carteras`],
-    ["En cierre", open.length, myTurn ? `${myTurn} esperan tu acción` : "Al día"],
-    ["Compradas", closed.length, `${fmtM(closed.reduce((s, o) => s + o.value, 0))} invertidos`]
+    ["Carteras disponibles", buyerOpportunities.length, `${live} en subasta ahora`, "navigate(null,'mercado')"],
+    ["Mis ofertas", bids.length, `${new Set(bids.map(b => b.lotId)).size} carteras`, "navigate(null,'ofertas')"],
+    ["En cierre", open.length, myTurn ? `${myTurn} esperan tu acción` : "Al día", "navigate(null,'cierre')"],
+    ["Compradas", closed.length, `${fmtM(closed.reduce((s, o) => s + o.value, 0))} invertidos`, "navigate(null,'cierre')"]
   ];
   const types = countBy(pool, "type");
   const statuses = seller
@@ -527,7 +527,7 @@ function renderRealDashboard() {
         <p style="color:var(--muted);font-size:13px;margin-top:5px;">${seller ? "Publica carteras, revisa ofertas y cierra con B²GC Brokers como intermediario." : "Oferta en las carteras que publican bancos, fintech y cooperativas a través de B²GC Brokers."}</p>
         ${seller ? `<button class="btn btn-navy btn-small" style="margin-top:14px" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
       </div>
-      <div class="kpi-grid">${kpis.map(k => kpiCard(k[0], k[1], k[2], "up")).join("")}</div>
+      <div class="kpi-grid">${kpis.map(k => kpiCard(k[0], k[1], k[2], "up", k[3])).join("")}</div>
       <div class="dashboard-chart-grid">
         <div class="dashboard-chart-card dashboard-chart-large">
           ${seller
@@ -535,7 +535,7 @@ function renderRealDashboard() {
             : renderBuyerProcess()}
         </div>
         <div class="dashboard-chart-card">
-          <div class="dashboard-chart-header"><div><div class="chart-kicker">${seller ? "TU PORTAFOLIO" : "MERCADO"}</div><h3>Por tipo de cartera</h3></div></div>
+          <div class="dashboard-chart-header"><div><div class="chart-kicker">${seller ? "TU PORTAFOLIO" : "MERCADO"}</div><h3>Por tipo de cartera</h3></div><button class="chart-period" onclick="navigate(null,'${seller ? "cartera" : "mercado"}')">Ver todo →</button></div>
           ${types.length ? svgDonut(types, String(pool.length), "carteras", "rd") : '<div class="page-placeholder"><strong>Sin carteras todavía</strong></div>'}
         </div>
         <div class="dashboard-chart-card">
@@ -613,10 +613,10 @@ async function renderRealAdmin() {
       <h2 class="admin-h2">${{ empresas: "Empresas registradas", carteras: "Carteras publicadas", operaciones: "Operaciones" }[realAdminTab]}</h2>
       ${err ? `<div class="offer-alert warn"><span>${escapeHtml(friendlyError(err))}</span></div>` : ""}
       <div class="kpi-grid">
-        ${kpiCard("Pendientes de revisión", count("pendiente"), "Empresas por aprobar", "up")}
-        ${kpiCard("Empresas aprobadas", count("aprobada"), `${C.filter(c => c.status === "aprobada" && c.role === "vendedor").length} vendedoras · ${C.filter(c => c.status === "aprobada" && c.role === "comprador").length} casas de cobranza`, "up")}
-        ${kpiCard("Carteras publicadas", P.filter(p => p.status !== "cancelada").length, `${B.length} ofertas recibidas`, "up")}
-        ${kpiCard("Operaciones cerradas", appState.operations.filter(o => o.status === "Cerrada").length, `${fmtM(closedValue)} intermediados`, "up")}
+        ${kpiCard("Pendientes de revisión", count("pendiente"), "Empresas por aprobar", "up", "setRealAdminTab('empresas');setRealAdminFilter('pendiente')")}
+        ${kpiCard("Empresas aprobadas", count("aprobada"), `${C.filter(c => c.status === "aprobada" && c.role === "vendedor").length} vendedoras · ${C.filter(c => c.status === "aprobada" && c.role === "comprador").length} casas de cobranza`, "up", "setRealAdminTab('empresas');setRealAdminFilter('aprobada')")}
+        ${kpiCard("Carteras publicadas", P.filter(p => p.status !== "cancelada").length, `${B.length} ofertas recibidas`, "up", "setRealAdminTab('carteras')")}
+        ${kpiCard("Operaciones cerradas", appState.operations.filter(o => o.status === "Cerrada").length, `${fmtM(closedValue)} intermediados`, "up", "setRealAdminTab('operaciones')")}
       </div>
       ${realAdminTab === "empresas" ? `
         <div class="admin-tabs">${[["pendiente", "Pendientes"], ["aprobada", "Aprobadas"], ["rechazada", "Rechazadas"], ["suspendida", "Suspendidas"], ["todas", "Todas"]]

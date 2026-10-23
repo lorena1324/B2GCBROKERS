@@ -226,6 +226,59 @@ function fillDemo(role) {
   showToast("Cuenta demo cargada. Pulsa “Entrar a la plataforma”.");
 }
 
+function scrollToId(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* Cartera del sitio público: abre el demo de casa de cobranza filtrado por ese tipo */
+function openPublicPortfolio(type) {
+  openAuth("login");
+  fillDemo("comprador");
+  typeFilter = type;
+  showToast(`Entra al demo para ver la cartera de ${type.toLowerCase()}, o inicia sesión con tu cuenta.`);
+}
+
+const MODALITIES = {
+  subasta: {
+    title: "Subasta privada", icon: "↗",
+    lead: "La entidad vendedora fija una fecha de cierre y una tarifa mínima; las casas de cobranza compiten mejorando su oferta.",
+    steps: ["La entidad vendedora publica la cartera anonimizada, la tarifa mínima y la ventana de la subasta.", "Las casas de cobranza aprobadas revisan el data room y ofertan; ven su posición pero no las ofertas ajenas.", "Si alguien oferta por debajo de la última, se le avisa y la entidad vendedora decide.", "Al cierre, la entidad vendedora adjudica y B²GC Brokers acompaña firmas, pago, entrega y paz y salvo."]
+  },
+  directa: {
+    title: "Compra directa", icon: "◇",
+    lead: "Negociación uno a uno entre la entidad vendedora y una casa de cobranza, sin ventana competitiva.",
+    steps: ["La casa de cobranza presenta una oferta sobre la cartera.", "La entidad vendedora la acepta, la rechaza o espera una mejor.", "Al aceptar, se abre el cierre documental con B²GC Brokers como intermediario."]
+  },
+  hibrida: {
+    title: "Híbrida", icon: "◎",
+    lead: "Negociación previa y luego una subasta limitada a las casas de cobranza que la entidad vendedora preselecciona.",
+    steps: ["La entidad vendedora conversa con varias casas de cobranza y elige a las finalistas.", "Las finalistas compiten en una subasta corta con fecha límite.", "La mejor oferta se adjudica y se cierra con B²GC Brokers."]
+  }
+};
+
+function openModality(key) {
+  const m = MODALITIES[key];
+  if (!m) return;
+  $("#modality-overlay")?.remove();
+  const el = document.createElement("div");
+  el.id = "modality-overlay";
+  el.className = "offer-overlay";
+  el.innerHTML = `
+    <div class="offer-modal">
+      <button class="detail-close" type="button" onclick="$('#modality-overlay').remove()">×</button>
+      <div class="section-kicker">MODALIDAD DE NEGOCIACIÓN</div>
+      <h2>${m.icon} ${m.title}</h2>
+      <p>${m.lead}</p>
+      <ol class="modality-steps">${m.steps.map(s => `<li>${s}</li>`).join("")}</ol>
+      <div class="offer-actions">
+        <button class="btn btn-ghost" onclick="$('#modality-overlay').remove();openAuth('login');fillDemo('comprador')">Probar el demo</button>
+        <button class="btn btn-navy" onclick="$('#modality-overlay').remove();openRegister()">Registrar mi empresa</button>
+      </div>
+    </div>`;
+  el.addEventListener("click", e => { if (e.target === el) el.remove(); });
+  document.body.appendChild(el);
+}
+
 function closeAuth() {
   const overlay = $("#auth-overlay");
   if (overlay) overlay.classList.add("hidden");
@@ -268,6 +321,7 @@ function enterApp() {
   const toggle = $(".role-toggle");
   if (toggle) toggle.style.display = res.demo ? "" : "none"; // solo las cuentas demo cambian de rol
   setRole(currentRole);
+  if (typeFilter && currentRole === "comprador") navigate(null, "mercado"); // vino desde una cartera del sitio público
   showToast(`Bienvenido, ${res.company}.`);
 }
 
@@ -359,6 +413,7 @@ function navigate(event, page) {
   if (event && event.currentTarget) event.currentTarget.classList.add("active");
 
   currentPage = page;
+  if (event) typeFilter = null;
   const titles = {
     dashboard: "Dashboard", cartera: "Mis carteras", oportunidades: "Oportunidades", negociaciones: "Negociaciones",
     documentos: "Documentos", reportes: "Reportes", mercado: "Mercado de oportunidades",
@@ -390,10 +445,10 @@ function renderDashboard() {
     title: "Encuentra, analiza y oferta en nuevas oportunidades.",
     description: "Explora la cartera que bancos, fintech y cooperativas publican a través de B²GC, revisa data rooms, oferta y sigue tus adjudicaciones.",
     kpis: [
-      ["Oportunidades disponibles", "32", "↗ 7 nuevas hoy"],
-      ["Ofertas realizadas", "14", "↗ +3 esta semana"],
-      ["Adjudicaciones", "8", "↗ +2 este mes"],
-      ["Tasa de cierre", "76%", "↗ +3.8 puntos"]
+      ["Oportunidades disponibles", "32", "↗ 7 nuevas hoy", "navigate(null,'mercado')"],
+      ["Ofertas realizadas", "14", "↗ +3 esta semana", "navigate(null,'ofertas')"],
+      ["Adjudicaciones", "8", "↗ +2 este mes", "navigate(null,'adjudicaciones')"],
+      ["Tasa de cierre", "76%", "↗ +3.8 puntos", "navigate(null,'reportes')"]
     ]
   };
 
@@ -405,7 +460,7 @@ function renderDashboard() {
         <p style="color:var(--muted);font-size:13px;margin-top:5px;">${roleData.description}</p>
       </div>
       <div class="kpi-grid">
-        ${isOriginator ? renderOriginatorKpis() : roleData.kpis.map(k => kpiCard(k[0], k[1], k[2], "up")).join("")}
+        ${isOriginator ? renderOriginatorKpis() : roleData.kpis.map(k => kpiCard(k[0], k[1], k[2], "up", k[3])).join("")}
       </div>
       ${isOriginator ? renderOriginatorCharts() : renderDashboardCharts("comprador")}
       ${renderLotsCard()}
@@ -415,9 +470,10 @@ function renderDashboard() {
   startCountdowns();
 }
 
-function kpiCard(label, value, change, direction = "up") {
+function kpiCard(label, value, change, direction = "up", action = "") {
+  const attrs = action ? ` role="button" tabindex="0" onclick="${action}" title="Ver detalle"` : "";
   return `
-    <div class="kpi-card">
+    <div class="kpi-card ${action ? "clickable" : ""}"${attrs}>${action ? '<span class="kpi-go" aria-hidden="true">→</span>' : ""}
       <div class="label">${label}</div>
       <div class="value">${value}</div>
       <div class="change ${direction === "down" ? "down" : ""}">${change}</div>
@@ -438,25 +494,25 @@ function renderOriginatorKpis() {
   const n = getNotif();
 
   return `
-    <div class="kpi-card">
+    <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'cartera')" title="Ver mis carteras">
       <div class="label">Cartera en comercialización · Saldo a capital</div>
       <div class="value">${fmtM(total)}</div>
       <div class="change">≈ USD ${fmtN(usd)} · TRM $${fmtN(TRM_DEMO)}</div>
     </div>
 
-    <div class="kpi-card">
+    <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'oportunidades')" title="Ver casas de cobranza interesadas">
       <div class="label">Visualizaciones</div>
       <div class="value">${fmtN(likes + favs + comments)}</div>
       <div class="change" style="color:var(--muted)">♥ ${fmtN(likes)} likes · ★ ${fmtN(favs)} favoritos · ✎ ${fmtN(comments)} comentarios</div>
     </div>
 
-    <div class="kpi-card">
+    <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'ofertas')" title="Ver ofertas recibidas">
       <div class="label">Mejor oferta actual · ${best.lot.id}</div>
       <div class="value">${fmtM(bestValue)} <small style="font-size:13px;color:var(--blue)">${best.p}%</small></div>
       <div class="change">Vendido ${fmtM(SOLD_DEMO)} de ${fmtM(total)} (${(SOLD_DEMO / total * 100).toFixed(1)}%) · ${nOffers} ofertas</div>
     </div>
 
-    <div class="kpi-card" style="cursor:pointer" onclick="toggleCountdown()" title="Clic para alternar inicio ⇄ cierre">
+    <div class="kpi-card clickable" role="button" tabindex="0" onclick="toggleCountdown()" title="Clic para alternar inicio ⇄ cierre">
       <div class="label"><span id="cd-label">Tiempo para cierre de subasta</span> ⇄</div>
       <div class="value" id="cd-main" data-cd="${featured.id}|cierre" style="font-size:20px">—</div>
       <div class="change" style="color:var(--muted)" onclick="event.stopPropagation()">
@@ -479,11 +535,11 @@ function renderOriginatorCharts() {
         ${renderReserveChart(originatorLots)}
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">TU PORTAFOLIO</div><h3>Distribución por tipo</h3></div></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">TU PORTAFOLIO</div><h3>Distribución por tipo</h3></div><button class="chart-period" onclick="navigate(null,'cartera')">Mis carteras →</button></div>
         ${svgDonut(donut, "126", "operaciones", "dv")}
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Estado de tus operaciones</h3></div></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Estado de tus operaciones</h3></div><button class="chart-period" onclick="navigate(null,'cierre')">Cierre →</button></div>
         ${renderStatusBars(statuses)}
       </div>
     </div>`;
@@ -499,7 +555,7 @@ function renderDashboardCharts(role) {
         ${renderBuyerProcess()}
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">MERCADO DISPONIBLE</div><h3>Tipos de oportunidad</h3></div></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">MERCADO DISPONIBLE</div><h3>Tipos de oportunidad</h3></div><button class="chart-period" onclick="navigate(null,'mercado')">Ver mercado →</button></div>
         ${svgDonut(donut, "32", "oportunidades", "dc")}
       </div>
       <div class="dashboard-chart-card">
@@ -507,20 +563,26 @@ function renderDashboardCharts(role) {
         <div class="activity-chart">${renderActivityBars(role)}</div>
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Tu pipeline de compra</h3></div></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Tu pipeline de compra</h3></div><button class="chart-period" onclick="navigate(null,'ofertas')">Mis ofertas →</button></div>
         ${renderStatusBars(statuses)}
       </div>
     </div>`;
 }
 
+// A dónde lleva cada etapa del pipeline al hacer clic
+const STATUS_TARGET = {
+  "Disponibles": "mercado", "Con oferta": "ofertas", "Adjudicadas": "cierre",
+  "En mercado": "subastas", "En subasta": "subastas", "En negociación": "ofertas", "En cierre": "cierre", "Cerradas": "cierre", "Vendidas": "cierre"
+};
+
 function renderStatusBars(statuses) {
-  const total = statuses.reduce((s, x) => s + x[1], 0);
+  const total = statuses.reduce((s, x) => s + x[1], 0) || 1;
   return `<div class="status-summary premium">${statuses.map(([name, value, cls]) => `
-    <div class="status-item">
+    <div class="status-item clickable" role="button" tabindex="0" title="Ver ${name.toLowerCase()}" onclick="navigate(null,'${STATUS_TARGET[name] || "dashboard"}')">
       <div class="status-row"><div class="status-name"><span class="status-dot ${cls}"></span>${name}</div><strong>${value}<small>${Math.round(value / total * 100)}%</small></strong></div>
       <div class="status-progress ${cls}"><span style="width:${value / total * 100}%"></span></div>
     </div>`).join("")}
-    <div class="status-total"><span>Total</span><strong>${total}</strong></div>
+    <div class="status-total"><span>Total</span><strong>${statuses.reduce((s, x) => s + x[1], 0)}</strong></div>
   </div>`;
 }
 
@@ -528,7 +590,7 @@ function renderActivityBars(role) {
   const values = role === "vendedor" ? [48, 55, 62, 70, 66, 81, 88] : [38, 46, 58, 52, 70, 64, 84];
   const labels = ["Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep"];
   return values.map((value, index) => `
-    <div class="activity-column ${index === values.length - 1 ? "current" : ""}">
+    <div class="activity-column clickable ${index === values.length - 1 ? "current" : ""}" role="button" tabindex="0" title="Ver ofertas de ${labels[index]}" onclick="openActivityMonth('${labels[index]}', ${value})">
       <div class="activity-value" style="height:${value}%"><b>${value}</b></div>
       <span>${labels[index]}</span>
     </div>`).join("");
@@ -617,7 +679,13 @@ function renderPage(page) {
   if (!isOrig && ["oportunidades", "mercado"].includes(page)) { content.innerHTML = renderMarketPage(current.title, current.description); startCountdowns(); return; }
 
   if (["cartera", "oportunidades", "mercado"].includes(page)) {
-    const items = isOrig ? originatorLots : buyerOpportunities;
+    const items = (isOrig ? originatorLots : buyerOpportunities).filter(l => !typeFilter || l.type === typeFilter);
+    if (typeFilter && !items.length) {
+      content.innerHTML = `<div class="card page-card"><div class="section-kicker">MIS CARTERAS</div><h2>Mis carteras</h2>
+        <div class="page-placeholder"><strong>No tienes carteras de tipo ${escapeHtml(typeFilter)}</strong><span>Quita el filtro para ver todas.</span>
+        <button class="btn btn-ghost btn-small" style="margin-top:12px" onclick="clearTypeFilter()">Ver todas</button></div></div>`;
+      return;
+    }
     if (appState.realMode && !items.length) {
       content.innerHTML = `<div class="card page-card"><div class="section-kicker">MIS CARTERAS</div><h2>Mis carteras</h2>
         <div class="page-placeholder"><strong>Aún no has publicado carteras</strong><span>Publica la primera y B²GC Brokers la llevará a las casas de cobranza aprobadas.</span>
@@ -630,9 +698,10 @@ function renderPage(page) {
         ${appState.realMode && isOrig ? `<button class="btn btn-navy btn-small" style="float:right" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
         <h2>${current.title}</h2>
         <p>${current.description}</p>
+        ${typeFilter ? typeFilterChip() : ""}
         <div class="test-lot-grid">
           ${items.map(lot => `
-            <article class="test-lot-card">
+            <article class="test-lot-card clickable" role="button" tabindex="0" onclick="openDetail('${lot.id}')">
               <div class="lot-number">${lot.id}</div>
               <h3>${lot.title}</h3>
               <span>${lot.type} · ${lot.modality}</span>
@@ -642,7 +711,7 @@ function renderPage(page) {
                 <span class="badge ${lot.statusClass}">${lot.status}</span>
                 <span>${fmtN(profileOf(lot).obligations)} obligaciones</span>
               </div>
-              <button class="btn btn-ghost btn-small" onclick="openDetail('${lot.id}')">Ver lote</button>
+              <button class="btn btn-ghost btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">Ver lote</button>
             </article>`).join("")}
         </div>
       </div>`;
@@ -1610,11 +1679,17 @@ document.addEventListener("click", event => {
 });
 
 document.addEventListener("keydown", event => {
+  if ((event.key === "Enter" || event.key === " ") && event.target?.matches?.('[role="button"][onclick]')) {
+    event.preventDefault();
+    event.target.click();
+    return;
+  }
   if (event.key !== "Escape") return;
   closeAuth();
   closeDetail();
   closeOfferModal();
   closeDocumentViewer();
+  $("#modality-overlay")?.remove();
 });
 
 document.addEventListener("DOMContentLoaded", () => {

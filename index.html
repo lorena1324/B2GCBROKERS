@@ -140,9 +140,9 @@
           <div class="trend" id="hero-chart"></div>
 
           <div class="hero-mini-stats">
-            <div><strong>47</strong><span>Casas de cobranza</span></div>
-            <div><strong>126</strong><span>Operaciones</span></div>
-            <div><strong>82%</strong><span>Cierre</span></div>
+            <div class="clickable" role="button" tabindex="0" onclick="openRegister('comprador')" title="Registrar mi casa de cobranza"><strong>47</strong><span>Casas de cobranza</span></div>
+            <div class="clickable" role="button" tabindex="0" onclick="scrollToId('carteras-demo')" title="Ver carteras"><strong>126</strong><span>Operaciones</span></div>
+            <div class="clickable" role="button" tabindex="0" onclick="scrollToId('intermediario')" title="Cómo cerramos"><strong>82%</strong><span>Cierre</span></div>
           </div>
 
         </div>
@@ -166,21 +166,21 @@
         <p>Las entidades financieras publican su cartera, B²GC Brokers organiza la venta y las casas de cobranza la compran.</p>
       </div>
       <div class="bridge-flow">
-        <article class="bridge-node">
+        <article class="bridge-node clickable" role="button" tabindex="0" onclick="openRegister('vendedor')" title="Registrar mi entidad">
           <div class="bridge-icon">◈</div>
           <div class="section-kicker">VENDEN</div>
           <h3>Bancos, fintech y cooperativas</h3>
           <p>Publican su cartera de forma anonimizada, fijan su tarifa mínima y eligen la modalidad de venta.</p>
         </article>
         <div class="bridge-arrow" aria-hidden="true">→</div>
-        <article class="bridge-node bridge-core">
+        <article class="bridge-node bridge-core clickable" role="button" tabindex="0" onclick="scrollToId('como-funciona')" title="Ver cómo funciona">
           <div class="bridge-icon">B²</div>
           <div class="section-kicker">INTERMEDIAMOS</div>
           <h3>B²GC Brokers</h3>
           <p>Verificamos a las empresas, abrimos el data room, corremos la subasta y acompañamos firmas, pago, entrega y paz y salvo.</p>
         </article>
         <div class="bridge-arrow" aria-hidden="true">→</div>
-        <article class="bridge-node">
+        <article class="bridge-node clickable" role="button" tabindex="0" onclick="openRegister('comprador')" title="Registrar mi casa de cobranza">
           <div class="bridge-icon">◇</div>
           <div class="section-kicker">COMPRAN</div>
           <h3>Casas de cobranza</h3>
@@ -207,7 +207,7 @@
 
       <div class="public-portfolios-grid">
 
-        <article class="public-portfolio-card">
+        <article class="public-portfolio-card clickable" role="button" tabindex="0" onclick="openPublicPortfolio('Consumo')">
           <div class="public-portfolio-top">
             <span class="portfolio-tag">01 · CONSUMO</span>
             <span class="portfolio-status">ACTIVA</span>
@@ -218,10 +218,10 @@
             <div><strong>$4.850 M</strong><span>Valor nominal demo</span></div>
             <div><strong>2.840</strong><span>Deudores</span></div>
           </div>
-          <button type="button" class="btn-text" onclick="openAuth('login')">Explorar cartera →</button>
+          <button type="button" class="btn-text">Explorar cartera →</button>
         </article>
 
-        <article class="public-portfolio-card">
+        <article class="public-portfolio-card clickable" role="button" tabindex="0" onclick="openPublicPortfolio('Libranza')">
           <div class="public-portfolio-top">
             <span class="portfolio-tag">02 · LIBRANZA</span>
             <span class="portfolio-status">ACTIVA</span>
@@ -232,10 +232,10 @@
             <div><strong>$3.240 M</strong><span>Valor nominal demo</span></div>
             <div><strong>1.460</strong><span>Deudores</span></div>
           </div>
-          <button type="button" class="btn-text" onclick="openAuth('login')">Explorar cartera →</button>
+          <button type="button" class="btn-text">Explorar cartera →</button>
         </article>
 
-        <article class="public-portfolio-card">
+        <article class="public-portfolio-card clickable" role="button" tabindex="0" onclick="openPublicPortfolio('Comercial')">
           <div class="public-portfolio-top">
             <span class="portfolio-tag">03 · COMERCIAL</span>
             <span class="portfolio-status">ACTIVA</span>
@@ -246,7 +246,7 @@
             <div><strong>$6.780 M</strong><span>Valor nominal demo</span></div>
             <div><strong>860</strong><span>Deudores</span></div>
           </div>
-          <button type="button" class="btn-text" onclick="openAuth('login')">Explorar cartera →</button>
+          <button type="button" class="btn-text">Explorar cartera →</button>
         </article>
 
       </div>
@@ -259,7 +259,7 @@
 
     <section class="trust-bar">
 
-      <div class="trust-item">
+      <div class="trust-item clickable" role="button" tabindex="0" onclick="scrollToId('como-funciona')">
 
         <span class="trust-icon">
           ✓
@@ -270,7 +270,7 @@
       </div>
 
 
-      <div class="trust-item">
+      <div class="trust-item clickable" role="button" tabindex="0" onclick="scrollToId('intermediario')">
 
         <span class="trust-icon">
           ✓
@@ -281,7 +281,7 @@
       </div>
 
 
-      <div class="trust-item">
+      <div class="trust-item clickable" role="button" tabindex="0" onclick="openRegister('comprador')">
 
         <span class="trust-icon">
           ✓
@@ -292,7 +292,7 @@
       </div>
 
 
-      <div class="trust-item">
+      <div class="trust-item clickable" role="button" tabindex="0" onclick="scrollToId('carteras-demo')">
 
         <span class="trust-icon">
           ✓
@@ -347,7 +347,7 @@
 
       <div class="modalidades-grid">
 
-<article class="modalidad">
+<article class="modalidad clickable" role="button" tabindex="0" onclick="openModality('subasta')">
 
         <div class="modalidad-number">
           01
@@ -384,7 +384,7 @@
            MODALIDAD 02
       ================================================== -->
 
-      <article class="modalidad">
+      <article class="modalidad clickable" role="button" tabindex="0" onclick="openModality('directa')">
 
         <div class="modalidad-number">
           02
@@ -421,7 +421,7 @@
            MODALIDAD 03
       ================================================== -->
 
-      <article class="modalidad">
+      <article class="modalidad clickable" role="button" tabindex="0" onclick="openModality('hibrida')">
 
         <div class="modalidad-number">
           03
@@ -633,7 +633,7 @@
 
         <div class="info-stats">
 
-          <div class="info-stat">
+          <div class="info-stat clickable" role="button" tabindex="0" onclick="openRegister('comprador')">
 
             <strong>
               47+
@@ -646,7 +646,7 @@
           </div>
 
 
-          <div class="info-stat">
+          <div class="info-stat clickable" role="button" tabindex="0" onclick="scrollToId('carteras-demo')">
 
             <strong>
               126
@@ -659,7 +659,7 @@
           </div>
 
 
-          <div class="info-stat">
+          <div class="info-stat clickable" role="button" tabindex="0" onclick="openAuth('login')">
 
             <strong>
               24/7
@@ -1038,7 +1038,8 @@
 
       <a
         class="brand"
-        href="#">
+        href="#"
+        onclick="navigate(null,'dashboard');return false;">
 
         B<span class="sup">2</span>GC Brokers
 

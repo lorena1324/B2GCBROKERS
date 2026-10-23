@@ -159,7 +159,7 @@ function initHeroScene() {
 const TILT_SELECTOR = [
   ".hero-dashboard", ".public-portfolio-card", ".modalidad", ".bridge-node", ".info-box",
   ".kpi-card", ".dashboard-chart-card", ".auction-card", ".market-card", ".op-card",
-  ".spotlight-card", ".report-kpi", ".test-lot-card", ".simulator-main-value", ".chart-card", ".ai-insight"
+  ".spotlight-card", ".test-lot-card"
 ].join(",");
 
 let tiltEl = null;

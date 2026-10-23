@@ -5061,3 +5061,34 @@ tr.row-muted td { opacity: .55; }
 .publish-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 18px; }
 .field select { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font: inherit; color: var(--ink); }
 @media (max-width: 900px) { .publish-grid { grid-template-columns: 1fr; } }
+
+/* =========================================================
+   GRÁFICAS INTERACTIVAS (cada parte lleva a su sección)
+   ========================================================= */
+.clickable { cursor: pointer; }
+.clickable:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 10px; }
+.donut-3d .donut-seg { cursor: pointer; transition: stroke-width .2s ease, filter .2s ease; }
+.donut-3d .donut-seg:hover { filter: brightness(1.12); }
+.legend-premium > div.clickable { margin: 0 -8px; padding: 6px 8px; border-radius: 10px; transition: background .2s ease, transform .2s ease; }
+.legend-premium > div.clickable:hover { background: var(--blue-light); transform: translateX(3px); }
+.legend-premium > div.clickable:hover strong::after, .status-item.clickable:hover .status-name::after { content: " →"; color: var(--blue); }
+.status-item.clickable { margin: 0 -10px; padding: 8px 10px; border-radius: 12px; transition: background .2s ease; }
+.status-item.clickable:hover { background: var(--paper); }
+.activity-column.clickable:hover span { color: var(--blue); font-weight: 700; }
+.reserve-row.clickable { margin: 0 -10px; padding: 6px 10px; border-radius: 12px; transition: background .2s ease; }
+.reserve-row.clickable:hover { background: var(--paper); }
+.process-row.clickable:hover .process-info strong { color: var(--blue); }
+.filter-chip { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 6px 6px 6px 14px; border: 1px solid #c7d7fe; border-radius: 999px; background: var(--blue-light); color: var(--navy); font-size: 12px; }
+.filter-chip button { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%; background: #fff; color: var(--blue); font-size: 14px; cursor: pointer; }
+
+/* Todo lo clicable se ve clicable */
+.kpi-card.clickable:hover .label, .info-stat.clickable:hover span, .hero-mini-stats .clickable:hover span { color: var(--blue); }
+.kpi-go { position: absolute; right: 18px; bottom: 16px; color: var(--blue); font-weight: 800; opacity: 0; transform: translateX(-4px); transition: opacity .2s ease, transform .2s ease; }
+.kpi-card.clickable:hover .kpi-go { opacity: 1; transform: none; }
+.kpi-card.clickable { position: relative; }
+.trust-item.clickable { transition: background .2s ease; border-radius: 14px; }
+.trust-item.clickable:hover { background: var(--blue-light); }
+.hero-mini-stats .clickable, .info-stat.clickable { border-radius: 12px; transition: background .2s ease, transform .2s ease; }
+.hero-mini-stats .clickable:hover, .info-stat.clickable:hover { background: var(--blue-light); transform: translateY(-2px); }
+.modality-steps { margin: 16px 0 6px; padding-left: 20px; display: grid; gap: 10px; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+.modality-steps li::marker { color: var(--gold); font-weight: 800; }
