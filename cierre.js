@@ -151,7 +151,7 @@ function uiAdjudicate(offerId) {
   el.innerHTML = `
     <div class="offer-modal">
       <button class="detail-close" type="button" onclick="$('#op-confirm-overlay').remove()">×</button>
-      <div class="section-kicker">ADJUDICAR · ${lot.id}</div>
+      <div class="meta-line">${lot.id}</div>
       <h2>¿Adjudicar esta oferta?</h2>
       <p>${escapeHtml(lot.title)}</p>
       <div class="op-parties">
@@ -252,7 +252,7 @@ function openOperation(opId) {
   el.innerHTML = `
     <div class="offer-modal op-modal">
       <button class="detail-close" type="button" onclick="closeOperation()">×</button>
-      <div class="section-kicker">${op.id} · ${op.lotId}</div>
+      <div class="meta-line">${op.id} · ${op.lotId}</div>
       <h2>${escapeHtml(op.lotTitle)}</h2>
       <span class="badge ${op.status === "Cerrada" ? "badge-green" : op.status === "Cancelada" ? "badge-red" : "badge-gold"}">${op.status}</span>
 
@@ -281,7 +281,7 @@ function openOperation(opId) {
         }).join("")}
       </ol>
 
-      <div class="op-log"><div class="section-kicker">HISTORIAL</div>${op.log.slice().reverse().map(l => `<div><small>${escapeHtml(l.at)}</small><span>${escapeHtml(l.text)}</span></div>`).join("")}</div>
+      <div class="op-log"><div class="meta-line"><strong>Historial</strong></div>${op.log.slice().reverse().map(l => `<div><small>${escapeHtml(l.at)}</small><span>${escapeHtml(l.text)}</span></div>`).join("")}</div>
 
       <div class="offer-actions">
         ${currentRole === "vendedor" && op.status === "En cierre" && stepsDone(op) === 1 ? `<button class="btn btn-danger-soft" onclick="uiCancelOperation('${op.id}')">Deshacer adjudicación</button>` : ""}

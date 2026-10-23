@@ -314,7 +314,7 @@ function openReview(id) {
   el.innerHTML = `
     <div class="modal modal-wrap review-modal">
       <button type="button" class="modal-close" onclick="closeReview()">×</button>
-      <div class="section-kicker">${c.id} · ${c.role === "vendedor" ? "VENDEDOR" : "COMPRADOR"}</div>
+      <div class="meta-line">${c.id} · ${c.role === "vendedor" ? "Entidad vendedora" : "Casa de cobranza"}</div>
       <h2 style="margin-bottom:4px">${escapeHtml(c.name)}</h2>
       <span class="badge ${STATUS_CLASS[c.status]}">${STATUS_LABEL[c.status]}</span>
 

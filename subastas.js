@@ -161,7 +161,7 @@ function renderAuctionBanner(lot) {
   const st = auctionState(lot.id);
   const top = topBid(lot.id);
   const seller = currentRole === "vendedor";
-  const title = { vivo: "SUBASTA EN VIVO", proxima: "SUBASTA PRÓXIMA", cerrada: "SUBASTA CERRADA" }[st];
+  const title = { vivo: "Subasta en vivo", proxima: "Subasta próxima", cerrada: "Subasta cerrada" }[st];
   return `
     <div class="auction-banner state-${st}">
       <div class="auction-banner-state"><span class="live-dot"></span>${title}</div>
@@ -217,8 +217,8 @@ function spotlightCards(pool) {
         <div class="spotlight-timer"><small>${cdLabel(id)}</small>${cdHtml(id, "big")}</div>
       </div>`;
   };
-  if (topId === soonId) return `<div class="spotlight-grid single">${card(topId, "🔥 LA MÁS VENDIDA · ⏱ Y LA QUE VENCE MÁS RÁPIDO", "urgent")}</div>`;
-  return `<div class="spotlight-grid">${card(topId, "🔥 LA MÁS VENDIDA", "hot")}${card(soonId, "⏱ LA QUE VENCE MÁS RÁPIDO", "urgent")}</div>`;
+  if (topId === soonId) return `<div class="spotlight-grid single">${card(topId, "🔥 La más vendida y la que vence más rápido", "urgent")}</div>`;
+  return `<div class="spotlight-grid">${card(topId, "🔥 La más vendida", "hot")}${card(soonId, "⏱ La que vence más rápido", "urgent")}</div>`;
 }
 
 function renderMarketPage(title, description) {

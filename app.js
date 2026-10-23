@@ -1184,8 +1184,8 @@ function renderDetailSummary(lot) {
         ${detailMetric("Número de obligaciones", fmtN(p.obligations))}
         ${detailMetric("Modalidad", lot.modality)}
       </div>
-      <div class="summary-block" style="margin-top:22px"><div class="section-kicker">PUBLICADA POR</div><p style="margin-top:6px;color:var(--navy);font-weight:700">${escapeHtml(lot.vendedor)} · vía B²GC Brokers</p></div>
-      ${lot.description ? `<div class="summary-block" style="margin-top:14px"><div class="section-kicker">DESCRIPCIÓN</div><p style="margin-top:6px;color:var(--ink-2);font-size:13px;line-height:1.6;white-space:pre-line">${escapeHtml(lot.description)}</p></div>` : ""}
+      <div class="summary-block" style="margin-top:22px"><div class="meta-line">Publicada por</div><p style="margin-top:6px;color:var(--navy);font-weight:700">${escapeHtml(lot.vendedor)} · vía B²GC Brokers</p></div>
+      ${lot.description ? `<div class="summary-block" style="margin-top:14px"><div class="meta-line">Descripción</div><p style="margin-top:6px;color:var(--ink-2);font-size:13px;line-height:1.6;white-space:pre-line">${escapeHtml(lot.description)}</p></div>` : ""}
       <p style="margin-top:14px;color:var(--muted);font-size:12px">Revisa la pestaña <strong>Data room</strong> para descargar la base anonimizada y los soportes.</p>
       <div style="margin-top:25px;display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-navy" onclick="makeOffer('${lot.id}')">${mine ? "Ver ofertas recibidas" : "Presentar oferta"}</button>

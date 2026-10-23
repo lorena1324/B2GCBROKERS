@@ -654,7 +654,7 @@ function openRealReview(id) {
   el.innerHTML = `
     <div class="modal modal-wrap review-modal">
       <button type="button" class="modal-close" onclick="closeReview()">×</button>
-      <div class="section-kicker">${c.role === "vendedor" ? "ENTIDAD VENDEDORA" : "CASA DE COBRANZA"} · ${ENTITY_LABEL[c.entity_type] || ""}</div>
+      <div class="meta-line">${ENTITY_LABEL[c.entity_type] || ""}</div>
       <h2 style="margin-bottom:4px">${escapeHtml(c.name)}</h2>
       <span class="badge ${STATUS_CLASS[c.status]}">${STATUS_LABEL[c.status]}</span>
       <div class="review-grid">

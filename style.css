@@ -5092,3 +5092,16 @@ tr.row-muted td { opacity: .55; }
 .hero-mini-stats .clickable:hover, .info-stat.clickable:hover { background: var(--blue-light); transform: translateY(-2px); }
 .modality-steps { margin: 16px 0 6px; padding-left: 20px; display: grid; gap: 10px; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
 .modality-steps li::marker { color: var(--gold); font-weight: 800; }
+
+/* =========================================================
+   TEXTO MÁS NATURAL: sin antetítulos en mayúsculas
+   ========================================================= */
+.section-kicker, .chart-kicker, .topbar-kicker { display: none !important; }
+.meta-line { margin-bottom: 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.meta-line strong { color: var(--navy); font-size: 13px; }
+.spotlight-kicker { font-family: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0; opacity: .9; }
+.cd-label, .test-lot-timer small, .auction-timer small, .spotlight-timer small, .offer-group-timer small,
+.auction-banner small, .offer-auction-strip small, .op-parties small, .market-card-stats small, .metric-caption {
+  text-transform: none !important; letter-spacing: 0 !important; font-family: inherit !important; font-size: 11px !important;
+}
+.auction-banner-state { font-family: inherit; letter-spacing: .02em; text-transform: none; }
