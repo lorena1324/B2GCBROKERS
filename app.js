@@ -30,7 +30,7 @@ const appState = {
   offers: [],
   uploadedDocuments: [],
   decisions: {},  // { idOferta: "Aceptada" | "Rechazada" } — decisión del vendedor
-  favorites: [],  // lotes marcados con ★ por el comprador
+  favorites: [],  // lotes que el comprador marcó como favoritos
   operations: []  // operaciones en cierre (ver cierre.js)
 };
 
@@ -367,7 +367,7 @@ function buildSidebar() {
 
   if (appState.realMode) {
     const seller = currentRole === "vendedor";
-    const link = (page, icon, label, active) => `<a href="#" class="${active ? "active" : ""}" onclick="navigate(event,'${page}')"><span>${icon}</span> ${label}</a>`;
+    const link = (page, icon, label, active) => `<a href="#" class="${active ? "active" : ""}" onclick="navigate(event,'${page}')">${label}</a>`;
     nav.innerHTML = (seller ? [
       link("dashboard", "▦", "Dashboard", true), link("cartera", "◫", "Mis carteras"), link("publicar", "＋", "Publicar cartera"),
       link("subastas", "⏱", "Carteras en subasta"), link("ofertas", "↕", "Ofertas recibidas"), link("cierre", "✍", "Cierre de operaciones")
@@ -380,28 +380,28 @@ function buildSidebar() {
 
   if (currentRole === "vendedor") {
     nav.innerHTML = `
-      <a href="#" class="active" onclick="navigate(event,'dashboard')"><span>▦</span> Dashboard</a>
-      <a href="#" onclick="navigate(event,'cartera')"><span>◫</span> Mis carteras</a>
-      <a href="#" onclick="navigate(event,'subastas')"><span>⏱</span> Carteras en subasta</a>
-      <a href="#" onclick="navigate(event,'ofertas')"><span>↕</span> Ofertas recibidas</a>
-      <a href="#" onclick="navigate(event,'oportunidades')"><span>◇</span> Casas de cobranza interesadas</a>
-      <a href="#" onclick="navigate(event,'negociaciones')"><span>⇄</span> Negociaciones</a>
-      <a href="#" onclick="navigate(event,'cierre')"><span>✍</span> Cierre de operaciones</a>
-      <a href="#" onclick="navigate(event,'documentos')"><span>□</span> Documentos</a>
-      <a href="#" onclick="navigate(event,'reportes')"><span>▥</span> Reportes</a>
-      <a href="#" onclick="navigate(event,'pruebas')"><span>✓</span> Pruebas</a>
+      <a href="#" class="active" onclick="navigate(event,'dashboard')">Dashboard</a>
+      <a href="#" onclick="navigate(event,'cartera')">Mis carteras</a>
+      <a href="#" onclick="navigate(event,'subastas')">Carteras en subasta</a>
+      <a href="#" onclick="navigate(event,'ofertas')">Ofertas recibidas</a>
+      <a href="#" onclick="navigate(event,'oportunidades')">Casas de cobranza interesadas</a>
+      <a href="#" onclick="navigate(event,'negociaciones')">Negociaciones</a>
+      <a href="#" onclick="navigate(event,'cierre')">Cierre de operaciones</a>
+      <a href="#" onclick="navigate(event,'documentos')">Documentos</a>
+      <a href="#" onclick="navigate(event,'reportes')">Reportes</a>
+      <a href="#" onclick="navigate(event,'pruebas')">Pruebas</a>
       <div class="sidebar-market-status"><div class="status-title">Mercado activo</div><p>47 casas de cobranza conectadas</p></div>`;
   } else {
     nav.innerHTML = `
-      <a href="#" class="active" onclick="navigate(event,'dashboard')"><span>▦</span> Dashboard</a>
-      <a href="#" onclick="navigate(event,'mercado')"><span>◇</span> Mercado</a>
-      <a href="#" onclick="navigate(event,'subastas')"><span>⏱</span> Carteras en subasta</a>
-      <a href="#" onclick="navigate(event,'ofertas')"><span>⇄</span> Mis ofertas</a>
-      <a href="#" onclick="navigate(event,'cierre')"><span>✍</span> Cierre de operaciones</a>
-      <a href="#" onclick="navigate(event,'adjudicaciones')"><span>✓</span> Adjudicaciones</a>
-      <a href="#" onclick="navigate(event,'dataroom')"><span>□</span> Data room</a>
-      <a href="#" onclick="navigate(event,'reportes')"><span>▥</span> Reportes</a>
-      <a href="#" onclick="navigate(event,'pruebas')"><span>✓</span> Pruebas</a>
+      <a href="#" class="active" onclick="navigate(event,'dashboard')">Dashboard</a>
+      <a href="#" onclick="navigate(event,'mercado')">Mercado</a>
+      <a href="#" onclick="navigate(event,'subastas')">Carteras en subasta</a>
+      <a href="#" onclick="navigate(event,'ofertas')">Mis ofertas</a>
+      <a href="#" onclick="navigate(event,'cierre')">Cierre de operaciones</a>
+      <a href="#" onclick="navigate(event,'adjudicaciones')">Adjudicaciones</a>
+      <a href="#" onclick="navigate(event,'dataroom')">Data room</a>
+      <a href="#" onclick="navigate(event,'reportes')">Reportes</a>
+      <a href="#" onclick="navigate(event,'pruebas')">Pruebas</a>
       <div class="sidebar-market-status"><div class="status-title">Mercado activo</div><p>32 oportunidades disponibles</p></div>`;
   }
 }
@@ -438,11 +438,11 @@ function renderDashboard() {
   const isOriginator = currentRole === "vendedor";
   const roleData = isOriginator ? {
     kicker: "VISTA GENERAL · ENTIDAD VENDEDORA",
-    title: "Controla tu cartera y tus procesos de venta.",
+    title: "Tus carteras y las ofertas que han recibido",
     description: "Publica la cartera de tu banco, fintech o cooperativa; B²GC la lleva a las casas de cobranza, gestiona la subasta y acompaña el cierre."
   } : {
     kicker: "VISTA GENERAL · CASA DE COBRANZA",
-    title: "Encuentra, analiza y oferta en nuevas oportunidades.",
+    title: "Carteras disponibles y tus ofertas",
     description: "Explora la cartera que bancos, fintech y cooperativas publican a través de B²GC, revisa data rooms, oferta y sigue tus adjudicaciones.",
     kpis: [
       ["Oportunidades disponibles", "32", "↗ 7 nuevas hoy", "navigate(null,'mercado')"],
@@ -503,7 +503,7 @@ function renderOriginatorKpis() {
     <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'oportunidades')" title="Ver casas de cobranza interesadas">
       <div class="label">Visualizaciones</div>
       <div class="value">${fmtN(likes + favs + comments)}</div>
-      <div class="change" style="color:var(--muted)">♥ ${fmtN(likes)} likes · ★ ${fmtN(favs)} favoritos · ✎ ${fmtN(comments)} comentarios</div>
+      <div class="change" style="color:var(--muted)">${fmtN(likes)} me gusta, ${fmtN(favs)} favoritos y ${fmtN(comments)} comentarios</div>
     </div>
 
     <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'ofertas')" title="Ver ofertas recibidas">
@@ -531,15 +531,15 @@ function renderOriginatorCharts() {
   return `
     <div class="dashboard-chart-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <div class="dashboard-chart-card dashboard-chart-large">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">SUBASTAS</div><h3>Mejor oferta vs. tu tarifa</h3><p>La línea dorada marca la tarifa mínima que fijaste para cada lote.</p></div><button class="chart-period" onclick="navigate(null,'ofertas')">Ver ofertas →</button></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">SUBASTAS</div><h3>Mejor oferta vs. tu tarifa</h3><p>La línea dorada marca la tarifa mínima que fijaste para cada lote.</p></div><button class="chart-period" onclick="navigate(null,'ofertas')">Ver ofertas</button></div>
         ${renderReserveChart(originatorLots)}
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">TU PORTAFOLIO</div><h3>Distribución por tipo</h3></div><button class="chart-period" onclick="navigate(null,'cartera')">Mis carteras →</button></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">TU PORTAFOLIO</div><h3>Distribución por tipo</h3></div><button class="chart-period" onclick="navigate(null,'cartera')">Mis carteras</button></div>
         ${svgDonut(donut, "126", "operaciones", "dv")}
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Estado de tus operaciones</h3></div><button class="chart-period" onclick="navigate(null,'cierre')">Cierre →</button></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Estado de tus operaciones</h3></div><button class="chart-period" onclick="navigate(null,'cierre')">Cierre</button></div>
         ${renderStatusBars(statuses)}
       </div>
     </div>`;
@@ -555,7 +555,7 @@ function renderDashboardCharts(role) {
         ${renderBuyerProcess()}
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">MERCADO DISPONIBLE</div><h3>Tipos de oportunidad</h3></div><button class="chart-period" onclick="navigate(null,'mercado')">Ver mercado →</button></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">MERCADO DISPONIBLE</div><h3>Tipos de oportunidad</h3></div><button class="chart-period" onclick="navigate(null,'mercado')">Ver mercado</button></div>
         ${svgDonut(donut, "32", "oportunidades", "dc")}
       </div>
       <div class="dashboard-chart-card">
@@ -563,7 +563,7 @@ function renderDashboardCharts(role) {
         <div class="activity-chart">${renderActivityBars(role)}</div>
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Tu pipeline de compra</h3></div><button class="chart-period" onclick="navigate(null,'ofertas')">Mis ofertas →</button></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Tu pipeline de compra</h3></div><button class="chart-period" onclick="navigate(null,'ofertas')">Mis ofertas</button></div>
         ${renderStatusBars(statuses)}
       </div>
     </div>`;
@@ -1026,7 +1026,7 @@ function renderSellerOffersPage() {
               <td>${fmtWhen(b)}</td>
               <td>${op
                 ? (op.offerId === b.id
-                  ? `<span class="badge badge-green">Adjudicada · ${op.id}</span> <button class="btn-text" onclick="openOperation('${op.id}')">Ver cierre →</button>`
+                  ? `<span class="badge badge-green">Adjudicada · ${op.id}</span> <button class="btn-text" onclick="openOperation('${op.id}')">Ver cierre</button>`
                   : '<span class="badge">No adjudicada</span>')
                 : b.decision
                   ? `<span class="badge ${b.decision === "Aceptada" ? "badge-green" : "badge-red"}">${b.decision}</span> <button class="btn-text" onclick="decideOffer('${b.id}',null)">Deshacer</button>`
@@ -1045,7 +1045,7 @@ function renderBuyerOffersPage() {
         <div class="section-kicker">ACTIVIDAD DEL COMPRADOR</div>
         <h2>Mis ofertas</h2>
         <div class="page-placeholder"><strong>Aún no has ofertado</strong><span>Entra a una cartera en subasta y usa “Presentar oferta”. Aquí verás todas las ofertas del lote, de la más alta a la más baja, con los demás postores en anónimo.</span>
-          <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'subastas')">Ver carteras en subasta →</button></div>
+          <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'subastas')">Ver carteras en subasta</button></div>
       </div>`;
   }
 

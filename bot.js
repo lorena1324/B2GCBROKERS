@@ -33,11 +33,11 @@ function buildBot() {
   root.id = "bot-root";
   root.innerHTML = `
     <button type="button" id="bot-fab" class="bot-fab" onclick="toggleBot()" aria-label="Abrir asistente de carteras">
-      <span class="bot-fab-icon">✦</span><span class="bot-fab-text">¿Qué cartera me sirve?</span>
+      <span class="bot-fab-text">Ayuda para elegir cartera</span>
     </button>
     <section id="bot-panel" class="bot-panel hidden" role="dialog" aria-label="Asistente de carteras">
       <header class="bot-head">
-        <div class="bot-avatar">✦</div>
+        <div class="bot-avatar">B²</div>
         <div><strong>Asistente B²GC</strong><span>Te ayudo a elegir cartera</span></div>
         <button type="button" class="bot-x" onclick="toggleBot()" aria-label="Cerrar">×</button>
       </header>
@@ -104,7 +104,7 @@ async function botStart() {
   BOT.answers = {}; BOT.step = 0;
   $("#bot-msgs").innerHTML = "";
   await botTyping(300);
-  botSay("Hola 👋 Soy el asistente de B²GC. Con cuatro preguntas te muestro las carteras que mejor encajan contigo.");
+  botSay("Hola, soy el asistente de B²GC. Con cuatro preguntas te muestro las carteras que mejor encajan contigo.");
   botSay('También puedes escribirme todo junto, por ejemplo: <em>“libranza, 3.000 millones, conservador”</em>.');
   botAsk();
 }

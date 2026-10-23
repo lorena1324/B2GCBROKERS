@@ -203,7 +203,7 @@ function renderClosingPage() {
       ${mine.length ? `<div class="op-list">${mine.map(opCard).join("")}</div>` : `
         <div class="page-placeholder"><strong>Aún no hay operaciones en cierre</strong>
           <span>${seller ? "Ve a “Ofertas recibidas” y adjudica una oferta para abrir el cierre." : "Cuando un vendedor adjudique tu oferta, la operación aparecerá aquí."}</span>
-          <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'${seller ? "ofertas" : "subastas"}')">${seller ? "Ir a ofertas recibidas" : "Ver carteras en subasta"} →</button></div>`}
+          <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'${seller ? "ofertas" : "subastas"}')">${seller ? "Ir a ofertas recibidas" : "Ver carteras en subasta"}</button></div>`}
     </div>`;
 }
 
@@ -274,7 +274,7 @@ function openOperation(opId) {
           return `<li class="${rec ? "done" : current ? "current" : ""}">
             <span class="op-step-dot">${rec ? "✓" : i + 1}</span>
             <div><strong>${s.label}</strong><small>${rec ? `${escapeHtml(rec.at)} · ${escapeHtml(rec.by)}${rec.signer ? ` · firmó ${escapeHtml(rec.signer)}` : ""}${rec.reference ? ` · ref. ${escapeHtml(rec.reference)}` : ""}` : `Responsable: ${ROLE[s.role].el}`}</small>
-              ${rec?.file ? `<button class="btn-text" onclick="openSignedFile('operation-docs','${escapeHtml(rec.file)}')">Ver documento adjunto →</button>` : ""}
+              ${rec?.file ? `<button class="btn-text" onclick="openSignedFile('operation-docs','${escapeHtml(rec.file)}')">Ver documento adjunto</button>` : ""}
               ${current ? (myTurn ? stepForm(op, s) : waitingBox(op, s)) : ""}
             </div>
           </li>`;
@@ -312,7 +312,7 @@ function stepForm(op, s) {
       ${fields}
       ${appState.realMode ? `<label class="offer-field"><span>${{ firma: "Contrato firmado (PDF, opcional)", pago: "Comprobante de pago (PDF o imagen) *" }[s.kind] || "Soporte (opcional)"}</span><input id="op-file" type="file" accept=".pdf,.png,.jpg,.jpeg"></label>` : ""}
       <div id="op-error" class="offer-alert warn hidden"></div>
-      <button class="btn btn-navy btn-small" onclick="submitStep('${op.id}','${s.key}')">${s.action} →</button>
+      <button class="btn btn-navy btn-small" onclick="submitStep('${op.id}','${s.key}')">${s.action}</button>
     </div>`;
 }
 
@@ -356,7 +356,7 @@ function simulateCounterparty(opId) {
 function afterStep(res) {
   if (res.error) { showToast(res.error); return; }
   const step = nextStep(res.op);
-  showToast(res.closed ? `🎉 ${res.op.id} cerrada con éxito.` : `Listo. Siguiente paso: ${step.label} (${ROLE[step.role].el}).`);
+  showToast(res.closed ? `${res.op.id} cerrada con éxito.` : `Listo. Siguiente paso: ${step.label} (${ROLE[step.role].el}).`);
   rerenderCurrent();
   openOperation(res.op.id);
 }

@@ -118,7 +118,7 @@ function fmtWhen(b) {
 function ownStatusBadge(b) {
   const op = typeof operationForLot === "function" && operationForLot(b.lotId);
   if (op) return op.offerId === b.id
-    ? `<span class="badge badge-green">Adjudicada</span> <button class="btn-text" onclick="openOperation('${op.id}')">Ir al cierre →</button>`
+    ? `<span class="badge badge-green">Adjudicada</span> <button class="btn-text" onclick="openOperation('${op.id}')">Ir al cierre</button>`
     : '<span class="badge badge-red">No adjudicada</span>';
   if (b.decision === "Aceptada") return '<span class="badge badge-green">Aceptada por el vendedor</span>';
   if (b.decision === "Rechazada") return '<span class="badge badge-red">Rechazada</span>';
@@ -217,8 +217,8 @@ function spotlightCards(pool) {
         <div class="spotlight-timer"><small>${cdLabel(id)}</small>${cdHtml(id, "big")}</div>
       </div>`;
   };
-  if (topId === soonId) return `<div class="spotlight-grid single">${card(topId, "🔥 La más vendida y la que vence más rápido", "urgent")}</div>`;
-  return `<div class="spotlight-grid">${card(topId, "🔥 La más vendida", "hot")}${card(soonId, "⏱ La que vence más rápido", "urgent")}</div>`;
+  if (topId === soonId) return `<div class="spotlight-grid single">${card(topId, "La más vendida y la que vence más rápido", "urgent")}</div>`;
+  return `<div class="spotlight-grid">${card(topId, "La más vendida", "hot")}${card(soonId, "La que vence más rápido", "urgent")}</div>`;
 }
 
 function renderMarketPage(title, description) {
@@ -244,16 +244,16 @@ function renderMarketPage(title, description) {
       <p>${description} Tus favoritas (★) siempre aparecen arriba.</p>
       ${spotlightCards(buyerOpportunities)}
       ${typeFilter ? typeFilterChip() : ""}
-      <div class="sort-chips">${chip("populares", "Más vendidas")}${chip("vence", "Vencen primero")}${chip("valor", "Mayor valor")}${chip("favoritas", `★ Favoritas (${fav.size})`)}</div>
+      <div class="sort-chips">${chip("populares", "Más vendidas")}${chip("vence", "Vencen primero")}${chip("valor", "Mayor valor")}${chip("favoritas", `Favoritas (${fav.size})`)}</div>
       ${items.length ? `<div class="test-lot-grid market-grid">${items.map(lot => {
         const top = topBid(lot.id);
         return `
           <article class="test-lot-card market-card clickable ${fav.has(lot.id) ? "is-fav" : ""}" role="button" tabindex="0" onclick="openDetail('${lot.id}')">
             <div class="market-card-top"><div class="lot-number">${lot.id}</div>${favButton(lot.id)}</div>
             <div class="market-card-tags">
-              ${lot.id === topId ? '<span class="chip chip-hot">🔥 Más vendida</span>' : ""}
-              ${lot.id === soonId ? '<span class="chip chip-urgent">⏱ Vence primero</span>' : ""}
-              ${fav.has(lot.id) ? '<span class="chip chip-fav">★ Favorita</span>' : ""}
+              ${lot.id === topId ? '<span class="chip chip-hot">Más vendida</span>' : ""}
+              ${lot.id === soonId ? '<span class="chip chip-urgent">Vence primero</span>' : ""}
+              ${fav.has(lot.id) ? '<span class="chip chip-fav">Favorita</span>' : ""}
             </div>
             <h3>${lot.title}</h3>
             <span>${lot.type} · ${lot.modality}</span>
@@ -264,7 +264,7 @@ function renderMarketPage(title, description) {
               <div><small>Postores</small><b>${bidderCount(lot.id)}</b></div>
               <div><small>Ofertas</small><b>${bidsFor(lot.id).length}</b></div>
             </div>
-            <button class="btn btn-navy btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">Entrar a la subasta →</button>
+            <button class="btn btn-navy btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">Entrar a la subasta</button>
           </article>`;
       }).join("")}</div>` : typeFilter && marketSort !== "favoritas"
         ? `<div class="page-placeholder"><strong>No hay carteras de tipo ${escapeHtml(typeFilter)} ahora</strong><span>Quita el filtro para ver todo el mercado.</span><button class="btn btn-ghost btn-small" style="margin-top:12px" onclick="clearTypeFilter()">Ver todo</button></div>`
@@ -295,7 +295,7 @@ function auctionCard(lot, seller) {
         ${seller ? `<div><small>Tarifa</small><b>${reserve}%</b></div>` : `<div><small>Ofertas</small><b>${bidsFor(lot.id).length}</b></div>`}
       </div>
       ${seller && top ? `<div style="margin-top:10px">${reserveBadge(top.percent, reserve, true)}</div>` : ""}
-      <button class="btn btn-navy btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">${seller ? "Ver subasta" : "Entrar a la subasta"} →</button>
+      <button class="btn btn-navy btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">${seller ? "Ver subasta" : "Entrar a la subasta"}</button>
     </article>`;
 }
 

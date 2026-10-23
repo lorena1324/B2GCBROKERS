@@ -161,7 +161,7 @@ function openRegister(role) {
         <span>Autorizo el tratamiento de los datos y documentos con fines de verificación (Ley 1581 de 2012).</span>
       </label>
 
-      <button type="button" class="btn btn-navy" style="width:100%;" id="reg-submit" onclick="submitRegistration()">Crear cuenta →</button>
+      <button type="button" class="btn btn-navy" style="width:100%;" id="reg-submit" onclick="submitRegistration()">Crear cuenta</button>
       <p class="modal-switch">¿Ya tienes cuenta? <button type="button" class="btn-text" onclick="closeRegister();openAuth('login')">Inicia sesión</button></p>
     </div>`;
   overlay.addEventListener("click", e => { if (e.target === overlay) closeRegister(); });
@@ -197,7 +197,7 @@ async function submitRegistration() {
   const btn = $("#reg-submit");
   btn.disabled = true; btn.textContent = "Creando cuenta…";
   const res = await realSignUp(data); // real.js
-  if (res.error) { btn.disabled = false; btn.textContent = "Crear cuenta →"; showToast(res.error); return; }
+  if (res.error) { btn.disabled = false; btn.textContent = "Crear cuenta"; showToast(res.error); return; }
   if (res.session) return;
 
   $("#register-overlay .register-modal").innerHTML = `
@@ -511,7 +511,7 @@ function adminHeader() {
       </nav>
       <div class="admin-top-right">
         <span class="admin-user">${escapeHtml(ADMIN_ACCOUNT.name)}</span>
-        <button class="btn btn-ghost btn-small" onclick="closeAdminPanel()">← Salir</button>
+        <button class="btn btn-ghost btn-small" onclick="closeAdminPanel()">Salir</button>
       </div>
     </header>`;
 }
@@ -595,7 +595,7 @@ function renderAdminAnalytics(shell) {
       </div>
 
       <div class="ai-card">
-        <div class="ai-card-head"><div class="ai-avatar">✦</div><div><strong>Asistente IA · tiempos y conversión</strong><span>Análisis automático del histórico y de las subastas en curso (modelo de reglas sobre datos demo)</span></div></div>
+        <div class="ai-card-head"><div class="ai-avatar">B²</div><div><strong>Lectura automática de tiempos y conversión</strong><span>Análisis automático del histórico y de las subastas en curso (modelo de reglas sobre datos demo)</span></div></div>
         <div class="ai-insights">${aiInsights(live).map(i => `<div class="ai-insight ${i.tone}"><b>${icon[i.tone]}</b><div><strong>${escapeHtml(i.title)}</strong><span>${escapeHtml(i.text)}</span></div></div>`).join("")}</div>
       </div>
 

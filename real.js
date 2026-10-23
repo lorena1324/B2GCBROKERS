@@ -63,7 +63,7 @@ async function realSignIn(email, password) {
   const btn = $("#auth-overlay .btn-navy");
   if (btn) { btn.disabled = true; btn.textContent = "Entrando…"; }
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (btn) { btn.disabled = false; btn.textContent = "Entrar a la plataforma →"; }
+  if (btn) { btn.disabled = false; btn.textContent = "Entrar a la plataforma"; }
   if (error) { showToast(friendlyError(error)); return; }
   closeAuth();
   await afterRealLogin(data.user);
@@ -117,7 +117,7 @@ async function enterRealApp() {
   const toggle = $(".role-toggle");
   if (toggle) toggle.style.display = "none";
   const back = $(".logout-btn");
-  if (back) { back.textContent = "← Cerrar sesión"; back.setAttribute("onclick", "realSignOut()"); }
+  if (back) { back.textContent = "Cerrar sesión"; back.setAttribute("onclick", "realSignOut()"); }
 
   await loadRealData();
   setRole(currentRole);
@@ -272,7 +272,7 @@ async function realAdvance(opCode, key, payload, fileInput) {
   await loadRealData();
   const updated = opById(opCode);
   const next = updated && nextStep(updated);
-  showToast(updated?.status === "Cerrada" ? `🎉 ${opCode} cerrada con éxito.` : `Listo. Siguiente paso: ${next?.label}.`);
+  showToast(updated?.status === "Cerrada" ? `${opCode} cerrada con éxito.` : `Listo. Siguiente paso: ${next?.label}.`);
   rerenderCurrent();
   openOperation(opCode);
 }
@@ -401,7 +401,7 @@ function renderPublishForm() {
       <div class="field"><label for="pf-desc">Descripción para los compradores</label><textarea id="pf-desc" rows="3" placeholder="Antigüedad de mora, ciudades, estado de soportes…"></textarea></div>
       <div class="field"><label for="pf-files">Archivos del data room (opcional, máx. 20 MB cada uno)</label><input id="pf-files" type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.zip"></div>
       <div class="offer-actions" style="justify-content:flex-start">
-        <button class="btn btn-navy" id="pf-submit" onclick="submitPortfolio()">Publicar cartera →</button>
+        <button class="btn btn-navy" id="pf-submit" onclick="submitPortfolio()">Publicar cartera</button>
         <button class="btn btn-ghost" onclick="navigate(null,'cartera')">Cancelar</button>
       </div>
     </div>`;
@@ -426,7 +426,7 @@ async function submitPortfolio() {
   const btn = $("#pf-submit");
   btn.disabled = true; btn.textContent = "Publicando…";
   const p = await rpcOrToast("create_portfolio", data);
-  if (!p) { btn.disabled = false; btn.textContent = "Publicar cartera →"; return; }
+  if (!p) { btn.disabled = false; btn.textContent = "Publicar cartera"; return; }
   let failed = 0;
   for (const f of files) {
     try { await uploadTo("portfolio-docs", `${p.id}/${safeName(f.name)}`, f); } catch { failed++; }
@@ -523,7 +523,7 @@ function renderRealDashboard() {
     <div class="dashboard-welcome reveal visible">
       <div style="margin-bottom:25px;">
         <div class="section-kicker">${seller ? "ENTIDAD VENDEDORA" : "CASA DE COBRANZA"} · ${escapeHtml(real.company.name)}</div>
-        <h2 style="font-size:30px;letter-spacing:-1px;color:var(--navy);margin-top:5px;">${seller ? "Tu cartera, en manos de las casas de cobranza correctas." : "Encuentra cartera y cierra operaciones con respaldo."}</h2>
+        <h2 style="font-size:30px;letter-spacing:-1px;color:var(--navy);margin-top:5px;">${seller ? "Tus carteras y las ofertas que han recibido" : "Carteras disponibles y tus ofertas"}</h2>
         <p style="color:var(--muted);font-size:13px;margin-top:5px;">${seller ? "Publica carteras, revisa ofertas y cierra con B²GC Brokers como intermediario." : "Oferta en las carteras que publican bancos, fintech y cooperativas a través de B²GC Brokers."}</p>
         ${seller ? `<button class="btn btn-navy btn-small" style="margin-top:14px" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
       </div>
@@ -535,7 +535,7 @@ function renderRealDashboard() {
             : renderBuyerProcess()}
         </div>
         <div class="dashboard-chart-card">
-          <div class="dashboard-chart-header"><div><div class="chart-kicker">${seller ? "TU PORTAFOLIO" : "MERCADO"}</div><h3>Por tipo de cartera</h3></div><button class="chart-period" onclick="navigate(null,'${seller ? "cartera" : "mercado"}')">Ver todo →</button></div>
+          <div class="dashboard-chart-header"><div><div class="chart-kicker">${seller ? "TU PORTAFOLIO" : "MERCADO"}</div><h3>Por tipo de cartera</h3></div><button class="chart-period" onclick="navigate(null,'${seller ? "cartera" : "mercado"}')">Ver todo</button></div>
           ${types.length ? svgDonut(types, String(pool.length), "carteras", "rd") : '<div class="page-placeholder"><strong>Sin carteras todavía</strong></div>'}
         </div>
         <div class="dashboard-chart-card">
