@@ -339,22 +339,37 @@ function renderBuyerProcess() {
 /* ===== Gráficas premium ===== */
 const CHART_COLORS = [["#60a5fa", "#2563eb"], ["#fcd34d", "#d89b2b"], ["#6ee7b7", "#12b76a"], ["#5b7bc0", "#102a56"], ["#c4b5fd", "#7c3aed"]];
 
+/* Dona en 3D: anillo inclinado con volumen (capas apiladas) y sombra */
 function svgDonut(data, centerValue, centerLabel, idp = "d") {
   const total = data.reduce((s, d) => s + d[1], 0);
-  const r = 72, C = 2 * Math.PI * r, gap = 3;
-  let acc = 0;
-  const segs = data.map(([label, value], i) => {
-    const len = C * value / total;
-    const seg = `<circle class="donut-seg" cx="100" cy="100" r="${r}" stroke="url(#${idp}${i})" stroke-dasharray="${Math.max(0, len - gap).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" style="animation-delay:${i * .1}s"><title>${label}: ${value}%</title></circle>`;
-    acc += len;
-    return seg;
-  }).join("");
+  const r = 72, C = 2 * Math.PI * r, gap = 3, DEPTH = 14, CY = 64;
+  const ring = (cls, colorOf) => {
+    let acc = 0;
+    return data.map(([label, value], i) => {
+      const len = C * value / total;
+      const seg = `<circle class="${cls}" cx="100" cy="100" r="${r}" stroke="${colorOf(i)}" stroke-dasharray="${Math.max(0, len - gap).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" style="animation-delay:${i * .12}s">${cls === "donut-seg" ? `<title>${label}: ${value}%</title>` : ""}</circle>`;
+      acc += len;
+      return seg;
+    }).join("");
+  };
+  const plane = d => `translate(0 ${d}) translate(100 ${CY}) scale(1 .62) translate(-100 -100)`;
+  const depth = ring("donut-depth", i => CHART_COLORS[i % 5][1]);
+  const layers = Array.from({ length: DEPTH }, (_, k) => DEPTH - k)
+    .map(d => `<g transform="${plane(d)}"><g transform="rotate(-90 100 100)">${depth}</g></g>`).join("");
   return `
-    <div class="donut-premium">
-      <svg viewBox="0 0 200 200" role="img" aria-label="${escapeHtml(centerValue + " " + centerLabel)}">
-        <defs>${data.map((_, i) => `<linearGradient id="${idp}${i}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${CHART_COLORS[i % 5][0]}"/><stop offset="100%" stop-color="${CHART_COLORS[i % 5][1]}"/></linearGradient>`).join("")}</defs>
-        <circle class="donut-track" cx="100" cy="100" r="${r}"></circle>
-        <g transform="rotate(-90 100 100)">${segs}</g>
+    <div class="donut-premium donut-3d">
+      <svg viewBox="0 0 200 150" role="img" aria-label="${escapeHtml(centerValue + " " + centerLabel)}">
+        <defs>
+          ${data.map((_, i) => `<linearGradient id="${idp}${i}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${CHART_COLORS[i % 5][0]}"/><stop offset="100%" stop-color="${CHART_COLORS[i % 5][1]}"/></linearGradient>`).join("")}
+          <radialGradient id="${idp}sh"><stop offset="0%" stop-color="#102a56" stop-opacity=".28"/><stop offset="100%" stop-color="#102a56" stop-opacity="0"/></radialGradient>
+        </defs>
+        <ellipse cx="100" cy="${CY + DEPTH + 8}" rx="92" ry="54" fill="url(#${idp}sh)"></ellipse>
+        <g class="donut-depth-layers">${layers}</g>
+        <g transform="${plane(0)}">
+          <circle class="donut-track" cx="100" cy="100" r="${r}"></circle>
+          <g transform="rotate(-90 100 100)">${ring("donut-seg", i => `url(#${idp}${i})`)}</g>
+          <circle class="donut-shine" cx="100" cy="100" r="${r}"></circle>
+        </g>
       </svg>
       <div class="donut-premium-center"><strong>${centerValue}</strong><span>${centerLabel}</span></div>
     </div>
