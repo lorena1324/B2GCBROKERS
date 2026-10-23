@@ -495,6 +495,20 @@ create policy "docs operación: ver las partes o admin" on storage.objects for s
     select 1 from public.operations o where o.id::text = (storage.foldername(name))[1]
       and (o.seller_company = public.my_company_id() or o.buyer_company = public.my_company_id()))));
 
+-- ---------------------------------------------------------
+-- PERMISOS DE LECTURA (RLS decide qué filas ve cada uno) y
+-- recarga de la API para que vea las tablas y funciones nuevas
+-- ---------------------------------------------------------
+grant usage on schema public to anon, authenticated;
+revoke all on public.admins, public.companies, public.portfolios, public.bids, public.operations, public.operation_steps from anon;
+grant select on public.admins, public.companies, public.portfolios, public.bids, public.operations, public.operation_steps to authenticated;
+notify pgrst, 'reload schema';
+
+-- Verificación: debe mostrar "B²GC instalado" y cuántas administradoras hay
+select 'B²GC instalado' as resultado,
+       (select count(*) from public.admins) as administradoras,
+       (select count(*) from pg_proc where proname in ('place_bid', 'adjudicate_bid', 'advance_operation')) as funciones_clave;
+
 -- =========================================================
 -- ÚLTIMO PASO: hacerte administradora de B²GC Brokers.
 -- 1) Authentication → Users → Add user → Create new user
