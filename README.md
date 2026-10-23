@@ -4,6 +4,31 @@ Prototipo front-end de B²GC Brokers preparado para pruebas manuales con datos c
 
 **Modelo de negocio:** B²GC Brokers es el intermediario. Los **bancos, fintech y cooperativas** (vendedores) publican su cartera; **B²GC Brokers** verifica a las empresas, gestiona la subasta y acompaña el cierre; las **casas de cobranza** (compradores) compran la cartera para gestionar su cobro.
 
+## Modo real (Supabase)
+
+La plataforma tiene dos modos:
+
+- **Real:** cualquier correo que no sea de demo entra con una cuenta real en Supabase. Los datos se comparten entre la entidad vendedora, la casa de cobranza y B²GC Brokers desde cualquier computador.
+- **Demo:** las cuentas `*@demo.b2gc.co` y `admin@b2gc.co` usan datos ficticios guardados solo en el navegador.
+
+### Puesta en marcha (una sola vez)
+
+1. En Supabase → **SQL Editor** → **New query**, pega todo `supabase/schema.sql` y pulsa **Run**.
+2. **Authentication → Users → Add user → Create new user**: tu correo de administradora, una contraseña y **Auto Confirm User**.
+3. En el SQL Editor ejecuta (con tu correo):
+   `insert into public.admins (user_id) select id from auth.users where email = 'TU_CORREO' on conflict do nothing;`
+4. **Authentication → URL Configuration**: Site URL y Redirect URL = la dirección donde publicas la web (por ejemplo GitHub Pages).
+
+### Flujo de una operación real
+
+1. La entidad vendedora (banco, fintech o cooperativa) y la casa de cobranza se registran, confirman su correo y suben RUT, Cámara de Comercio y cédula.
+2. B²GC Brokers entra con su cuenta de administradora y aprueba a las dos empresas.
+3. La entidad vendedora publica la cartera (con tarifa mínima, fechas y data room).
+4. La casa de cobranza oferta durante la ventana de la subasta.
+5. La entidad vendedora adjudica la oferta y se abre el cierre: firmas, pago (con comprobante), confirmación, entrega y paz y salvo.
+
+Todas las reglas (quién puede hacer qué, orden de los pasos, valor exacto del pago, tarifa oculta para compradores, postores anónimos) se validan en el servidor.
+
 ## Credenciales
 
 ### Administrador

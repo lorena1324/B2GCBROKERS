@@ -147,6 +147,7 @@ function toggleFavorite(lotId, event) {
 }
 
 function decideOffer(offerId, decision) {
+  if (appState.realMode) { realRejectBid(offerId, !decision); return; }
   if (!appState.decisions) appState.decisions = {};
   if (decision) appState.decisions[offerId] = decision;
   else delete appState.decisions[offerId];

@@ -5054,3 +5054,10 @@ tr.row-muted td { opacity: .55; }
 @media (max-width: 1000px) {
   .hero-scene { opacity: .45; -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.25), #000 70%); mask-image: linear-gradient(180deg, rgba(0,0,0,.25), #000 70%); }
 }
+
+/* Login: clientes reales y demo */
+.login-hint { margin: -4px 0 12px; color: var(--muted); font-size: 12px; }
+.demo-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.publish-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 18px; }
+.field select { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font: inherit; color: var(--ink); }
+@media (max-width: 900px) { .publish-grid { grid-template-columns: 1fr; } }

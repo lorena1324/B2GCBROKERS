@@ -172,6 +172,7 @@ function uiAdjudicate(offerId) {
 }
 
 function confirmAdjudicate(offerId) {
+  if (appState.realMode) { realAdjudicate(offerId); return; }
   const res = adjudicateOffer(offerId);
   $("#op-confirm-overlay")?.remove();
   if (res.error) { showToast(res.error); return; }
@@ -273,6 +274,7 @@ function openOperation(opId) {
           return `<li class="${rec ? "done" : current ? "current" : ""}">
             <span class="op-step-dot">${rec ? "✓" : i + 1}</span>
             <div><strong>${s.label}</strong><small>${rec ? `${escapeHtml(rec.at)} · ${escapeHtml(rec.by)}${rec.signer ? ` · firmó ${escapeHtml(rec.signer)}` : ""}${rec.reference ? ` · ref. ${escapeHtml(rec.reference)}` : ""}` : `Responsable: ${ROLE[s.role].el}`}</small>
+              ${rec?.file ? `<button class="btn-text" onclick="openSignedFile('operation-docs','${escapeHtml(rec.file)}')">Ver documento adjunto →</button>` : ""}
               ${current ? (myTurn ? stepForm(op, s) : waitingBox(op, s)) : ""}
             </div>
           </li>`;
@@ -283,7 +285,7 @@ function openOperation(opId) {
 
       <div class="offer-actions">
         ${currentRole === "vendedor" && op.status === "En cierre" && stepsDone(op) === 1 ? `<button class="btn btn-danger-soft" onclick="uiCancelOperation('${op.id}')">Deshacer adjudicación</button>` : ""}
-        ${op.steps.firmaComprador ? `<button class="btn btn-ghost" onclick="downloadOpDoc('${op.id}','contrato')">Descargar contrato</button>` : ""}
+        <button class="btn btn-ghost" onclick="downloadOpDoc('${op.id}','contrato')">${op.steps.firmaComprador ? "Descargar contrato" : "Descargar borrador del contrato"}</button>
         ${op.status === "Cerrada" ? `<button class="btn btn-navy" onclick="downloadOpDoc('${op.id}','acta')">Descargar acta de cierre</button>` : `<button class="btn btn-ghost" onclick="closeOperation()">Cerrar</button>`}
       </div>
     </div>`;
@@ -302,12 +304,13 @@ function stepForm(op, s) {
     <div class="offer-summary"><span>Valor a pagar</span><strong>${fmtM(op.value)}</strong></div>
     <label class="offer-field"><span>Referencia de la transferencia</span><input id="op-ref" type="text" placeholder="Ej: TRF-2026-00981"></label>
     <label class="offer-field"><span>Valor pagado (millones COP)</span><input id="op-amount" type="number" step="0.1" value="${op.value}"></label>
-    <small class="op-note">Demo: aquí solo se registra el pago; no se mueve dinero.</small>`;
+    <small class="op-note">${appState.realMode ? "Haz la transferencia desde tu banco a la cuenta de la entidad vendedora y registra aquí la referencia y el comprobante." : "Demo: aquí solo se registra el pago; no se mueve dinero."}</small>`;
   else fields = `<label class="consent"><input type="checkbox" id="op-accept"><span>${s.check}</span></label>`;
   return `
     <div class="op-form">
       <div class="chip chip-warn">Te toca a ti</div>
       ${fields}
+      ${appState.realMode ? `<label class="offer-field"><span>${{ firma: "Contrato firmado (PDF, opcional)", pago: "Comprobante de pago (PDF o imagen) *" }[s.kind] || "Soporte (opcional)"}</span><input id="op-file" type="file" accept=".pdf,.png,.jpg,.jpeg"></label>` : ""}
       <div id="op-error" class="offer-alert warn hidden"></div>
       <button class="btn btn-navy btn-small" onclick="submitStep('${op.id}','${s.key}')">${s.action} →</button>
     </div>`;
@@ -328,6 +331,11 @@ function submitStep(opId, key) {
     reference: $("#op-ref")?.value,
     amount: $("#op-amount")?.value
   };
+  if (appState.realMode) {
+    if (key === "pago" && !$("#op-file")?.files?.length) { showToast("Adjunta el comprobante de pago."); return; }
+    realAdvance(opId, key, payload, $("#op-file"));
+    return;
+  }
   const res = advanceOperation(opId, key, payload, currentRole);
   if (res.error) {
     const box = $("#op-error");
@@ -355,6 +363,7 @@ function afterStep(res) {
 
 function uiCancelOperation(opId) {
   if (!confirm("¿Deshacer la adjudicación? La subasta vuelve a quedar abierta.")) return;
+  if (appState.realMode) { realCancelOperation(opId); return; }
   const res = cancelOperation(opId);
   if (res.error) { showToast(res.error); return; }
   closeOperation();

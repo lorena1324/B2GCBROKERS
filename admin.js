@@ -101,12 +101,13 @@ function authenticate(email, password) {
     };
   }
 
-  // Cuentas demo (entorno de pruebas)
-  const demo = demoAccounts[currentRole];
-  if (demo && email === demo.email && password === demo.password) {
-    return { role: currentRole, company: demo.company, avatar: demo.avatar, demo: true, email };
+  // Cuentas demo (entorno de pruebas): el rol sale del correo
+  const entry = Object.entries(demoAccounts).find(([, a]) => a.email === email);
+  if (entry && password === entry[1].password) {
+    const [role, demo] = entry;
+    return { role, company: demo.company, avatar: demo.avatar, demo: true, email };
   }
-  return { error: `No encontramos esa cuenta. Prueba: ${demo.email} / ${demo.password}` };
+  return { error: entry ? "Contraseña incorrecta para la cuenta demo." : "No encontramos esa cuenta." };
 }
 
 function initials(name) {
@@ -116,11 +117,13 @@ function initials(name) {
 /* =========================================================
    REGISTRO DE EMPRESA
    ========================================================= */
-const regFiles = {}; // { rut: File, camara: File, cc: File }
+const ENTITY_OPTIONS = {
+  vendedor: [["banco", "Banco"], ["fintech", "Fintech"], ["cooperativa", "Cooperativa"], ["otro", "Otra entidad financiera"]],
+  comprador: [["casa_cobranza", "Casa de cobranza"], ["otro", "Otro comprador de cartera"]]
+};
 
 function openRegister() {
   $("#register-overlay")?.remove();
-  Object.keys(regFiles).forEach(k => delete regFiles[k]);
 
   const overlay = document.createElement("div");
   overlay.id = "register-overlay";
@@ -130,7 +133,7 @@ function openRegister() {
       <button type="button" class="modal-close" onclick="closeRegister()">×</button>
       <div class="modal-brand">B<span>2</span>GC</div>
       <h2>Registrar mi empresa</h2>
-      <p class="sub">Verificamos cada empresa antes de darle acceso. Cuando aprobemos tu solicitud, te asignaremos tu usuario.</p>
+      <p class="sub">Crea tu cuenta. Después de confirmar tu correo subirás el RUT, la Cámara de Comercio y la cédula del representante legal; B²GC Brokers revisa y aprueba tu empresa.</p>
 
       <div class="role-pick" id="reg-role-pick">
         <div class="role-opt active" data-role="vendedor" onclick="pickRegRole(this)">
@@ -142,27 +145,15 @@ function openRegister() {
       </div>
 
       <div class="form-grid">
+        <div class="field"><label for="reg-entity">Tipo de entidad *</label><select id="reg-entity">${ENTITY_OPTIONS.vendedor.map(o => `<option value="${o[0]}">${o[1]}</option>`).join("")}</select></div>
         <div class="field"><label for="reg-name">Razón social *</label><input id="reg-name" type="text" placeholder="Mi Empresa S.A.S."></div>
         <div class="field"><label for="reg-nit">NIT *</label><input id="reg-nit" type="text" inputmode="numeric" placeholder="900.123.456-7"></div>
         <div class="field"><label for="reg-contact">Representante legal *</label><input id="reg-contact" type="text" placeholder="Nombre completo"></div>
         <div class="field"><label for="reg-city">Ciudad</label><input id="reg-city" type="text" placeholder="Bogotá"></div>
-        <div class="field"><label for="reg-email">Correo corporativo *</label><input id="reg-email" type="email" placeholder="nombre@empresa.com"></div>
         <div class="field"><label for="reg-phone">Celular / WhatsApp *</label><input id="reg-phone" type="tel" placeholder="300 000 0000"></div>
-      </div>
-
-      <div class="doc-upload-title">Documentos en PDF <span>(máx. 3 MB cada uno)</span></div>
-      <div class="doc-upload-list">
-        ${REQUIRED_DOCS.map(d => `
-          <label class="doc-upload" id="reg-doc-${d.key}">
-            <input type="file" accept="application/pdf,.pdf" onchange="pickRegFile('${d.key}', this)">
-            <div class="doc-upload-icon">PDF</div>
-            <div class="doc-upload-text">
-              <strong>${d.label} *</strong>
-              <span class="doc-upload-hint">${d.hint}</span>
-              <span class="doc-upload-file" id="reg-file-${d.key}">Haz clic para seleccionar el archivo</span>
-            </div>
-            <div class="doc-upload-check" id="reg-check-${d.key}">✓</div>
-          </label>`).join("")}
+        <div class="field"><label for="reg-email">Correo corporativo *</label><input id="reg-email" type="email" placeholder="nombre@empresa.com" autocomplete="email"></div>
+        <div class="field"><label for="reg-password">Contraseña * <small>(mín. 8 caracteres)</small></label><input id="reg-password" type="password" autocomplete="new-password"></div>
+        <div class="field"><label for="reg-password2">Confirmar contraseña *</label><input id="reg-password2" type="password" autocomplete="new-password"></div>
       </div>
 
       <label class="consent">
@@ -170,8 +161,8 @@ function openRegister() {
         <span>Autorizo el tratamiento de los datos y documentos con fines de verificación (Ley 1581 de 2012).</span>
       </label>
 
-      <button type="button" class="btn btn-navy" style="width:100%;" id="reg-submit" onclick="submitRegistration()">Enviar solicitud →</button>
-      <p class="modal-switch">¿Ya tienes usuario? <button type="button" class="btn-text" onclick="closeRegister();openAuth('login')">Inicia sesión</button></p>
+      <button type="button" class="btn btn-navy" style="width:100%;" id="reg-submit" onclick="submitRegistration()">Crear cuenta →</button>
+      <p class="modal-switch">¿Ya tienes cuenta? <button type="button" class="btn-text" onclick="closeRegister();openAuth('login')">Inicia sesión</button></p>
     </div>`;
   overlay.addEventListener("click", e => { if (e.target === overlay) closeRegister(); });
   document.body.appendChild(overlay);
@@ -182,77 +173,39 @@ function closeRegister() { $("#register-overlay")?.remove(); }
 function pickRegRole(el) {
   $$("#reg-role-pick .role-opt").forEach(o => o.classList.remove("active"));
   el.classList.add("active");
-}
-
-function pickRegFile(key, input) {
-  const file = input.files?.[0];
-  const label = $(`#reg-file-${key}`);
-  const box = $(`#reg-doc-${key}`);
-  delete regFiles[key];
-  box.classList.remove("done", "error");
-
-  if (!file) { label.textContent = "Haz clic para seleccionar el archivo"; return; }
-
-  const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
-  if (!isPdf) { label.textContent = "Solo se aceptan archivos PDF."; box.classList.add("error"); input.value = ""; return; }
-  if (file.size > MAX_PDF) { label.textContent = `Pesa ${formatFileSize(file.size)}; el máximo es 3 MB.`; box.classList.add("error"); input.value = ""; return; }
-
-  regFiles[key] = file;
-  label.textContent = `${file.name} · ${formatFileSize(file.size)}`;
-  box.classList.add("done");
+  const select = $("#reg-entity");
+  if (select) select.innerHTML = ENTITY_OPTIONS[el.dataset.role].map(o => `<option value="${o[0]}">${o[1]}</option>`).join("");
 }
 
 async function submitRegistration() {
   const v = id => ($(id)?.value || "").trim();
   const role = $("#reg-role-pick .role-opt.active")?.dataset.role || "vendedor";
   const data = {
-    name: v("#reg-name"), nit: v("#reg-nit"), contactName: v("#reg-contact"),
-    city: v("#reg-city"), email: v("#reg-email").toLowerCase(), phone: v("#reg-phone")
+    role, entityType: v("#reg-entity"), name: v("#reg-name"), nit: v("#reg-nit"), contactName: v("#reg-contact"),
+    city: v("#reg-city"), email: v("#reg-email").toLowerCase(), phone: v("#reg-phone"), password: $("#reg-password")?.value || ""
   };
 
   if (!data.name || !data.nit || !data.contactName || !data.email || !data.phone) { showToast("Completa los campos obligatorios (*)."); return; }
   if (!/^\S+@\S+\.\S+$/.test(data.email)) { showToast("Revisa el formato del correo."); return; }
-  const nitDigits = data.nit.replace(/\D/g, "");
-  if (nitDigits.length < 8) { showToast("El NIT parece incompleto."); return; }
-  for (const d of REQUIRED_DOCS) {
-    if (!regFiles[d.key]) { showToast(`Falta adjuntar: ${d.label}.`); return; }
-  }
+  if (data.nit.replace(/\D/g, "").length < 8) { showToast("El NIT parece incompleto."); return; }
+  if (data.password.length < 8) { showToast("La contraseña debe tener al menos 8 caracteres."); return; }
+  if (data.password !== ($("#reg-password2")?.value || "")) { showToast("Las contraseñas no coinciden."); return; }
   if (!$("#reg-consent")?.checked) { showToast("Debes autorizar el tratamiento de datos."); return; }
-
-  const list = loadCompanies();
-  const dup = list.find(c => c.nitDigits === nitDigits || c.email === data.email || (c.user && c.user.email === data.email));
-  if (dup) { showToast(dup.status === "aprobada" ? "Esa empresa ya tiene usuario. Inicia sesión." : "Ya existe una solicitud con ese NIT o correo."); return; }
+  if (isDemoEmail(data.email)) { showToast("Ese correo es de una cuenta demo. Usa el correo real de tu empresa."); return; }
 
   const btn = $("#reg-submit");
-  btn.disabled = true; btn.textContent = "Enviando…";
-
-  const id = "EMP-" + String(list.length + 1).padStart(4, "0");
-  try {
-    const docs = {};
-    for (const d of REQUIRED_DOCS) {
-      const f = regFiles[d.key];
-      await putFile(`${id}:${d.key}`, f);
-      docs[d.key] = { name: f.name, size: f.size };
-    }
-    list.push({
-      id, role, ...data, nitDigits, status: "pendiente",
-      createdAt: new Date().toISOString(), docs, user: null, reviewNote: "", reviewedAt: null
-    });
-    saveCompanies(list);
-  } catch (err) {
-    console.error(err);
-    btn.disabled = false; btn.textContent = "Enviar solicitud →";
-    showToast("No fue posible guardar los archivos en este navegador.");
-    return;
-  }
+  btn.disabled = true; btn.textContent = "Creando cuenta…";
+  const res = await realSignUp(data); // real.js
+  if (res.error) { btn.disabled = false; btn.textContent = "Crear cuenta →"; showToast(res.error); return; }
+  if (res.session) return;
 
   $("#register-overlay .register-modal").innerHTML = `
     <div class="register-success">
       <div class="success-mark">✓</div>
-      <h2>Solicitud recibida</h2>
-      <p>Radicado <strong>${id}</strong>. Nuestro equipo revisará los documentos de <strong>${escapeHtml(data.name)}</strong> y te asignará un usuario.</p>
-      <p class="muted">Te avisaremos al correo ${escapeHtml(data.email)} o al WhatsApp registrado.</p>
-      <button type="button" class="btn btn-navy" onclick="closeRegister()">Entendido</button>
+      <h2>Revisa tu correo</h2>
+      <p>Enviamos un enlace de confirmación a <strong>${escapeHtml(data.email)}</strong>.</p>
+      <p class="muted">Ábrelo, vuelve aquí e inicia sesión para subir los documentos de <strong>${escapeHtml(data.name)}</strong>. B²GC Brokers los revisará y aprobará tu empresa.</p>
+      <button type="button" class="btn btn-navy" onclick="closeRegister();openAuth('login')">Ir a iniciar sesión</button>
     </div>`;
 }
 

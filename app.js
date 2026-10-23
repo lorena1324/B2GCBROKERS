@@ -100,6 +100,10 @@ function loadDemoState() {
 }
 
 function saveDemoState() {
+  if (appState.realMode) { // en modo real los datos viven en Supabase; aquí solo las favoritas
+    try { localStorage.setItem(`b2gc_real_favs_${real.user?.id}`, JSON.stringify(appState.favorites || [])); } catch { }
+    return;
+  }
   localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites, operations: appState.operations }));
 }
 
@@ -213,6 +217,15 @@ function openAuth(mode = "login") {
   setTimeout(() => { const email = $("#auth-email"); if (email) email.focus(); }, 150);
 }
 
+function fillDemo(role) {
+  const account = demoAccounts[role];
+  const email = $("#auth-email"), password = $("#auth-password");
+  if (email) email.value = account.email;
+  if (password) password.value = account.password;
+  pickRole($(`.role-opt[data-role="${role}"]`), role);
+  showToast("Cuenta demo cargada. Pulsa “Entrar a la plataforma”.");
+}
+
 function closeAuth() {
   const overlay = $("#auth-overlay");
   if (overlay) overlay.classList.add("hidden");
@@ -232,6 +245,9 @@ function enterApp() {
 
   if (!emailValue) { showToast("Ingresa tu correo corporativo."); email?.focus(); return; }
   if (!passwordValue) { showToast("Ingresa tu contraseña."); password?.focus(); return; }
+
+  // Las cuentas demo funcionan en este navegador; las demás son cuentas reales en Supabase
+  if (!isDemoEmail(emailValue)) { realSignIn(emailValue, passwordValue); return; }
 
   const res = authenticate(emailValue, passwordValue); // definido en admin.js
   if (res.error) { showToast(res.error); return; }
@@ -256,6 +272,7 @@ function enterApp() {
 }
 
 function exitApp() {
+  if (appState.realMode) { realSignOut(); return; }
   appState.loggedIn = false;
   appState.session = null;
   $("#admin-shell")?.classList.add("hidden");
@@ -293,6 +310,19 @@ function setRole(role) {
 function buildSidebar() {
   const nav = $("#sidebar-nav");
   if (!nav) return;
+
+  if (appState.realMode) {
+    const seller = currentRole === "vendedor";
+    const link = (page, icon, label, active) => `<a href="#" class="${active ? "active" : ""}" onclick="navigate(event,'${page}')"><span>${icon}</span> ${label}</a>`;
+    nav.innerHTML = (seller ? [
+      link("dashboard", "▦", "Dashboard", true), link("cartera", "◫", "Mis carteras"), link("publicar", "＋", "Publicar cartera"),
+      link("subastas", "⏱", "Carteras en subasta"), link("ofertas", "↕", "Ofertas recibidas"), link("cierre", "✍", "Cierre de operaciones")
+    ] : [
+      link("dashboard", "▦", "Dashboard", true), link("mercado", "◇", "Mercado"), link("subastas", "⏱", "Carteras en subasta"),
+      link("ofertas", "⇄", "Mis ofertas"), link("cierre", "✍", "Cierre de operaciones")
+    ]).join("") + `<div class="sidebar-market-status"><div class="status-title">Conectado · datos reales</div><p>${escapeHtml(appState.company)}</p></div>`;
+    return;
+  }
 
   if (currentRole === "vendedor") {
     nav.innerHTML = `
@@ -334,7 +364,7 @@ function navigate(event, page) {
     documentos: "Documentos", reportes: "Reportes", mercado: "Mercado de oportunidades",
     ofertas: currentRole === "vendedor" ? "Ofertas recibidas" : "Mis ofertas",
     adjudicaciones: "Adjudicaciones", dataroom: "Data room", pruebas: "Centro de pruebas",
-    subastas: "Carteras en subasta", cierre: "Cierre de operaciones"
+    subastas: "Carteras en subasta", cierre: "Cierre de operaciones", publicar: "Publicar cartera"
   };
   if (pageTitle) pageTitle.textContent = titles[page] || "Dashboard";
 
@@ -348,6 +378,7 @@ function navigate(event, page) {
 function renderDashboard() {
   const content = $("#content");
   if (!content) return;
+  if (appState.realMode) { renderRealDashboard(); return; }
 
   const isOriginator = currentRole === "vendedor";
   const roleData = isOriginator ? {
@@ -580,15 +611,23 @@ function renderPage(page) {
 
   if (page === "pruebas") { content.innerHTML = renderTestCenter(); runSelfTests(false); return; }
   if (page === "ofertas") { content.innerHTML = renderOffersPage(); startCountdowns(); return; }
+  if (page === "publicar") { content.innerHTML = renderPublishForm(); return; }
   if (page === "cierre") { content.innerHTML = renderClosingPage(); return; }
   if (page === "subastas") { content.innerHTML = renderAuctionsPage(); startCountdowns(); return; }
   if (!isOrig && ["oportunidades", "mercado"].includes(page)) { content.innerHTML = renderMarketPage(current.title, current.description); startCountdowns(); return; }
 
   if (["cartera", "oportunidades", "mercado"].includes(page)) {
     const items = isOrig ? originatorLots : buyerOpportunities;
+    if (appState.realMode && !items.length) {
+      content.innerHTML = `<div class="card page-card"><div class="section-kicker">MIS CARTERAS</div><h2>Mis carteras</h2>
+        <div class="page-placeholder"><strong>Aún no has publicado carteras</strong><span>Publica la primera y B²GC Brokers la llevará a las casas de cobranza aprobadas.</span>
+        <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'publicar')">＋ Publicar cartera</button></div></div>`;
+      return;
+    }
     content.innerHTML = `
       <div class="card page-card">
-        <div class="section-kicker">DATOS DE PRUEBA · ${isOrig ? "VENDEDOR" : "COMPRADOR"}</div>
+        <div class="section-kicker">${appState.realMode ? "DATOS REALES" : "DATOS DE PRUEBA"} · ${isOrig ? "VENDEDOR" : "COMPRADOR"}</div>
+        ${appState.realMode && isOrig ? `<button class="btn btn-navy btn-small" style="float:right" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
         <h2>${current.title}</h2>
         <p>${current.description}</p>
         <div class="test-lot-grid">
@@ -1046,7 +1085,7 @@ function openDetail(lotId) {
 
   renderDetailSummary(lot);
   renderSimulator(lot);
-  renderDataRoom(lot);
+  if (lot.real) renderRealDataRoom(lot); else renderDataRoom(lot);
   showTab("resumen");
   startCountdowns();
 }
@@ -1065,6 +1104,26 @@ function renderDetailSummary(lot) {
   const nominal = parseLotAmount(lot);
   const debtors = Number(String(lot.debtors).replace(/\./g, ""));
   const c = composition;
+
+  if (lot.real) { // cartera real: sin composición ficticia
+    const mine = originatorLots.some(l => l.id === lot.id);
+    panel.innerHTML = `
+      ${renderAuctionBanner(lot)}
+      <div class="summary-metrics">
+        ${detailMetric("Valor nominal", lot.amount)}
+        ${detailMetric("Número de deudores", lot.debtors)}
+        ${detailMetric("Número de obligaciones", fmtN(p.obligations))}
+        ${detailMetric("Modalidad", lot.modality)}
+      </div>
+      <div class="summary-block" style="margin-top:22px"><div class="section-kicker">PUBLICADA POR</div><p style="margin-top:6px;color:var(--navy);font-weight:700">${escapeHtml(lot.vendedor)} · vía B²GC Brokers</p></div>
+      ${lot.description ? `<div class="summary-block" style="margin-top:14px"><div class="section-kicker">DESCRIPCIÓN</div><p style="margin-top:6px;color:var(--ink-2);font-size:13px;line-height:1.6;white-space:pre-line">${escapeHtml(lot.description)}</p></div>` : ""}
+      <p style="margin-top:14px;color:var(--muted);font-size:12px">Revisa la pestaña <strong>Data room</strong> para descargar la base anonimizada y los soportes.</p>
+      <div style="margin-top:25px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-navy" onclick="makeOffer('${lot.id}')">${mine ? "Ver ofertas recibidas" : "Presentar oferta"}</button>
+        ${mine && lot.dbStatus === "publicada" ? `<button class="btn btn-danger-soft" onclick="cancelPortfolio('${lot.id}')">Retirar del mercado</button>` : ""}
+      </div>`;
+    return;
+  }
 
   const bars = (rows, total, unit) => rows.map(r => `
     <div class="report-bar-row">
@@ -1424,6 +1483,7 @@ function submitOffer(lotId) {
 
   if (!lot || !percent) { showToast("Ingresa un porcentaje válido."); return; }
   if (auctionState(lot.id) === "cerrada") { showToast("La subasta de este lote ya cerró."); return; }
+  if (lot.real) { realPlaceBid(lot, +percent.toFixed(1), note); return; }
 
   const top = topBid(lot.id);
   const belowLast = !!(top && percent < top.percent);

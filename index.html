@@ -937,7 +937,7 @@
           id="auth-email"
           type="email"
           placeholder="nombre@empresa.com"
-          value="vendedor@demo.b2gc.co">
+          value="">
 
       </div>
 
@@ -957,15 +957,20 @@
           id="auth-password"
           type="password"
           placeholder="••••••••"
-          value="Demo123!">
+          value="">
 
       </div>
 
+      <p class="login-hint">Clientes: entra con el correo y la contraseña de tu empresa.</p>
+
       <div class="demo-credentials">
-        <strong>ENTORNO DE PRUEBAS</strong>
-        <span>Vendedor (banco/fintech/cooperativa): vendedor@demo.b2gc.co · Demo123!</span>
-        <span>Comprador (casa de cobranza): comprador@demo.b2gc.co · Demo123!</span>
-        <span>Admin: admin@b2gc.co · Admin123!</span>
+        <strong>¿SOLO QUIERES PROBAR? USA EL DEMO</strong>
+        <span>Datos ficticios que se guardan solo en este navegador.</span>
+        <div class="demo-buttons">
+          <button type="button" class="btn btn-ghost btn-small" onclick="fillDemo('vendedor')">Demo entidad vendedora</button>
+          <button type="button" class="btn btn-ghost btn-small" onclick="fillDemo('comprador')">Demo casa de cobranza</button>
+          <button type="button" class="btn btn-ghost btn-small" onclick="openAdminLogin()">Demo admin</button>
+        </div>
       </div>
 
 
@@ -1316,10 +1321,12 @@
   ====================================================== -->
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="app.js"></script>
   <script src="subastas.js"></script>
   <script src="cierre.js"></script>
   <script src="admin.js"></script>
+  <script src="real.js"></script>
   <script src="bot.js"></script>
   <script src="efectos3d.js"></script>
 
