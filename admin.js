@@ -134,10 +134,10 @@ function openRegister() {
 
       <div class="role-pick" id="reg-role-pick">
         <div class="role-opt active" data-role="vendedor" onclick="pickRegRole(this)">
-          <strong>Soy vendedor</strong><small>Publico y vendo cartera</small>
+          <strong>Soy entidad vendedora</strong><small>Banco, fintech o cooperativa</small>
         </div>
         <div class="role-opt" data-role="comprador" onclick="pickRegRole(this)">
-          <strong>Soy comprador</strong><small>Busco oportunidades</small>
+          <strong>Soy casa de cobranza</strong><small>Compro cartera para cobrarla</small>
         </div>
       </div>
 
@@ -327,7 +327,7 @@ function renderAdmin() {
             <td><strong style="color:var(--navy)">${c.id}</strong></td>
             <td><strong>${escapeHtml(c.name)}</strong><br><small style="color:var(--muted-2)">${escapeHtml(c.city || "—")}</small></td>
             <td>${escapeHtml(c.nit)}</td>
-            <td>${c.role === "vendedor" ? "Vendedor" : "Comprador"}</td>
+            <td>${c.role === "vendedor" ? "Entidad vendedora" : "Casa de cobranza"}</td>
             <td>${escapeHtml(c.contactName)}<br><small style="color:var(--muted-2)">${escapeHtml(c.email)}</small></td>
             <td>${new Date(c.createdAt).toLocaleDateString("es-CO")}</td>
             <td><span class="badge ${STATUS_CLASS[c.status]}">${STATUS_LABEL[c.status]}</span></td>
@@ -515,9 +515,9 @@ function copyCredentials(id) {
 function seedDemoRequests() {
   const list = loadCompanies();
   const base = [
-    ["Inversiones Andina S.A.S.", "901234567-1", "comprador", "Laura Gómez", "laura@andina.co", "Bogotá"],
-    ["Financiera del Valle S.A.", "800765432-9", "vendedor", "Carlos Ruiz", "carlos@fvalle.co", "Cali"],
-    ["Fondo Capital Norte", "900111222-3", "comprador", "Ana Pérez", "ana@capitalnorte.co", "Medellín"]
+    ["Cobranzas Andina S.A.S.", "901234567-1", "comprador", "Laura Gómez", "laura@andina.co", "Bogotá"],
+    ["Cooperativa Financiera del Valle", "800765432-9", "vendedor", "Carlos Ruiz", "carlos@fvalle.co", "Cali"],
+    ["Cobranzas Capital Norte S.A.S.", "900111222-3", "comprador", "Ana Pérez", "ana@capitalnorte.co", "Medellín"]
   ];
   let added = 0;
   base.forEach(b => {
@@ -689,7 +689,7 @@ function renderAdminAnalytics(shell) {
       <div class="card" style="margin-top:18px">
         <div class="card-header"><div><h3>Operaciones en cierre</h3><p>Seguimiento de firmas, pago, entrega y paz y salvo</p></div></div>
         ${(appState.operations || []).filter(o => o.status !== "Cancelada").length ? `<div class="table-wrap"><table><thead><tr>
-          <th>Operación</th><th>Lote</th><th>Vendedor</th><th>Comprador</th><th>Valor</th><th>Avance</th><th>Siguiente paso</th><th>Estado</th>
+          <th>Operación</th><th>Lote</th><th>Entidad vendedora</th><th>Casa de cobranza</th><th>Valor</th><th>Avance</th><th>Siguiente paso</th><th>Estado</th>
         </tr></thead><tbody>
           ${(appState.operations || []).filter(o => o.status !== "Cancelada").map(o => {
             const st = nextStep(o);

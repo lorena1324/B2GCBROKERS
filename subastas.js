@@ -16,10 +16,10 @@ const lotReserve = { "LOTE-TEST-001": 80, "LOTE-TEST-002": 83, "LOTE-TEST-003": 
 
 // Ofertas de otros compradores — DEMO. [comprador, %, horas atrás]
 const seedBids = {
-  "LOTE-TEST-001": [["Fondo Demo Andino", 76.5, 70], ["Inversiones Demo Capital", 79.2, 52], ["Capital Norte Demo", 80.4, 30], ["Fondo Demo Andino", 81.1, 18], ["Recuperadora Demo Pacífico", 79.8, 9], ["Inversiones Demo Capital", 82, 4]],
-  "LOTE-TEST-002": [["Fondo Demo Andino", 84, 40], ["Capital Norte Demo", 82.5, 26], ["Recuperadora Demo Pacífico", 85, 12], ["Inversiones Demo Capital", 83.2, 5]],
-  "LOTE-TEST-003": [["Inversiones Demo Capital", 70.5, 33], ["Fondo Demo Andino", 74, 20], ["Capital Norte Demo", 71.8, 6]],
-  "LOTE-TEST-004": [["Recuperadora Demo Pacífico", 87.1, 15], ["Fondo Demo Andino", 88, 7]]
+  "LOTE-TEST-001": [["Cobranzas Demo Andina", 76.5, 70], ["Recaudos Demo Capital", 79.2, 52], ["Gestión de Cobro Norte Demo", 80.4, 30], ["Cobranzas Demo Andina", 81.1, 18], ["Recuperadora Demo Pacífico", 79.8, 9], ["Recaudos Demo Capital", 82, 4]],
+  "LOTE-TEST-002": [["Cobranzas Demo Andina", 84, 40], ["Gestión de Cobro Norte Demo", 82.5, 26], ["Recuperadora Demo Pacífico", 85, 12], ["Recaudos Demo Capital", 83.2, 5]],
+  "LOTE-TEST-003": [["Recaudos Demo Capital", 70.5, 33], ["Cobranzas Demo Andina", 74, 20], ["Gestión de Cobro Norte Demo", 71.8, 6]],
+  "LOTE-TEST-004": [["Recuperadora Demo Pacífico", 87.1, 15], ["Cobranzas Demo Andina", 88, 7]]
 };
 
 const demoBids = Object.entries(seedBids).flatMap(([lotId, rows]) =>

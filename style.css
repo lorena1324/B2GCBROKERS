@@ -4931,3 +4931,27 @@ tr.row-muted td { opacity: .55; }
   .op-parties { grid-template-columns: 1fr; }
   .op-log > div { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* =========================================================
+   EL PUENTE: VENDEDOR → B²GC → CASA DE COBRANZA
+   ========================================================= */
+.bridge { max-width: 1200px; margin: 0 auto; padding: 70px 30px 40px; }
+.bridge .section-head { text-align: center; max-width: 720px; margin: 0 auto 34px; }
+.bridge-flow { display: grid; grid-template-columns: 1fr auto 1.15fr auto 1fr; align-items: stretch; gap: 14px; }
+.bridge-node { padding: 26px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: var(--shadow-sm); }
+.bridge-node h3 { margin: 6px 0 8px; color: var(--navy); font-size: 19px; }
+.bridge-node p { color: var(--muted); font-size: 13px; line-height: 1.55; }
+.bridge-icon { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 14px; border-radius: 14px; background: var(--blue-light); color: var(--blue); font-size: 18px; font-weight: 800; }
+.bridge-core { color: #fff; border: 0; background: radial-gradient(120% 120% at 100% 0%, rgba(240, 189, 88, .35), transparent 55%), linear-gradient(135deg, var(--navy), #1e4b94); box-shadow: 0 24px 50px -24px rgba(16, 42, 86, .9); }
+.bridge-core h3 { color: #fff; }
+.bridge-core p { color: rgba(255, 255, 255, .8); }
+.bridge-core .section-kicker { color: var(--gold-2); }
+.bridge-core .bridge-icon { background: linear-gradient(135deg, var(--gold-2), var(--gold)); color: var(--navy); }
+.bridge-arrow { align-self: center; color: var(--gold); font-size: 28px; font-weight: 800; }
+.op-broker { grid-column: 1 / -1; background: linear-gradient(135deg, #f5f8ff, #fffaf0) !important; border: 1px dashed #c7d7fe; }
+.op-broker span { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+@media (max-width: 900px) {
+  .bridge { padding: 50px 16px 24px; }
+  .bridge-flow { grid-template-columns: 1fr; }
+  .bridge-arrow { justify-self: center; transform: rotate(90deg); }
+}

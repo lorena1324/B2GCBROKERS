@@ -15,14 +15,14 @@ let currentPage = "dashboard";
 const DEMO_STORAGE_KEY = "b2gc_demo_state_v2";
 
 const demoAccounts = {
-  vendedor: { email: "vendedor@demo.b2gc.co", password: "Demo123!", company: "Vendedor Demo S.A.S.", avatar: "VD" },
-  comprador: { email: "comprador@demo.b2gc.co", password: "Demo123!", company: "Comprador Demo S.A.S.", avatar: "CD" }
+  vendedor: { email: "vendedor@demo.b2gc.co", password: "Demo123!", company: "Banco Demo S.A.", avatar: "VD" },
+  comprador: { email: "comprador@demo.b2gc.co", password: "Demo123!", company: "Casa de Cobranza Demo S.A.S.", avatar: "CD" }
 };
 
 const appState = {
   loggedIn: false,
   demoMode: true,
-  company: "Vendedor Demo S.A.S.",
+  company: "Banco Demo S.A.",
   avatar: "VD",
   userEmail: demoAccounts.vendedor.email,
   vendedor: { stats: { cartera: "$18.420 M", operaciones: "126", compradores: "47", cierre: "82%" } },
@@ -35,17 +35,17 @@ const appState = {
 };
 
 const originatorLots = [
-  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", vendedor: "Vendedor Demo S.A.S.", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
-  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Vendedor Demo S.A.S.", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
-  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Vendedor Demo S.A.S.", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Data room abierto", statusClass: "badge-blue", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" }
+  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", vendedor: "Banco Demo S.A.", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
+  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Banco Demo S.A.", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
+  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Banco Demo S.A.", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Data room abierto", statusClass: "badge-blue", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" }
 ];
 
 const lots = [
-  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", vendedor: "Entidad Financiera Demo A", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
-  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Entidad Financiera Demo B", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
-  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Entidad Financiera Demo C", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Precalificación", statusClass: "badge-gold", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" },
-  { id: "LOTE-TEST-004", title: "Cartera hipotecaria — Demo", vendedor: "Entidad Financiera Demo D", type: "Hipotecaria", amount: "$8.920 M", discount: "12%", debtors: "420", status: "Data room abierto", statusClass: "badge-blue", modality: "Subasta privada", deadline: "30 Sep 2026", score: "A+" },
-  { id: "LOTE-TEST-005", title: "Cartera pyme — Demo", vendedor: "Vendedor Demo E", type: "PYME", amount: "$2.160 M", discount: "20%", debtors: "315", status: "Nueva", statusClass: "badge-green", modality: "Compra directa", deadline: "02 Oct 2026", score: "A" }
+  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", vendedor: "Banco Demo A", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
+  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Fintech Demo B", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
+  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Cooperativa Demo C", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Precalificación", statusClass: "badge-gold", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" },
+  { id: "LOTE-TEST-004", title: "Cartera hipotecaria — Demo", vendedor: "Banco Demo D", type: "Hipotecaria", amount: "$8.920 M", discount: "12%", debtors: "420", status: "Data room abierto", statusClass: "badge-blue", modality: "Subasta privada", deadline: "30 Sep 2026", score: "A+" },
+  { id: "LOTE-TEST-005", title: "Cartera pyme — Demo", vendedor: "Fintech Demo E", type: "PYME", amount: "$2.160 M", discount: "20%", debtors: "315", status: "Nueva", statusClass: "badge-green", modality: "Compra directa", deadline: "02 Oct 2026", score: "A" }
 ];
 
 const buyerOpportunities = lots.map(lot => ({ ...lot }));
@@ -300,13 +300,13 @@ function buildSidebar() {
       <a href="#" onclick="navigate(event,'cartera')"><span>◫</span> Mis carteras</a>
       <a href="#" onclick="navigate(event,'subastas')"><span>⏱</span> Carteras en subasta</a>
       <a href="#" onclick="navigate(event,'ofertas')"><span>↕</span> Ofertas recibidas</a>
-      <a href="#" onclick="navigate(event,'oportunidades')"><span>◇</span> Interés de compradores</a>
+      <a href="#" onclick="navigate(event,'oportunidades')"><span>◇</span> Casas de cobranza interesadas</a>
       <a href="#" onclick="navigate(event,'negociaciones')"><span>⇄</span> Negociaciones</a>
       <a href="#" onclick="navigate(event,'cierre')"><span>✍</span> Cierre de operaciones</a>
       <a href="#" onclick="navigate(event,'documentos')"><span>□</span> Documentos</a>
       <a href="#" onclick="navigate(event,'reportes')"><span>▥</span> Reportes</a>
       <a href="#" onclick="navigate(event,'pruebas')"><span>✓</span> Pruebas</a>
-      <div class="sidebar-market-status"><div class="status-title">Mercado activo</div><p>47 compradores conectados</p></div>`;
+      <div class="sidebar-market-status"><div class="status-title">Mercado activo</div><p>47 casas de cobranza conectadas</p></div>`;
   } else {
     nav.innerHTML = `
       <a href="#" class="active" onclick="navigate(event,'dashboard')"><span>▦</span> Dashboard</a>
@@ -351,13 +351,13 @@ function renderDashboard() {
 
   const isOriginator = currentRole === "vendedor";
   const roleData = isOriginator ? {
-    kicker: "VISTA GENERAL DEL VENDEDOR",
+    kicker: "VISTA GENERAL · ENTIDAD VENDEDORA",
     title: "Controla tu cartera y tus procesos de venta.",
-    description: "Publica portafolios, revisa compradores, gestiona negociaciones y acompaña el cierre documental."
+    description: "Publica la cartera de tu banco, fintech o cooperativa; B²GC la lleva a las casas de cobranza, gestiona la subasta y acompaña el cierre."
   } : {
-    kicker: "VISTA GENERAL DEL COMPRADOR",
+    kicker: "VISTA GENERAL · CASA DE COBRANZA",
     title: "Encuentra, analiza y oferta en nuevas oportunidades.",
-    description: "Explora cartera disponible, revisa data rooms, presenta ofertas y haz seguimiento a tus adjudicaciones.",
+    description: "Explora la cartera que bancos, fintech y cooperativas publican a través de B²GC, revisa data rooms, oferta y sigue tus adjudicaciones.",
     kpis: [
       ["Oportunidades disponibles", "32", "↗ 7 nuevas hoy"],
       ["Ofertas realizadas", "14", "↗ +3 esta semana"],
@@ -570,7 +570,7 @@ function renderPage(page) {
   const isOrig = currentRole === "vendedor";
   const data = {
     cartera: { title: "Mis carteras", description: "Portafolios publicados por el vendedor demo." },
-    oportunidades: { title: isOrig ? "Interés de compradores" : "Oportunidades", description: isOrig ? "Compradores demo que han mostrado interés en tus portafolios." : "Oportunidades disponibles para analizar y ofertar." },
+    oportunidades: { title: isOrig ? "Casas de cobranza interesadas" : "Oportunidades", description: isOrig ? "Casas de cobranza demo que han mostrado interés en tus portafolios." : "Oportunidades disponibles para analizar y ofertar." },
     negociaciones: { title: isOrig ? "Negociaciones con compradores" : "Mis negociaciones", description: isOrig ? "Seguimiento a propuestas recibidas y contrapropuestas de tus portafolios." : "Seguimiento a tus propuestas y contrapropuestas." },
     mercado: { title: "Mercado de oportunidades", description: "Lotes demo disponibles para explorar y ofertar." },
     reportes: { title: "Reportes", description: "Indicadores simulados para validar visualizaciones." },
@@ -616,12 +616,12 @@ function renderPage(page) {
       ? appState.offers
       : isOrig
         ? [
-          { id: "NEG-ORIG-001", lotId: "LOTE-TEST-002", amount: "$2.754 M", status: "En revisión", date: "16 Sep 2026", counterparty: "Fondo Demo Andino" },
-          { id: "NEG-ORIG-002", lotId: "LOTE-TEST-003", amount: "$5.220 M", status: "Contrapropuesta", date: "15 Sep 2026", counterparty: "Inversiones Demo Capital" }
+          { id: "NEG-ORIG-001", lotId: "LOTE-TEST-002", amount: "$2.754 M", status: "En revisión", date: "16 Sep 2026", counterparty: "Cobranzas Demo Andina" },
+          { id: "NEG-ORIG-002", lotId: "LOTE-TEST-003", amount: "$5.220 M", status: "Contrapropuesta", date: "15 Sep 2026", counterparty: "Recaudos Demo Capital" }
         ]
         : [
-          { id: "NEG-COMP-001", lotId: "LOTE-TEST-002", amount: "$2.754 M", status: "En revisión", date: "16 Sep 2026", counterparty: "Vendedor Demo S.A.S." },
-          { id: "NEG-COMP-002", lotId: "LOTE-TEST-003", amount: "$5.017 M", status: "Contrapropuesta", date: "15 Sep 2026", counterparty: "Entidad Financiera Demo C" }
+          { id: "NEG-COMP-001", lotId: "LOTE-TEST-002", amount: "$2.754 M", status: "En revisión", date: "16 Sep 2026", counterparty: "Banco Demo S.A." },
+          { id: "NEG-COMP-002", lotId: "LOTE-TEST-003", amount: "$5.017 M", status: "Contrapropuesta", date: "15 Sep 2026", counterparty: "Cooperativa Demo C" }
         ];
 
     content.innerHTML = `
@@ -833,14 +833,14 @@ function renderAdjudicationsPage() {
   const isOrig = currentRole === "vendedor";
   const adjudications = isOrig
     ? [
-      { id: "ADJ-ORIG-001", lot: "LOTE-TEST-001", buyer: "Comprador Demo S.A.S.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
-      { id: "ADJ-ORIG-002", lot: "LOTE-TEST-002", buyer: "Fondo Demo Andino", value: "$2.754 M", status: "En cierre", date: "15 Sep 2026" },
-      { id: "ADJ-ORIG-003", lot: "LOTE-TEST-003", buyer: "Inversiones Demo Capital", value: "$5.220 M", status: "Documental", date: "16 Sep 2026" }
+      { id: "ADJ-ORIG-001", lot: "LOTE-TEST-001", buyer: "Casa de Cobranza Demo S.A.S.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
+      { id: "ADJ-ORIG-002", lot: "LOTE-TEST-002", buyer: "Cobranzas Demo Andina", value: "$2.754 M", status: "En cierre", date: "15 Sep 2026" },
+      { id: "ADJ-ORIG-003", lot: "LOTE-TEST-003", buyer: "Recaudos Demo Capital", value: "$5.220 M", status: "Documental", date: "16 Sep 2026" }
     ]
     : [
-      { id: "ADJ-COMP-001", lot: "LOTE-HIST-018", buyer: "Vendedor Demo S.A.S.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
-      { id: "ADJ-COMP-002", lot: "LOTE-TEST-004", buyer: "Entidad Financiera Demo D", value: "$7.850 M", status: "En cierre", date: "14 Sep 2026" },
-      { id: "ADJ-COMP-003", lot: "LOTE-TEST-002", buyer: "Vendedor Demo S.A.S.", value: "$2.754 M", status: "Documental", date: "15 Sep 2026" }
+      { id: "ADJ-COMP-001", lot: "LOTE-HIST-018", buyer: "Banco Demo S.A.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
+      { id: "ADJ-COMP-002", lot: "LOTE-TEST-004", buyer: "Banco Demo D", value: "$7.850 M", status: "En cierre", date: "14 Sep 2026" },
+      { id: "ADJ-COMP-003", lot: "LOTE-TEST-002", buyer: "Banco Demo S.A.", value: "$2.754 M", status: "Documental", date: "15 Sep 2026" }
     ];
   return `
     <div class="card page-card">
@@ -907,7 +907,7 @@ function renderSellerOffersPage() {
             <div class="offer-group-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
           </div>
           ${bids.length ? `<div class="table-wrap page-table"><table>
-            <thead><tr><th>#</th><th>Comprador</th><th>Oferta</th><th>Valor</th><th>vs. tarifa</th><th>Alerta</th><th>Fecha</th><th>Decisión</th></tr></thead>
+            <thead><tr><th>#</th><th>Casa de cobranza</th><th>Oferta</th><th>Valor</th><th>vs. tarifa</th><th>Alerta</th><th>Fecha</th><th>Decisión</th></tr></thead>
             <tbody>${bids.map((b, i) => `<tr class="${b.decision === "Rechazada" ? "row-muted" : ""}">
               <td><span class="rank ${i === 0 ? "first" : ""}">${i + 1}</span></td>
               <td><strong>${escapeHtml(b.buyer)}</strong>${b.note ? `<br><small style="color:var(--muted-2)">“${escapeHtml(b.note)}”</small>` : ""}</td>
@@ -1438,7 +1438,7 @@ function submitOffer(lotId) {
     status: belowLast ? "Bajo la última · pendiente del vendedor" : "Enviada",
     date: new Date().toLocaleDateString("es-CO"),
     at: Date.now(),
-    buyer: appState.company || "Comprador Demo S.A.S.",
+    buyer: appState.company || "Casa de Cobranza Demo S.A.S.",
     submittedByRole: currentRole
   };
 

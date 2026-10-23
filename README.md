@@ -2,6 +2,8 @@
 
 Prototipo front-end de B²GC Brokers preparado para pruebas manuales con datos completamente ficticios.
 
+**Modelo de negocio:** B²GC Brokers es el intermediario. Los **bancos, fintech y cooperativas** (vendedores) publican su cartera; **B²GC Brokers** verifica a las empresas, gestiona la subasta y acompaña el cierre; las **casas de cobranza** (compradores) compran la cartera para gestionar su cobro.
+
 ## Credenciales
 
 ### Administrador

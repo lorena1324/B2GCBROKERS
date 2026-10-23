@@ -23,7 +23,12 @@ const CLOSING_STEPS = [
   { key: "recepcion", label: "Recepción y paz y salvo", role: "comprador", action: "Confirmar recepción y cerrar", done: "Recepción confirmada · operación cerrada", kind: "check", check: "Recibí la cartera completa y declaro a paz y salvo esta operación." }
 ];
 
-const ROLE_NAME = { vendedor: "vendedor", comprador: "comprador" };
+// Cómo nombrar a cada parte en los textos. B²GC Brokers es el intermediario entre ambas.
+const BROKER = "B²GC Brokers";
+const ROLE = {
+  vendedor: { al: "a la entidad vendedora", el: "la entidad vendedora", del: "de la entidad vendedora", name: "Entidad vendedora (banco, fintech o cooperativa)" },
+  comprador: { al: "a la casa de cobranza", el: "la casa de cobranza", del: "de la casa de cobranza", name: "Casa de cobranza" }
+};
 
 /* ===== Consultas ===== */
 const allOperations = () => appState.operations || (appState.operations = []);
@@ -58,15 +63,16 @@ function adjudicateOffer(offerId) {
 
   const seq = allOperations().length + 1;
   const seller = originatorLots.find(l => l.id === lot.id)?.vendedor || appState.company;
+  // B²GC Brokers queda registrado como intermediario de la operación
   const op = {
     id: `OP-${new Date().getFullYear()}-${String(seq).padStart(3, "0")}`,
     lotId: lot.id, lotTitle: lot.title, offerId: bid.id,
-    buyer: bid.buyer, seller, percent: bid.percent,
+    buyer: bid.buyer, seller, broker: BROKER, percent: bid.percent,
     value: +(parseLotAmount(lot) * bid.percent / 100).toFixed(1),
     nominal: parseLotAmount(lot),
     status: "En cierre", createdAt: Date.now(),
     steps: { adjudicacion: { at: nowText(), by: seller } },
-    log: [{ at: nowText(), text: `Oferta ${bid.id} de ${bid.buyer} adjudicada por ${bid.percent}% (${fmtM(parseLotAmount(lot) * bid.percent / 100)}).` }]
+    log: [{ at: nowText(), text: `${BROKER} registra la adjudicación: oferta ${bid.id} de ${bid.buyer} por ${bid.percent}% (${fmtM(parseLotAmount(lot) * bid.percent / 100)}).` }]
   };
   allOperations().push(op);
   if (!appState.decisions) appState.decisions = {};
@@ -82,7 +88,7 @@ function advanceOperation(opId, key, payload = {}, role = currentRole) {
   if (op.status !== "En cierre") return { error: `La operación está ${op.status.toLowerCase()}.` };
   const step = nextStep(op);
   if (!step || step.key !== key) return { error: `Este paso aún no está habilitado. Primero: ${step?.label || "—"}.` };
-  if (step.role !== role) return { error: `Este paso le corresponde al ${ROLE_NAME[step.role]}.` };
+  if (step.role !== role) return { error: `Este paso le corresponde ${ROLE[step.role].al}.` };
 
   const record = { at: nowText(), by: step.role === "vendedor" ? op.seller : op.buyer };
   if (step.kind === "firma") {
@@ -149,7 +155,7 @@ function uiAdjudicate(offerId) {
       <h2>¿Adjudicar esta oferta?</h2>
       <p>${escapeHtml(lot.title)}</p>
       <div class="op-parties">
-        <div><small>Comprador</small><strong>${escapeHtml(bid.buyer)}</strong></div>
+        <div><small>Casa de cobranza</small><strong>${escapeHtml(bid.buyer)}</strong></div>
         <div><small>Oferta</small><strong>${bid.percent}%</strong></div>
         <div><small>Valor a pagar</small><strong>${fmtM(parseLotAmount(lot) * bid.percent / 100)}</strong></div>
         <div><small>Tu tarifa</small><strong>${reserveOf(lot.id)}%</strong></div>
@@ -208,7 +214,7 @@ function opCard(op) {
   return `
     <article class="op-card ${op.status === "Cerrada" ? "closed" : mine ? "my-turn" : ""}" onclick="openOperation('${op.id}')" role="button" tabindex="0">
       <div class="op-card-head">
-        <div><div class="lot-number">${op.id} · ${op.lotId}</div><h3>${escapeHtml(op.lotTitle)}</h3><span>${currentRole === "vendedor" ? "Comprador" : "Vendedor"}: ${escapeHtml(counterpart)}</span></div>
+        <div><div class="lot-number">${op.id} · ${op.lotId}</div><h3>${escapeHtml(op.lotTitle)}</h3><span>${currentRole === "vendedor" ? "Casa de cobranza" : "Entidad vendedora"}: ${escapeHtml(counterpart)} · vía ${BROKER}</span></div>
         <div class="op-card-value"><strong>${fmtM(op.value)}</strong><small>${op.percent}% del nominal</small></div>
       </div>
       <div class="op-mini-steps">${CLOSING_STEPS.map(s => `<i class="${op.steps[s.key] ? "done" : step?.key === s.key ? "current" : ""}" title="${s.label}"></i>`).join("")}</div>
@@ -216,7 +222,7 @@ function opCard(op) {
         <span>${done} de ${CLOSING_STEPS.length} pasos</span>
         ${op.status === "Cerrada"
           ? '<span class="badge badge-green">✓ Cerrada</span>'
-          : mine ? `<span class="chip chip-warn">Te toca: ${step.label}</span>` : `<span class="chip">Esperando al ${ROLE_NAME[step.role]}: ${step.label}</span>`}
+          : mine ? `<span class="chip chip-warn">Te toca: ${step.label}</span>` : `<span class="chip">Esperando ${ROLE[step.role].al}: ${step.label}</span>`}
       </div>
     </article>`;
 }
@@ -250,8 +256,9 @@ function openOperation(opId) {
       <span class="badge ${op.status === "Cerrada" ? "badge-green" : op.status === "Cancelada" ? "badge-red" : "badge-gold"}">${op.status}</span>
 
       <div class="op-parties">
-        <div><small>Vendedor</small><strong>${escapeHtml(op.seller)}</strong></div>
-        <div><small>Comprador</small><strong>${escapeHtml(op.buyer)}</strong></div>
+        <div><small>Entidad vendedora</small><strong>${escapeHtml(op.seller)}</strong></div>
+        <div><small>Casa de cobranza</small><strong>${escapeHtml(op.buyer)}</strong></div>
+        <div class="op-broker"><small>Intermediario</small><strong>${BROKER}</strong><span>Conecta a las partes, custodia el data room y verifica cada paso del cierre.</span></div>
         <div><small>Valor adjudicado</small><strong>${fmtM(op.value)}</strong></div>
         <div><small>Precio</small><strong>${op.percent}% de ${fmtM(op.nominal)}</strong></div>
       </div>
@@ -265,7 +272,7 @@ function openOperation(opId) {
           const current = step?.key === s.key && op.status === "En cierre";
           return `<li class="${rec ? "done" : current ? "current" : ""}">
             <span class="op-step-dot">${rec ? "✓" : i + 1}</span>
-            <div><strong>${s.label}</strong><small>${rec ? `${escapeHtml(rec.at)} · ${escapeHtml(rec.by)}${rec.signer ? ` · firmó ${escapeHtml(rec.signer)}` : ""}${rec.reference ? ` · ref. ${escapeHtml(rec.reference)}` : ""}` : `Responsable: ${ROLE_NAME[s.role]}`}</small>
+            <div><strong>${s.label}</strong><small>${rec ? `${escapeHtml(rec.at)} · ${escapeHtml(rec.by)}${rec.signer ? ` · firmó ${escapeHtml(rec.signer)}` : ""}${rec.reference ? ` · ref. ${escapeHtml(rec.reference)}` : ""}` : `Responsable: ${ROLE[s.role].el}`}</small>
               ${current ? (myTurn ? stepForm(op, s) : waitingBox(op, s)) : ""}
             </div>
           </li>`;
@@ -309,8 +316,8 @@ function stepForm(op, s) {
 function waitingBox(op, s) {
   return `
     <div class="op-form waiting">
-      <span>Esperando que el ${ROLE_NAME[s.role]} complete este paso.</span>
-      ${appState.demoMode ? `<button class="btn btn-ghost btn-small" onclick="simulateCounterparty('${op.id}')">Simular respuesta del ${ROLE_NAME[s.role]} (demo)</button>` : ""}
+      <span>Esperando que ${ROLE[s.role].el} complete este paso. ${BROKER} le notifica y hace seguimiento.</span>
+      ${appState.demoMode ? `<button class="btn btn-ghost btn-small" onclick="simulateCounterparty('${op.id}')">Simular respuesta ${ROLE[s.role].del} (demo)</button>` : ""}
     </div>`;
 }
 
@@ -341,7 +348,7 @@ function simulateCounterparty(opId) {
 function afterStep(res) {
   if (res.error) { showToast(res.error); return; }
   const step = nextStep(res.op);
-  showToast(res.closed ? `🎉 ${res.op.id} cerrada con éxito.` : `Listo. Siguiente paso: ${step.label} (${ROLE_NAME[step.role]}).`);
+  showToast(res.closed ? `🎉 ${res.op.id} cerrada con éxito.` : `Listo. Siguiente paso: ${step.label} (${ROLE[step.role].el}).`);
   rerenderCurrent();
   openOperation(res.op.id);
 }
@@ -363,7 +370,8 @@ function downloadOpDoc(opId, kind) {
   const text = [
     `${head} — ${op.id}`, "Documento de prueba generado por B²GC Brokers (entorno demo).", "",
     `Lote: ${op.lotId} · ${op.lotTitle}`,
-    `Vendedor (cedente): ${op.seller}`, `Comprador (cesionario): ${op.buyer}`,
+    `Cedente (entidad vendedora): ${op.seller}`, `Cesionario (casa de cobranza): ${op.buyer}`,
+    `Intermediario: ${BROKER} — conecta a las partes y verifica el cierre.`,
     `Valor nominal: ${fmtM(op.nominal)}`, `Precio: ${op.percent}% · ${fmtM(op.value)}`, "",
     `Firma vendedor: ${s.firmaVendedor?.signer || "—"} · ${s.firmaVendedor?.at || ""}`,
     `Firma comprador: ${s.firmaComprador?.signer || "—"} · ${s.firmaComprador?.at || ""}`,
