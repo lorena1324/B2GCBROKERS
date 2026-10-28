@@ -120,6 +120,7 @@ function loadDemoState() {
     const saved = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || "null");
     if (saved && Array.isArray(saved.offers)) appState.offers = saved.offers;
     if (saved && Array.isArray(saved.uploadedDocuments)) appState.uploadedDocuments = saved.uploadedDocuments;
+    if (saved && Array.isArray(saved.demoPortfolios)) appState.demoPortfolios = saved.demoPortfolios;
     if (saved && saved.decisions && typeof saved.decisions === "object") appState.decisions = saved.decisions;
     if (saved && Array.isArray(saved.favorites)) appState.favorites = saved.favorites;
     if (saved && Array.isArray(saved.operations)) appState.operations = saved.operations;
@@ -134,7 +135,7 @@ function saveDemoState() {
     try { localStorage.setItem(`b2gc_real_favs_${real.user?.id}`, JSON.stringify(appState.favorites || [])); } catch { }
     return;
   }
-  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites, operations: appState.operations }));
+  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites, operations: appState.operations, demoPortfolios: appState.demoPortfolios || [] }));
 }
 
 function resetDemoData() {
@@ -143,7 +144,10 @@ function resetDemoData() {
   appState.decisions = {};
   appState.favorites = [];
   appState.operations = [];
+  const hadPortfolios = (appState.demoPortfolios || []).length;
+  appState.demoPortfolios = [];
   saveDemoState();
+  if (hadPortfolios) { location.reload(); return; } // las carteras publicadas ya están cargadas en memoria
   if (typeof syncLotStatuses === "function") syncLotStatuses();
   showToast("Datos de prueba restaurados.");
   if (appState.loggedIn) {
@@ -412,6 +416,7 @@ function buildSidebar() {
     nav.innerHTML = `
       <a href="#" class="active" onclick="navigate(event,'dashboard')">Dashboard</a>
       <a href="#" onclick="navigate(event,'cartera')">Mis carteras</a>
+      <a href="#" onclick="navigate(event,'publicar')">Publicar cartera</a>
       <a href="#" onclick="navigate(event,'subastas')">Carteras en subasta</a>
       <a href="#" onclick="navigate(event,'ofertas')">Ofertas recibidas</a>
       <a href="#" onclick="navigate(event,'oportunidades')">Casas de cobranza interesadas</a>
@@ -486,7 +491,10 @@ function renderDashboard() {
     <div class="dashboard-welcome reveal visible">
       <div style="margin-bottom:25px;">
         <div class="section-kicker">${roleData.kicker}</div>
-        <h2 style="font-size:30px;letter-spacing:-1px;color:var(--navy);margin-top:5px;">${roleData.title}</h2>
+        <div class="dash-title-row">
+          <h2 style="font-size:30px;letter-spacing:-1px;color:var(--navy);margin-top:5px;">${roleData.title}</h2>
+          ${isOriginator ? `<button class="btn btn-navy" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
+        </div>
         <p style="color:var(--muted);font-size:13px;margin-top:5px;">${roleData.description}</p>
       </div>
       <div class="kpi-grid">
@@ -508,6 +516,26 @@ function kpiCard(label, value, change, direction = "up", action = "") {
       <div class="value">${value}</div>
       <div class="change ${direction === "down" ? "down" : ""}">${change}</div>
     </div>`;
+}
+
+/* ----- Carteras publicadas en el demo ----- */
+function addDemoPortfolio(p) {
+  if (lots.some(l => l.id === p.id)) return;
+  const vendedor = demoAccounts.vendedor.company;
+  const now = Date.now();
+  const [status, statusClass] = now < p.startsAt ? ["Por abrir", "badge-blue"] : now >= p.endsAt ? ["Subasta finalizada", "badge-gold"] : ["Subasta activa", "badge-green"];
+  const lot = {
+    id: p.id, title: p.title, vendedor, type: p.type, amount: fmtM(Number(p.nominal)), discount: "", debtors: fmtN(p.debtors),
+    status, statusClass, modality: p.modality, deadline: new Date(p.endsAt).toLocaleDateString("es-CO"), score: "—", description: p.description || ""
+  };
+  lots.push(lot);
+  originatorLots.push({ ...lot });
+  buyerOpportunities.push({ ...lot });
+  lotProfiles[p.id] = { obligations: p.obligations, likes: 0, favs: 0, comments: 0, offers: 0, bestPercent: 0, startsAt: p.startsAt, endsAt: p.endsAt };
+  lotReserve[p.id] = Number(p.reserve);
+  const prefix = refPrefix(vendedor);
+  const used = Object.values(lotRefs).filter(r => r.startsWith(prefix) && /^\d+$/.test(r.slice(prefix.length))).length;
+  lotRefs[p.id] = prefix + String(used + 1).padStart(3, "0");
 }
 
 /* ----- KPIs de la casa de cobranza (demo y real) ----- */
@@ -773,7 +801,7 @@ function renderPage(page) {
     content.innerHTML = `
       <div class="card page-card">
         <div class="section-kicker">${appState.realMode ? "DATOS REALES" : "DATOS DE PRUEBA"} · ${isOrig ? "VENDEDOR" : "COMPRADOR"}</div>
-        ${appState.realMode && isOrig ? `<button class="btn btn-navy btn-small" style="float:right" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
+        ${isOrig ? `<button class="btn btn-navy btn-small" style="float:right" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
         <h2>${current.title}</h2>
         <p>${current.description}</p>
         ${renderFilterBar(pool)}
@@ -1213,7 +1241,7 @@ function runSelfTests(showFeedback = true) {
   const results = [];
   const assert = (name, condition) => results.push({ name, ok: Boolean(condition) });
 
-  assert("Existen 5 lotes de prueba", lots.length === 5);
+  assert("Existen las 5 carteras de prueba de base", lots.filter(l => !l.id.startsWith("LOTE-DEMO-")).length === 5);
   assert("Todos los lotes tienen ID único", new Set(lots.map(lot => lot.id)).size === lots.length);
   assert("Todos los lotes tienen valor nominal", lots.every(lot => lot.amount.includes("$")));
   assert("Todos los lotes tienen modalidad", lots.every(lot => lot.modality));
@@ -1797,6 +1825,7 @@ document.addEventListener("keydown", event => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  (appState.demoPortfolios || []).forEach(addDemoPortfolio);
   buildSidebar();
   renderHeroChart(6);
   if (location.hash === "#admin" && typeof openAdminLogin === "function") openAdminLogin();

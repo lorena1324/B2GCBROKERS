@@ -5243,3 +5243,10 @@ tr.clickable:hover td { background: var(--paper); }
 .filter-group button.active { border-color: var(--navy); background: var(--navy); color: #fff; }
 .filter-btn:focus-visible, .filter-group button:focus-visible, .filter-clear:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 @media (max-width: 640px) { .filter-group { grid-template-columns: 1fr; gap: 6px; } .filter-group > span { padding-top: 0; } }
+
+/* Título del dashboard con el botón de publicar al lado */
+.dash-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.dash-title-row .btn { flex: 0 0 auto; margin-top: 5px; }
+.dash-title-row { flex-wrap: nowrap; }
+.dash-title-row h2 { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 560px) { .dash-title-row { flex-wrap: wrap; } }

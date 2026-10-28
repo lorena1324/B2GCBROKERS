@@ -424,6 +424,7 @@ async function submitPortfolio() {
   if (files.some(f => f.size > 20 * 1024 * 1024)) return showToast("Algún archivo supera 20 MB.");
 
   const btn = $("#pf-submit");
+  if (!appState.realMode) { createDemoPortfolio(data, files.length); return; }
   btn.disabled = true; btn.textContent = "Publicando…";
   const p = await rpcOrToast("create_portfolio", data);
   if (!p) { btn.disabled = false; btn.textContent = "Publicar cartera"; return; }
@@ -433,6 +434,20 @@ async function submitPortfolio() {
   }
   await loadRealData();
   showToast(failed ? `${p.code} publicada, pero ${failed} archivo(s) no se subieron.` : `${p.code} publicada. Ya la ven las casas de cobranza.`);
+  navigate(null, "cartera");
+}
+
+/* Demo: la cartera publicada queda en este navegador y aparece para las casas de cobranza demo */
+function createDemoPortfolio(data, fileCount) {
+  const p = {
+    id: `LOTE-DEMO-${Date.now()}`, title: data.p_title, type: data.p_type, modality: data.p_modality,
+    nominal: data.p_nominal, debtors: data.p_debtors, obligations: data.p_obligations, reserve: data.p_reserve,
+    startsAt: Date.parse(data.p_starts), endsAt: Date.parse(data.p_ends), description: data.p_description
+  };
+  appState.demoPortfolios = [...(appState.demoPortfolios || []), p];
+  addDemoPortfolio(p);
+  saveDemoState();
+  showToast(`${refOf(p.id)} publicada.${fileCount ? " En el demo los archivos no se guardan." : ""} Ya la ven las casas de cobranza demo.`);
   navigate(null, "cartera");
 }
 
@@ -523,9 +538,11 @@ function renderRealDashboard() {
     <div class="dashboard-welcome reveal visible">
       <div style="margin-bottom:25px;">
         <div class="section-kicker">${seller ? "ENTIDAD VENDEDORA" : "CASA DE COBRANZA"} · ${escapeHtml(real.company.name)}</div>
-        <h2 style="font-size:30px;letter-spacing:-1px;color:var(--navy);margin-top:5px;">${seller ? "Tus carteras y las ofertas que han recibido" : "Carteras disponibles y tus ofertas"}</h2>
+        <div class="dash-title-row">
+          <h2 style="font-size:30px;letter-spacing:-1px;color:var(--navy);margin-top:5px;">${seller ? "Tus carteras y las ofertas que han recibido" : "Carteras disponibles y tus ofertas"}</h2>
+          ${seller ? `<button class="btn btn-navy" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
+        </div>
         <p style="color:var(--muted);font-size:13px;margin-top:5px;">${seller ? "Publica carteras, revisa ofertas y cierra con B²GC Brokers como intermediario." : "Oferta en las carteras que publican bancos, fintech y cooperativas a través de B²GC Brokers."}</p>
-        ${seller ? `<button class="btn btn-navy btn-small" style="margin-top:14px" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
       </div>
       <div class="kpi-grid">${seller ? kpis.map(k => kpiCard(k[0], k[1], k[2], "up", k[3])).join("") : buyerKpiCards()}</div>
       <div class="dashboard-chart-grid">
