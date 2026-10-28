@@ -443,7 +443,7 @@ function navigate(event, page) {
   if (event && event.currentTarget) event.currentTarget.classList.add("active");
 
   currentPage = page;
-  if (event) typeFilter = null;
+  if (event) resetFilters();
   const titles = {
     dashboard: "Dashboard", cartera: "Mis carteras", oportunidades: "Oportunidades", negociaciones: "Negociaciones",
     documentos: "Documentos", reportes: "Reportes", mercado: "Mercado de oportunidades",
@@ -762,14 +762,9 @@ function renderPage(page) {
   if (!isOrig && ["oportunidades", "mercado"].includes(page)) { content.innerHTML = renderMarketPage(current.title, current.description); startCountdowns(); return; }
 
   if (["cartera", "oportunidades", "mercado"].includes(page)) {
-    const items = (isOrig ? originatorLots : buyerOpportunities).filter(l => !typeFilter || l.type === typeFilter);
-    if (typeFilter && !items.length) {
-      content.innerHTML = `<div class="card page-card"><div class="section-kicker">MIS CARTERAS</div><h2>Mis carteras</h2>
-        <div class="page-placeholder"><strong>No tienes carteras de tipo ${escapeHtml(typeFilter)}</strong><span>Quita el filtro para ver todas.</span>
-        <button class="btn btn-ghost btn-small" style="margin-top:12px" onclick="clearTypeFilter()">Ver todas</button></div></div>`;
-      return;
-    }
-    if (appState.realMode && !items.length) {
+    const pool = isOrig ? originatorLots : buyerOpportunities;
+    const items = pool.filter(passesFilters);
+    if (appState.realMode && !pool.length) {
       content.innerHTML = `<div class="card page-card"><div class="section-kicker">MIS CARTERAS</div><h2>Mis carteras</h2>
         <div class="page-placeholder"><strong>Aún no has publicado carteras</strong><span>Publica la primera y B²GC Brokers la llevará a las casas de cobranza aprobadas.</span>
         <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'publicar')">＋ Publicar cartera</button></div></div>`;
@@ -781,7 +776,8 @@ function renderPage(page) {
         ${appState.realMode && isOrig ? `<button class="btn btn-navy btn-small" style="float:right" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
         <h2>${current.title}</h2>
         <p>${current.description}</p>
-        ${typeFilter ? typeFilterChip() : ""}
+        ${renderFilterBar(pool)}
+        ${!items.length ? noMatches("cartera") : ""}
         <div class="test-lot-grid">
           ${items.map(lot => `
             <article class="test-lot-card clickable" role="button" tabindex="0" onclick="openDetail('${lot.id}')">

@@ -5224,3 +5224,22 @@ tr.clickable:hover td { background: var(--paper); }
   .sidebar-footer .logout-btn { white-space: nowrap; font-size: 13px; }
   .main { margin-left: 0; }
 }
+
+/* =========================================================
+   BOTÓN FILTRAR Y SU PANEL
+   ========================================================= */
+.filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 20px; }
+.filter-btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border: 1px solid var(--navy); border-radius: 8px; background: #fff; color: var(--navy); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.filter-btn:hover, .filter-btn.open { background: var(--navy); color: #fff; }
+.filter-btn b { display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--gold); color: #fff; font-size: 12px; }
+.filter-bar .filter-chip { margin-top: 0; }
+.filter-clear { padding: 0; border: 0; background: none; color: var(--navy); font-family: inherit; font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.filter-panel { display: grid; gap: 14px; margin-top: 10px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.filter-group { display: grid; grid-template-columns: 170px 1fr; gap: 10px; align-items: start; }
+.filter-group > span { padding-top: 7px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.filter-group > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-group button { padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink-2); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+.filter-group button:hover { border-color: var(--navy); }
+.filter-group button.active { border-color: var(--navy); background: var(--navy); color: #fff; }
+.filter-btn:focus-visible, .filter-group button:focus-visible, .filter-clear:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 640px) { .filter-group { grid-template-columns: 1fr; gap: 6px; } .filter-group > span { padding-top: 0; } }

@@ -172,8 +172,15 @@ function renderAuctionBanner(lot) {
     </div>`;
 }
 
-/* ===== Filtro por tipo (desde la dona del dashboard) ===== */
-let typeFilter = null;
+/* ===== Filtros: botón "Filtrar" (y la dona del dashboard, que filtra por tipo) ===== */
+let typeFilter = null, modalityFilter = null, stateFilter = null;
+let filterPanelOpen = false;
+const STATE_LABEL = { vivo: "En vivo", proxima: "Por abrir", cerrada: "Cerradas" };
+
+const passesFilters = l => (!typeFilter || l.type === typeFilter)
+  && (!modalityFilter || l.modality === modalityFilter)
+  && (!stateFilter || auctionState(l.id) === stateFilter);
+const activeFilterCount = () => [typeFilter, modalityFilter, stateFilter].filter(Boolean).length;
 
 function filterByType(type) {
   typeFilter = type;
@@ -181,9 +188,48 @@ function filterByType(type) {
   showToast(`Mostrando carteras de tipo ${type}.`);
 }
 
-function clearTypeFilter() { typeFilter = null; rerenderCurrent(); }
+// Tocar la opción ya elegida la quita
+function setFilter(kind, value) {
+  if (kind === "type") typeFilter = typeFilter === value ? null : value;
+  if (kind === "modality") modalityFilter = modalityFilter === value ? null : value;
+  if (kind === "state") stateFilter = stateFilter === value ? null : value;
+  rerenderCurrent();
+}
 
-const typeFilterChip = () => `<div class="filter-chip">Tipo: <strong>${escapeHtml(typeFilter)}</strong><button type="button" onclick="clearTypeFilter()" aria-label="Quitar filtro">×</button></div>`;
+function clearFilters() { typeFilter = modalityFilter = stateFilter = null; rerenderCurrent(); }
+function resetFilters() { typeFilter = modalityFilter = stateFilter = null; filterPanelOpen = false; }
+function toggleFilterPanel() { filterPanelOpen = !filterPanelOpen; rerenderCurrent(); }
+
+function renderFilterBar(pool, withState = true) {
+  const n = activeFilterCount();
+  const types = [...new Set(pool.map(l => l.type))].sort();
+  const modalities = [...new Set(pool.map(l => l.modality))].sort();
+  const option = (kind, current, value, label) =>
+    `<button type="button" class="${current === value ? "active" : ""}" aria-pressed="${current === value}" onclick="setFilter('${kind}','${escapeHtml(value)}')">${escapeHtml(label)}</button>`;
+  const group = (title, kind, current, options) => `
+    <div class="filter-group"><span>${title}</span><div>${options.map(([v, l]) => option(kind, current, v, l)).join("")}</div></div>`;
+  const chips = [["type", "Tipo", typeFilter], ["modality", "Modalidad", modalityFilter], ["state", "Estado", stateFilter && STATE_LABEL[stateFilter]]]
+    .filter(c => c[2])
+    .map(([kind, label, value]) => `<span class="filter-chip">${label}: <strong>${escapeHtml(value)}</strong><button type="button" onclick="setFilter('${kind}',null)" aria-label="Quitar filtro de ${label.toLowerCase()}">×</button></span>`)
+    .join("");
+  return `
+    <div class="filter-bar">
+      <button type="button" class="filter-btn ${filterPanelOpen ? "open" : ""}" aria-expanded="${filterPanelOpen}" onclick="toggleFilterPanel()">
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2 3h12l-4.5 5.5V13l-3 1.5V8.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        Filtrar${n ? ` <b>${n}</b>` : ""}
+      </button>
+      ${chips}
+      ${n ? `<button type="button" class="filter-clear" onclick="clearFilters()">Limpiar filtros</button>` : ""}
+    </div>
+    ${filterPanelOpen ? `<div class="filter-panel">
+      ${group("Tipo de cartera", "type", typeFilter, types.map(t => [t, t]))}
+      ${group("Modalidad", "modality", modalityFilter, modalities.map(m => [m, m]))}
+      ${withState ? group("Estado de la subasta", "state", stateFilter, Object.entries(STATE_LABEL)) : ""}
+    </div>` : ""}`;
+}
+
+const noMatches = what => `<div class="page-placeholder"><strong>Ninguna ${what} cumple los filtros</strong><span>Cambia o quita alguno para ver más.</span>
+  <button class="btn btn-ghost btn-small" style="margin-top:12px" onclick="clearFilters()">Limpiar filtros</button></div>`;
 
 function openActivityMonth(month, count) {
   navigate(null, "ofertas");
@@ -231,7 +277,7 @@ function renderMarketPage(title, description) {
     valor: (a, b) => parseLotAmount(b) - parseLotAmount(a),
     favoritas: (a, b) => popularity(b) - popularity(a)
   };
-  let items = buyerOpportunities.filter(l => !typeFilter || l.type === typeFilter);
+  let items = buyerOpportunities.filter(passesFilters);
   if (marketSort === "favoritas") items = items.filter(l => fav.has(l.id));
   items.sort((a, b) => (fav.has(b.id) - fav.has(a.id)) || sorters[marketSort](a, b));
 
@@ -243,7 +289,7 @@ function renderMarketPage(title, description) {
       <h2>${title}</h2>
       <p>${description} Tus favoritas (★) siempre aparecen arriba.</p>
       ${spotlightCards(buyerOpportunities)}
-      ${typeFilter ? typeFilterChip() : ""}
+      ${renderFilterBar(buyerOpportunities)}
       <div class="sort-chips">${chip("populares", "Más vendidas")}${chip("vence", "Vencen primero")}${chip("valor", "Mayor valor")}${chip("favoritas", `Favoritas (${fav.size})`)}</div>
       ${items.length ? `<div class="test-lot-grid market-grid">${items.map(lot => {
         const top = topBid(lot.id);
@@ -266,8 +312,8 @@ function renderMarketPage(title, description) {
             </div>
             <button class="btn btn-navy btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">Entrar a la subasta</button>
           </article>`;
-      }).join("")}</div>` : typeFilter && marketSort !== "favoritas"
-        ? `<div class="page-placeholder"><strong>No hay carteras de tipo ${escapeHtml(typeFilter)} ahora</strong><span>Quita el filtro para ver todo el mercado.</span><button class="btn btn-ghost btn-small" style="margin-top:12px" onclick="clearTypeFilter()">Ver todo</button></div>`
+      }).join("")}</div>` : activeFilterCount() && marketSort !== "favoritas"
+        ? noMatches("cartera")
         : `<div class="page-placeholder"><strong>Aún no tienes favoritas</strong><span>Marca una cartera con ☆ para verla aquí y arriba del mercado.</span></div>`}
     </div>`;
 }
@@ -308,7 +354,7 @@ function renderAuctionsPage() {
     ["vivo", "En vivo", "Ordenadas por la que cierra primero"],
     ["proxima", "Próximas", "Aún no abren; puedes revisarlas y marcarlas"],
     ["cerrada", "Cerradas", "Subastas finalizadas"]
-  ].map(([st, title, sub]) => ({ title, sub, items: pool.filter(l => auctionState(l.id) === st).sort(byFavThenEnd) }))
+  ].map(([st, title, sub]) => ({ title, sub, items: pool.filter(l => auctionState(l.id) === st && passesFilters(l)).sort(byFavThenEnd) }))
     .filter(g => g.items.length);
 
   return `
@@ -317,6 +363,8 @@ function renderAuctionsPage() {
       <h2>Carteras en subasta</h2>
       <p>${seller ? "Sigue el tiempo, las ofertas y si superan tu tarifa en cada una de tus carteras." : "Entra a la subasta, revisa el tiempo restante y oferta. Tus favoritas aparecen primero."}</p>
       ${seller ? "" : spotlightCards(pool)}
+      ${renderFilterBar(pool)}
+      ${!groups.length && activeFilterCount() ? noMatches("subasta") : ""}
       ${groups.map(g => `
         <div class="auction-group-head"><h3>${g.title}</h3><span>${g.items.length} · ${g.sub}</span></div>
         <div class="auction-grid">${g.items.map(l => auctionCard(l, seller)).join("")}</div>`).join("")}
