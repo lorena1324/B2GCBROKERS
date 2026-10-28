@@ -387,6 +387,16 @@ function renderPublishForm() {
       <h2>Publicar una cartera</h2>
       <p>B²GC Brokers la mostrará a las casas de cobranza aprobadas. Tu tarifa mínima nunca la ven las casas de cobranza.</p>
       <div class="offer-alert warn"><strong>Protección de datos (Ley 1581)</strong><span>Los archivos del data room deben ir anonimizados: sin nombres, cédulas ni datos de contacto de los deudores.</span></div>
+      <div class="pf-drop" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')"
+           ondrop="event.preventDefault();this.classList.remove('over');handlePortfolioFile({ files: event.dataTransfer.files, value: '' })">
+        <div><strong>¿Tienes el archivo de la cartera?</strong><span>Súbelo o arrástralo aquí (Excel o CSV) y llenamos el formulario. Sirve la base de obligaciones o una ficha con parámetro y valor.</span></div>
+        <div class="pf-drop-actions">
+          <input id="pf-source" type="file" accept=".xlsx,.xls,.csv,.txt" class="hidden-file-input" onchange="handlePortfolioFile(this)">
+          <button class="btn btn-navy btn-small" type="button" onclick="$('#pf-source').click()">Subir archivo</button>
+          <button class="btn-text" type="button" onclick="downloadPortfolioTemplate()">Descargar plantilla</button>
+        </div>
+      </div>
+      <div id="pf-autofill" class="offer-alert hidden" role="status"></div>
       <div class="form-grid publish-grid">
         <div class="field"><label for="pf-title">Nombre de la cartera *</label><input id="pf-title" type="text" placeholder="Cartera de consumo castigada 2024"></div>
         <div class="field"><label for="pf-type">Tipo *</label><select id="pf-type">${["Consumo", "Libranza", "Comercial", "Hipotecaria", "PYME", "Tarjeta de crédito", "Vehículo", "Microcrédito", "Otro"].map(t => `<option>${t}</option>`).join("")}</select></div>

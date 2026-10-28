@@ -5250,3 +5250,13 @@ tr.clickable:hover td { background: var(--paper); }
 .dash-title-row { flex-wrap: nowrap; }
 .dash-title-row h2 { flex: 1 1 auto; min-width: 0; }
 @media (max-width: 560px) { .dash-title-row { flex-wrap: wrap; } }
+
+/* Publicar cartera: subir el archivo para llenar el formulario */
+.pf-drop { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding: 18px 20px; border: 2px dashed #c7d2de; border-radius: 12px; background: var(--paper); transition: border-color .15s ease, background .15s ease; }
+.pf-drop.over { border-color: var(--navy); background: var(--blue-light); }
+.pf-drop strong { display: block; color: var(--navy); }
+.pf-drop span { color: var(--muted); font-size: 13px; }
+.pf-drop-actions { display: flex; align-items: center; gap: 14px; }
+#pf-autofill { margin-top: 12px; }
+#pf-autofill.hidden { display: none; }
+.autofilled { border-color: var(--gold) !important; background: #fffbf1 !important; }
