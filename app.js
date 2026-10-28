@@ -38,7 +38,9 @@ const appState = {
 const originatorLots = [
   { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", vendedor: "Banco Demo S.A.", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
   { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Banco Demo S.A.", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
-  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Banco Demo S.A.", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Data room abierto", statusClass: "badge-blue", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" }
+  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Banco Demo S.A.", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Data room abierto", statusClass: "badge-blue", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" },
+  { id: "LOTE-TEST-006-A", parentId: "LOTE-TEST-006", tramo: "A", tramoCount: 2, tramoLabel: "Mora de 0 a 180 días", title: "Cartera de vehículo — Demo · Tramo A", vendedor: "Banco Demo S.A.", type: "Vehículo", amount: "$1.600 M", discount: "20%", debtors: "210", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "—", score: "A" },
+  { id: "LOTE-TEST-006-B", parentId: "LOTE-TEST-006", tramo: "B", tramoCount: 2, tramoLabel: "Mora de más de 180 días", title: "Cartera de vehículo — Demo · Tramo B", vendedor: "Banco Demo S.A.", type: "Vehículo", amount: "$1.150 M", discount: "35%", debtors: "185", status: "Por abrir", statusClass: "badge-blue", modality: "Subasta privada", deadline: "—", score: "B" }
 ];
 
 const lots = [
@@ -46,7 +48,9 @@ const lots = [
   { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Banco Demo S.A.", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
   { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Banco Demo S.A.", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Precalificación", statusClass: "badge-gold", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" },
   { id: "LOTE-TEST-004", title: "Cartera hipotecaria — Demo", vendedor: "Cooperativa Demo Andina", type: "Hipotecaria", amount: "$8.920 M", discount: "12%", debtors: "420", status: "Data room abierto", statusClass: "badge-blue", modality: "Subasta privada", deadline: "30 Sep 2026", score: "A+" },
-  { id: "LOTE-TEST-005", title: "Cartera pyme — Demo", vendedor: "Fintech Demo Pacífico", type: "PYME", amount: "$2.160 M", discount: "20%", debtors: "315", status: "Nueva", statusClass: "badge-green", modality: "Compra directa", deadline: "02 Oct 2026", score: "A" }
+  { id: "LOTE-TEST-005", title: "Cartera pyme — Demo", vendedor: "Fintech Demo Pacífico", type: "PYME", amount: "$2.160 M", discount: "20%", debtors: "315", status: "Nueva", statusClass: "badge-green", modality: "Compra directa", deadline: "02 Oct 2026", score: "A" },
+  { id: "LOTE-TEST-006-A", parentId: "LOTE-TEST-006", tramo: "A", tramoCount: 2, tramoLabel: "Mora de 0 a 180 días", title: "Cartera de vehículo — Demo · Tramo A", vendedor: "Banco Demo S.A.", type: "Vehículo", amount: "$1.600 M", discount: "20%", debtors: "210", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "—", score: "A" },
+  { id: "LOTE-TEST-006-B", parentId: "LOTE-TEST-006", tramo: "B", tramoCount: 2, tramoLabel: "Mora de más de 180 días", title: "Cartera de vehículo — Demo · Tramo B", vendedor: "Banco Demo S.A.", type: "Vehículo", amount: "$1.150 M", discount: "35%", debtors: "185", status: "Por abrir", statusClass: "badge-blue", modality: "Subasta privada", deadline: "—", score: "B" }
 ];
 
 const buyerOpportunities = lots.map(lot => ({ ...lot }));
@@ -70,12 +74,23 @@ function refPrefix(name) {
     .map(w => w[0].toUpperCase()).join("").slice(0, 4) || "EN";
 }
 
+/* Ventas anteriores de la entidad vendedora demo (antecedentes) */
+const sellerSalesDemo = [
+  { lotId: "LOTE-VTA-001", title: "Cartera de consumo 2024", vendedor: "Banco Demo S.A.", type: "Consumo", nominal: 3600, percent: 17.5, buyer: "Recaudos Demo Capital", date: "14/3/2026" },
+  { lotId: "LOTE-VTA-002", title: "Cartera de tarjeta de crédito", vendedor: "Banco Demo S.A.", type: "Tarjeta de crédito", nominal: 2250, percent: 12.8, buyer: "Cobranzas Demo Andina", date: "30/6/2026" }
+];
+
 (function assignDemoRefs() {
   const seq = {};
-  // El histórico va primero porque esas compras son anteriores
-  [...buyerAcquisitionsDemo.map(h => ({ id: h.lotId, vendedor: h.vendedor })), ...lots].forEach(item => {
+  // Los históricos van primero porque esas ventas y compras son anteriores
+  [...sellerSalesDemo.map(h => ({ id: h.lotId, vendedor: h.vendedor })), ...buyerAcquisitionsDemo.map(h => ({ id: h.lotId, vendedor: h.vendedor })), ...lots].forEach(item => {
     if (lotRefs[item.id]) return;
     const p = refPrefix(item.vendedor);
+    if (item.parentId) {
+      if (!lotRefs[item.parentId]) { seq[p] = (seq[p] || 0) + 1; lotRefs[item.parentId] = p + String(seq[p]).padStart(3, "0"); }
+      lotRefs[item.id] = `${lotRefs[item.parentId]}-${item.tramo}`;
+      return;
+    }
     seq[p] = (seq[p] || 0) + 1;
     lotRefs[item.id] = p + String(seq[p]).padStart(3, "0");
   });
@@ -84,14 +99,15 @@ function refPrefix(name) {
 /* ===== TRM y perfil ampliado de cada lote (DEMO: reemplazar por API/BD) ===== */
 const TRM_DEMO = 3950; // COP por USD; conectar a la TRM oficial cuando haya backend
 const DAY = 864e5;
-const SOLD_DEMO = 3977; // M COP ya vendidos (demo)
 
 const lotProfiles = {
   "LOTE-TEST-001": { views: 412, viewers: 38, obligations: 6120, likes: 128, favs: 41, comments: 17, offers: 6, bestPercent: 82, startsAt: Date.now() - 3 * DAY, endsAt: Date.now() + 5 * 36e5 },
   "LOTE-TEST-002": { views: 236, viewers: 24, obligations: 3010, likes: 76, favs: 22, comments: 9, offers: 4, bestPercent: 85, startsAt: Date.now() - 2 * DAY, endsAt: Date.now() + 2.25 * DAY },
   "LOTE-TEST-003": { views: 168, viewers: 17, obligations: 1930, likes: 54, favs: 15, comments: 6, offers: 3, bestPercent: 74, startsAt: Date.now() - 1.5 * DAY, endsAt: Date.now() + 4 * DAY },
   "LOTE-TEST-004": { views: 96, viewers: 9, obligations: 980, likes: 33, favs: 10, comments: 3, offers: 2, bestPercent: 88, startsAt: Date.now() - 1 * DAY, endsAt: Date.now() + 6 * DAY },
-  "LOTE-TEST-005": { views: 41, viewers: 6, obligations: 720, likes: 21, favs: 7, comments: 2, offers: 0, bestPercent: 0, startsAt: Date.now() + 18 * 36e5, endsAt: Date.now() + 8 * DAY }
+  "LOTE-TEST-005": { views: 41, viewers: 6, obligations: 720, likes: 21, favs: 7, comments: 2, offers: 0, bestPercent: 0, startsAt: Date.now() + 18 * 36e5, endsAt: Date.now() + 8 * DAY },
+  "LOTE-TEST-006-A": { views: 133, viewers: 14, obligations: 240, likes: 22, favs: 9, comments: 4, offers: 2, bestPercent: 21, startsAt: Date.now() - 1 * DAY, endsAt: Date.now() + 1 * DAY },
+  "LOTE-TEST-006-B": { views: 58, viewers: 8, obligations: 205, likes: 9, favs: 5, comments: 1, offers: 0, bestPercent: 0, startsAt: Date.now() + 1 * DAY, endsAt: Date.now() + 3 * DAY }
 };
 const profileOf = lot => lotProfiles[lot.id] || lotProfiles["LOTE-TEST-001"];
 
@@ -192,9 +208,17 @@ function tickCountdowns() {
     const [id, kind] = el.dataset.cd.split("|");
     const p = lotProfiles[id];
     if (!p) return;
-    const ms = (kind === "inicio" ? p.startsAt : p.endsAt) - Date.now();
-    el.textContent = kind === "inicio" && ms <= 0 ? "En curso" : fmtCountdown(ms);
-    el.classList.toggle("cd-urgent", kind === "cierre" && ms > 0 && ms < DAY);
+    const now = Date.now();
+    if (kind === "elapsed") { el.textContent = now < p.startsAt ? "aún no inicia" : fmtCountdown(now - p.startsAt); return; }
+    if (kind === "since") { el.textContent = fmtCountdown(now - Number(el.dataset.since || now)); return; }
+    let ms = (kind === "inicio" ? p.startsAt : p.endsAt) - now;
+    if (kind === "inicio" && ms <= 0) { // ya empezó: se muestra de una vez el tiempo para el cierre
+      el.dataset.cd = `${id}|cierre`;
+      ms = p.endsAt - now;
+      if (el.id === "cd-main") { const label = $("#cd-label"); if (label) label.textContent = "Tiempo para el cierre de la subasta"; }
+    }
+    el.textContent = fmtCountdown(ms);
+    el.classList.toggle("cd-urgent", ms > 0 && ms < DAY);
   });
 }
 
@@ -210,10 +234,14 @@ function toggleCountdown() {
   const [id, kind] = el.dataset.cd.split("|");
   const next = kind === "inicio" ? "cierre" : "inicio";
   el.dataset.cd = `${id}|${next}`;
-  const started = (lotProfiles[id]?.startsAt || 0) <= Date.now();
-  label.textContent = next === "inicio"
-    ? (started ? "Estado de la subasta" : "Tiempo para el inicio de la subasta")
-    : "Tiempo para el cierre de la subasta";
+  if (next === "inicio" && (lotProfiles[id]?.startsAt || 0) <= Date.now()) { // ya empezó: solo aplica el cierre
+    el.dataset.cd = `${id}|cierre`;
+    label.textContent = "Tiempo para el cierre de la subasta";
+    showToast("Esta subasta ya inició; se muestra el tiempo para el cierre.");
+    tickCountdowns();
+    return;
+  }
+  label.textContent = next === "inicio" ? "Tiempo para el inicio de la subasta" : "Tiempo para el cierre de la subasta";
   tickCountdowns();
 }
 
@@ -507,6 +535,7 @@ function renderDashboard() {
         ${isOriginator ? renderOriginatorKpis() : buyerKpiCards()}
       </div>
       ${isOriginator ? renderOriginatorCharts() : renderDashboardCharts("comprador")}
+      ${isOriginator ? renderSalesHistoryCard() : ""}
       ${renderLotsCard()}
     </div>`;
 
@@ -523,6 +552,11 @@ function kpiCard(label, value, change, direction = "up", action = "") {
       <div class="change ${direction === "down" ? "down" : ""}">${change}</div>
     </div>`;
 }
+
+/* ----- Tramos ----- */
+const tramoChip = lot => lot?.tramo
+  ? `<span class="chip chip-tramo" title="${escapeHtml(lot.tramoLabel || "")}">Tramo ${lot.tramo}${lot.tramoCount ? ` de ${lot.tramoCount}` : ""}${lot.tramoLabel ? ` · ${escapeHtml(lot.tramoLabel)}` : ""}</span>`
+  : "";
 
 /* ----- Visualizaciones: veces que una casa de cobranza entra a una cartera ----- */
 function viewsOf(lotId) {
@@ -576,17 +610,23 @@ function addDemoPortfolio(p) {
   const now = Date.now();
   const [status, statusClass] = now < p.startsAt ? ["Por abrir", "badge-blue"] : now >= p.endsAt ? ["Subasta finalizada", "badge-gold"] : ["Subasta activa", "badge-green"];
   const lot = {
-    id: p.id, title: p.title, vendedor, type: p.type, amount: fmtM(Number(p.nominal)), discount: "", debtors: fmtN(p.debtors),
-    status, statusClass, modality: p.modality, deadline: new Date(p.endsAt).toLocaleDateString("es-CO"), score: "—", description: p.description || ""
+    id: p.id, title: p.tramo ? `${p.title} · Tramo ${p.tramo}` : p.title, vendedor, type: p.type, amount: fmtM(Number(p.nominal)), discount: "", debtors: fmtN(p.debtors),
+    status, statusClass, modality: p.modality, deadline: new Date(p.endsAt).toLocaleDateString("es-CO"), score: "—", description: p.description || "",
+    parentId: p.parentId, tramo: p.tramo, tramoLabel: p.tramoLabel, tramoCount: p.tramoCount, composition: p.composition || null
   };
   lots.push(lot);
   originatorLots.push({ ...lot });
   buyerOpportunities.push({ ...lot });
   lotProfiles[p.id] = { obligations: p.obligations, likes: 0, favs: 0, comments: 0, offers: 0, bestPercent: 0, startsAt: p.startsAt, endsAt: p.endsAt };
   lotReserve[p.id] = Number(p.reserve);
+  // Siguiente número de la entidad (los tramos comparten el de su cartera)
   const prefix = refPrefix(vendedor);
-  const used = Object.values(lotRefs).filter(r => r.startsWith(prefix) && /^\d+$/.test(r.slice(prefix.length))).length;
-  lotRefs[p.id] = prefix + String(used + 1).padStart(3, "0");
+  const nextRef = () => prefix + String(Math.max(0, ...Object.values(lotRefs)
+    .map(r => r.match(new RegExp(`^${prefix}(\\d+)`))).filter(Boolean).map(m => Number(m[1]))) + 1).padStart(3, "0");
+  if (p.parentId) {
+    if (!lotRefs[p.parentId]) lotRefs[p.parentId] = nextRef();
+    lotRefs[p.id] = `${lotRefs[p.parentId]}-${p.tramo}`;
+  } else lotRefs[p.id] = nextRef();
 }
 
 /* ----- KPIs de la casa de cobranza (demo y real) ----- */
@@ -646,8 +686,16 @@ function buyerKpiCards() {
 function renderOriginatorKpis() {
   const total = originatorLots.reduce((s, l) => s + parseLotAmount(l), 0); // M COP
   const usd = total * 1e6 / TRM_DEMO;
-  const featured = originatorLots[0];
+  // Cartera destacada en el temporizador: la que está en cierre o la que cierra primero
+  const featured = originatorLots.find(l => operationForLot(l.id)?.status === "En cierre")
+    || [...originatorLots].filter(l => auctionState(l.id) !== "cerrada").sort((a, b) => profileOf(a).endsAt - profileOf(b).endsAt)[0]
+    || originatorLots[0];
+  const stage = sellerStage(featured);
   const views = originatorLots.map(l => ({ lot: l, ...viewsOf(l.id) }));
+  const favCount = originatorLots.reduce((s, l) => s + (profileOf(l).favs || 0), 0);
+  const commentCount = originatorLots.reduce((s, l) => s + (profileOf(l).comments || 0), 0);
+  const soldOps = (appState.operations || []).filter(o => o.status !== "Cancelada" && originatorLots.some(l => l.id === o.lotId));
+  const soldValue = soldOps.reduce((s, o) => s + o.value, 0);
   const totalViews = views.reduce((s, v) => s + v.views, 0);
   const mostViewed = [...views].sort((a, b) => b.views - a.views)[0];
   const nOffers = originatorLots.reduce((s, l) => s + bidsFor(l.id).length, 0);
@@ -665,18 +713,24 @@ function renderOriginatorKpis() {
     <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'oportunidades')" title="Ver casas de cobranza interesadas">
       <div class="label">Visualizaciones</div>
       <div class="value">${fmtN(totalViews)}</div>
-      <div class="change" style="color:var(--muted)">${totalViews ? `Veces que casas de cobranza entraron a tus carteras. La más vista: ${refOf(mostViewed.lot.id)} (${fmtN(mostViewed.views)})` : "Aún nadie ha entrado a tus carteras"}</div>
+      <div class="change" style="color:var(--muted)">${totalViews ? `Veces que casas de cobranza entraron a tus carteras. La más vista: ${refOf(mostViewed.lot.id)} (${fmtN(mostViewed.views)}). ${fmtN(favCount)} favoritos y ${fmtN(commentCount)} comentarios.` : "Aún nadie ha entrado a tus carteras"}</div>
     </div>
 
     <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'ofertas')" title="Ver ofertas recibidas">
       <div class="label">Mejor oferta actual · ${refOf(best.lot.id)}</div>
       <div class="value">${fmtM(bestValue)} <small style="font-size:13px;color:var(--blue)">${best.p}%</small></div>
-      <div class="change">Vendido ${fmtM(SOLD_DEMO)} de ${fmtM(total)} (${(SOLD_DEMO / total * 100).toFixed(1)}%) · ${nOffers} ofertas</div>
+      <div class="change">Vendido ${fmtM(soldValue)} de ${fmtM(total)} (${total ? (soldValue / total * 100).toLocaleString("es-CO", { maximumFractionDigits: 1 }) : 0}%) · ${nOffers} ofertas</div>
     </div>
 
-    <div class="kpi-card clickable" role="button" tabindex="0" onclick="toggleCountdown()" title="Toca para ver si la subasta está en curso o cuánto falta para el cierre">
-      <div class="label"><span id="cd-label">Tiempo para el cierre de la subasta</span> ⇄</div>
-      <div class="value" id="cd-main" data-cd="${featured.id}|cierre" style="font-size:20px">—</div>
+    <div class="kpi-card clickable" role="button" tabindex="0" onclick="${stage.closing ? `navigate(null,'cierre')` : "toggleCountdown()"}" title="${stage.closing ? "Ver el cierre de la operación" : "Toca para alternar entre el inicio y el cierre de la subasta"}">
+      <div class="label"><span id="cd-label">${stage.closing ? `Cierre: ${stage.label}` : auctionState(featured.id) === "proxima" ? "Tiempo para el inicio de la subasta" : "Tiempo para el cierre de la subasta"}</span> · ${refOf(featured.id)} ${stage.closing ? "" : "⇄"}</div>
+      ${stage.closing
+        ? `<div class="value" style="font-size:20px"><span class="cd" data-cd="${featured.id}|since" data-since="${stage.since}">—</span></div>`
+        : `<div class="value" id="cd-main" data-cd="${featured.id}|${auctionState(featured.id) === "proxima" ? "inicio" : "cierre"}" style="font-size:20px">—</div>`}
+      <div class="timer-lines">
+        <span>1. Proceso completo: <b class="cd" data-cd="${featured.id}|elapsed">—</b> desde el inicio</span>
+        <span>2. Etapa actual (${escapeHtml(stage.label)}): ${stage.closing ? `<b class="cd" data-cd="${featured.id}|since" data-since="${stage.since}">—</b> en esta etapa` : `<b>${auctionState(featured.id) === "proxima" ? "por abrir" : "subasta abierta"}</b>`}</span>
+      </div>
       <div class="change" style="color:var(--muted)" onclick="event.stopPropagation()">
         Avisar por:
         <label><input type="checkbox" ${n.sms ? "checked" : ""} onchange="setNotif('sms',this.checked)"> SMS</label>
@@ -687,22 +741,157 @@ function renderOriginatorKpis() {
 }
 
 /* ----- Gráficas del vendedor ----- */
+/* Fases del proceso de venta para la entidad vendedora */
+const SELLER_PHASES = ["Publicación", "Subasta", "Adjudicación", "Firmas", "Pago", "Entrega y cierre"];
+
+function sellerStage(lot) {
+  const op = lot && operationForLot(lot.id);
+  if (!lot) return { phase: 1, label: "Publicación", closing: false };
+  if (!op) {
+    const st = auctionState(lot.id);
+    return st === "proxima" ? { phase: 1, label: "Publicación", closing: false } : { phase: 2, label: "Subasta", closing: false };
+  }
+  if (op.status === "Cerrada") return { phase: 6, label: "Cerrada", closing: false, done: true };
+  const next = nextStep(op);
+  const phase = { firmaVendedor: 4, firmaComprador: 4, pago: 5, confirmacionPago: 5, entrega: 6, recepcion: 6 }[next?.key] || 3;
+  const lastAt = Math.max(op.createdAt || 0, ...Object.values(op.steps).map(s => s.ts || 0));
+  return { phase, label: next ? next.label : "Cierre", closing: true, since: lastAt || op.createdAt || Date.now() };
+}
+
+function renderSellerTimeline() {
+  const last = SELLER_PHASES.length - 1;
+  const rows = originatorLots.map(l => ({ lot: l, ...sellerStage(l) })).sort((a, b) => b.phase - a.phase);
+  return `
+    <div class="dashboard-chart-header"><div><h3>¿En qué fase vas?</h3><p>El avance de cada cartera, desde que la publicas hasta que entregas y firmas el paz y salvo.</p></div>
+      <button class="chart-period" onclick="navigate(null,'subastas')">Ver subastas</button></div>
+    <details class="how-auction">
+      <summary>¿Cómo funciona la subasta?</summary>
+      <ol>
+        <li><b>Publicación.</b> Publicas la cartera con su tarifa mínima, que solo ves tú, y las fechas de la subasta.</li>
+        <li><b>Subasta.</b> Durante la ventana las casas de cobranza aprobadas revisan el data room y ofertan; cada una puede mejorar su oferta y ve su posición, pero no a los demás. Si la cartera tiene tramos, se subastan uno detrás del otro.</li>
+        <li><b>Adjudicación.</b> Al cierre comparas las ofertas y aceptas una. Puedes aceptar una oferta bajo tu tarifa si te conviene.</li>
+        <li><b>Firmas, pago y entrega.</b> Ambas partes firman el contrato de cesión, la casa de cobranza paga por transferencia, tú confirmas, entregas la base y soportes, y se firma el paz y salvo.</li>
+      </ol>
+    </details>
+    <div class="process">
+      <div class="process-row process-head"><div></div><div class="process-track labels">${SELLER_PHASES.map((p, i) => `<label style="left:${i / last * 100}%"><b>${i + 1}</b>${p}</label>`).join("")}</div><div></div></div>
+      ${rows.map(r => `
+        <div class="process-row clickable" role="button" tabindex="0" title="Abrir ${refOf(r.lot.id)}" onclick="${operationForLot(r.lot.id) ? `navigate(null,'cierre');openOperation('${operationForLot(r.lot.id).id}')` : `openDetail('${r.lot.id}')`}">
+          <div class="process-info"><strong>${refOf(r.lot.id)}</strong><span>${escapeHtml(r.lot.title)}</span></div>
+          <div class="process-track">
+            <div class="process-fill" style="width:${(r.phase - 1) / last * 100}%"></div>
+            ${SELLER_PHASES.map((p, i) => `<span class="process-step ${i + 1 < r.phase || r.done ? "done" : i + 1 === r.phase ? "current" : ""}" style="left:${i / last * 100}%" title="Fase ${i + 1}: ${p}"></span>`).join("")}
+          </div>
+          <div class="process-extra"><em>Fase ${r.phase} · ${escapeHtml(r.done ? "Cerrada" : r.label)}</em>
+            <small>${r.closing ? `En esta etapa: <span class="cd" data-cd="${r.lot.id}|since" data-since="${r.since}">—</span>`
+              : r.done ? "Operación cerrada" : `${cdLabel(r.lot.id)} ${cdHtml(r.lot.id)}`}</small></div>
+        </div>`).join("")}
+    </div>`;
+}
+
+/* Distribución por tipo contando obligaciones, con la referencia de cada cartera */
+function renderObligationsDonut() {
+  const byType = {};
+  originatorLots.forEach(l => {
+    const t = byType[l.type] || (byType[l.type] = { obligations: 0, refs: [] });
+    t.obligations += Number(profileOf(l).obligations || 0);
+    t.refs.push(refOf(l.id));
+  });
+  const total = Object.values(byType).reduce((s, t) => s + t.obligations, 0);
+  if (!total) return '<div class="page-placeholder"><strong>Aún no hay obligaciones publicadas</strong></div>';
+  const data = Object.entries(byType).sort((a, b) => b[1].obligations - a[1].obligations)
+    .map(([type, t]) => [`${type} (${t.refs.join(", ")})`, Math.round(t.obligations / total * 100), type]);
+  return svgDonut(data, fmtN(total), "obligaciones", "dv");
+}
+
+/* Mapa de calor: obligaciones por ciudad y altura de mora */
+const HEAT_MORA = ["Al día", "1–90 días", "91–180 días", "181–360 días", "Más de 360"];
+
+function lotHeat(lot) {
+  if (lot.composition?.cells) return lot.composition; // modo real: viene de la base que subió el vendedor
+  const obligations = Number(profileOf(lot).obligations || 0);
+  if (!obligations) return null;
+  // Demo: reparte las obligaciones según la composición de ejemplo, distinta para cada cartera
+  const seed = [...lot.id].reduce((s, c) => s + c.charCodeAt(0), 0);
+  const base = [.18, .22, .2, .22, .18];
+  const mora = base.map((_, i) => base[(i + seed) % base.length]);
+  const cities = composition.ciudades;
+  return { rows: cities.map(c => c[0]), cols: HEAT_MORA, cells: cities.map(c => mora.map(m => Math.round(obligations * c[1] * m))) };
+}
+
+function renderHeatmap() {
+  const sources = originatorLots.map(l => ({ lot: l, heat: lotHeat(l) })).filter(x => x.heat);
+  if (!sources.length) return '<div class="page-placeholder"><strong>Sin datos para el mapa</strong><span>Sube la base de obligaciones al publicar la cartera y el mapa se arma solo.</span></div>';
+  const rows = [], grid = {};
+  sources.forEach(({ heat }) => heat.rows.forEach((city, i) => {
+    if (!rows.includes(city)) rows.push(city);
+    heat.cols.forEach((col, j) => {
+      const k = `${city}|${col}`;
+      grid[k] = (grid[k] || 0) + (heat.cells[i]?.[j] || 0);
+    });
+  }));
+  const max = Math.max(1, ...Object.values(grid));
+  const cell = v => {
+    const a = v / max;
+    return `<td style="background:rgba(20,35,61,${(0.06 + a * 0.85).toFixed(2)});color:${a > .45 ? "#fff" : "var(--navy)"}" title="${fmtN(v)} obligaciones">${fmtN(v)}</td>`;
+  };
+  return `
+    <div class="heatmap-wrap"><table class="heatmap">
+      <thead><tr><th>Ciudad</th>${HEAT_MORA.map(c => `<th>${c}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map(city => `<tr><th>${escapeHtml(city)}</th>${HEAT_MORA.map(col => cell(grid[`${city}|${col}`] || 0)).join("")}</tr>`).join("")}</tbody>
+    </table></div>
+    <p class="heatmap-note">Carteras incluidas: ${sources.map(s => refOf(s.lot.id)).join(", ")}. ${appState.realMode ? "" : "En el demo la distribución es de ejemplo."}</p>`;
+}
+
+/* Antecedentes de ventas de la entidad vendedora */
+function sellerSalesHistory() {
+  const fromOps = (appState.operations || []).filter(o => o.status !== "Cancelada" && originatorLots.some(l => l.id === o.lotId))
+    .map(o => ({ lotId: o.lotId, title: o.lotTitle, nominal: o.nominal, percent: o.percent, value: o.value, buyer: o.buyer, date: new Date(o.createdAt).toLocaleDateString("es-CO"), status: o.status }));
+  const history = appState.realMode ? [] : sellerSalesDemo.map(h => ({ ...h, value: +(h.nominal * h.percent / 100).toFixed(1), status: "Cerrada" }));
+  return [...history, ...fromOps];
+}
+
+function renderSalesHistoryCard() {
+  const rows = sellerSalesHistory();
+  return `
+    <div class="card" style="margin-top:18px">
+      <div class="card-header"><div><h3>Antecedentes de ventas</h3><p>Carteras que ya vendiste por la plataforma</p></div></div>
+      ${rows.length ? `<div class="table-wrap"><table><thead><tr>
+        <th>Referencia del proceso</th><th>Valor total de la cartera</th><th>% vendido del total</th><th>Valor vendido</th><th>Fecha</th><th>Comprador</th><th>Estado</th>
+      </tr></thead><tbody>
+        ${rows.map(r => `<tr>
+          <td><strong>${refOf(r.lotId)}</strong><br><small style="color:var(--muted-2)">${escapeHtml(r.title)}</small></td>
+          <td>${fmtM(r.nominal)}</td><td>${fmtPct(r.percent)}</td><td>${fmtM(r.value)}</td>
+          <td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.buyer)}</td>
+          <td><span class="badge ${r.status === "Cerrada" ? "badge-green" : "badge-gold"}">${r.status === "Cerrada" ? "Vendida" : "En cierre"}</span></td>
+        </tr>`).join("")}
+      </tbody></table></div>` : '<div class="page-placeholder" style="margin:22px"><strong>Aún no tienes ventas</strong><span>Cuando cierres tu primera operación aparecerá aquí.</span></div>'}
+    </div>`;
+}
+
+/* Estado de tus operaciones (ahora en Mis carteras) */
+function sellerStatusBars() {
+  const ops = (appState.operations || []).filter(o => o.status !== "Cancelada" && originatorLots.some(l => l.id === o.lotId));
+  return [
+    ["En subasta", originatorLots.filter(l => !operationForLot(l.id) && auctionState(l.id) !== "cerrada").length, "active"],
+    ["En cierre", ops.filter(o => o.status === "En cierre").length, "negotiation"],
+    ["Vendidas", ops.filter(o => o.status === "Cerrada").length + (appState.realMode ? 0 : sellerSalesDemo.length), "completed"]
+  ];
+}
+
 function renderOriginatorCharts() {
-  const donut = [["Consumo", 42], ["Libranza", 28], ["Comercial", 18], ["Hipotecaria", 12]];
-  const statuses = [["En mercado", 36, "active"], ["En negociación", 18, "negotiation"], ["Cerradas", 72, "completed"]];
   return `
     <div class="dashboard-chart-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <div class="dashboard-chart-card dashboard-chart-large">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">SUBASTAS</div><h3>Mejor oferta vs. tu tarifa</h3><p>La línea dorada marca la tarifa mínima que fijaste para cada cartera.</p></div><button class="chart-period" onclick="navigate(null,'ofertas')">Ver ofertas</button></div>
-        ${renderReserveChart(originatorLots)}
+        ${renderSellerTimeline()}
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">TU PORTAFOLIO</div><h3>Distribución por tipo</h3></div><button class="chart-period" onclick="navigate(null,'cartera')">Mis carteras</button></div>
-        ${svgDonut(donut, "126", "operaciones", "dv")}
+        <div class="dashboard-chart-header"><div><h3>Distribución por tipo</h3><p>Obligaciones por tipo de cartera y de qué carteras salen</p></div><button class="chart-period" onclick="navigate(null,'cartera')">Mis carteras</button></div>
+        ${renderObligationsDonut()}
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Estado de tus operaciones</h3></div><button class="chart-period" onclick="navigate(null,'cierre')">Cierre</button></div>
-        ${renderStatusBars(statuses)}
+        <div class="dashboard-chart-header"><div><h3>Mapa de calor de las obligaciones</h3><p>Ciudad y altura de mora</p></div></div>
+        ${renderHeatmap()}
       </div>
     </div>`;
 }
@@ -856,6 +1045,7 @@ function renderPage(page) {
         ${isOrig ? `<button class="btn btn-navy btn-small" style="float:right" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
         <h2>${current.title}</h2>
         <p>${current.description}</p>
+        ${isOrig ? `<div class="dashboard-chart-card" style="margin-top:18px"><div class="dashboard-chart-header"><div><h3>Estado de tus operaciones</h3></div><button class="chart-period" onclick="navigate(null,'cierre')">Cierre</button></div>${renderStatusBars(sellerStatusBars())}</div>` : ""}
         ${renderFilterBar(pool)}
         ${!items.length ? noMatches("cartera") : ""}
         <div class="test-lot-grid">
@@ -1293,7 +1483,8 @@ function runSelfTests(showFeedback = true) {
   const results = [];
   const assert = (name, condition) => results.push({ name, ok: Boolean(condition) });
 
-  assert("Existen las 5 carteras de prueba de base", lots.filter(l => !l.id.startsWith("LOTE-DEMO-")).length === 5);
+  assert("Existen las carteras y tramos de prueba de base", lots.filter(l => !l.id.startsWith("LOTE-DEMO-")).length === 7);
+  assert("Los tramos se subastan uno detrás del otro", lotProfiles["LOTE-TEST-006-B"].startsAt >= lotProfiles["LOTE-TEST-006-A"].endsAt);
   assert("Todas las carteras tienen referencia única", new Set(lots.map(lot => lot.id)).size === lots.length);
   assert("Todas las carteras tienen valor nominal", lots.every(lot => lot.amount.includes("$")));
   assert("Todas las carteras tienen modalidad", lots.every(lot => lot.modality));

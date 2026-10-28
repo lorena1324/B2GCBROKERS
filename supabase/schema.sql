@@ -66,6 +66,13 @@ create table if not exists public.portfolios (
   check (ends_at > starts_at)
 );
 
+-- Tramos: una cartera puede dividirse en tramos (BS004-A, BS004-B…) que se subastan uno detrás del otro.
+-- composition guarda ciudad × altura de mora para el mapa de calor del vendedor.
+alter table public.portfolios add column if not exists parent_code text;
+alter table public.portfolios add column if not exists tramo text;
+alter table public.portfolios add column if not exists tramo_label text;
+alter table public.portfolios add column if not exists composition jsonb;
+
 create table if not exists public.bids (
   id uuid primary key default gen_random_uuid(),
   portfolio_id uuid not null references public.portfolios on delete cascade,
@@ -245,6 +252,22 @@ language sql immutable set search_path = public as $$
    where w <> '' and w !~* '^(de|del|la|las|los|el|y|s\.?a\.?s?\.?|ltda\.?|e\.?u\.?)$' and w ~ '^[[:alnum:]]';
 $$;
 
+-- Prefijo único de la entidad para la referencia del proceso; se asigna la primera vez que publica
+create or replace function public.company_ref_prefix(p_company uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare c public.companies; base text; pref text; i integer := 1;
+begin
+  select * into c from public.companies where id = p_company for update;
+  if c.ref_prefix is not null then return c.ref_prefix; end if;
+  base := public.ref_prefix_for(c.name);
+  pref := base;
+  while exists (select 1 from public.companies where ref_prefix = pref) loop
+    i := i + 1; pref := base || i;
+  end loop;
+  update public.companies set ref_prefix = pref where id = c.id;
+  return pref;
+end $$;
+
 create or replace function public.create_portfolio(p_title text, p_type text, p_modality text, p_nominal numeric,
   p_debtors integer, p_obligations integer, p_reserve numeric, p_starts timestamptz, p_ends timestamptz, p_description text)
 returns public.portfolios
@@ -255,18 +278,9 @@ begin
   if p_ends <= now() then raise exception 'La fecha de cierre debe ser futura.'; end if;
   if p_ends <= p_starts then raise exception 'El cierre debe ser después del inicio.'; end if;
 
-  -- Referencia del proceso: prefijo único de la entidad + consecutivo de sus carteras
-  select * into c from public.companies where id = c.id for update;
-  if c.ref_prefix is null then
-    base := public.ref_prefix_for(c.name);
-    pref := base;
-    while exists (select 1 from public.companies where ref_prefix = pref) loop
-      i := i + 1; pref := base || i;
-    end loop;
-    update public.companies set ref_prefix = pref where id = c.id;
-    c.ref_prefix := pref;
-  end if;
-  select count(*) + 1 into n from public.portfolios where seller_company = c.id;
+  -- Referencia del proceso: prefijo único de la entidad + consecutivo de sus carteras (los tramos comparten número)
+  c.ref_prefix := public.company_ref_prefix(c.id);
+  select count(distinct coalesce(parent_code, code)) + 1 into n from public.portfolios where seller_company = c.id;
 
   insert into public.portfolios (code, seller_company, seller_name, title, type, modality, nominal, debtors, obligations,
                                  reserve_percent, starts_at, ends_at, description)
@@ -274,6 +288,53 @@ begin
           p_obligations, p_reserve, p_starts, p_ends, p_description)
   returning * into p;
   return p;
+end $$;
+
+-- Cartera dividida en tramos: cada tramo es una subasta propia; se abren uno detrás del otro con la misma duración
+create or replace function public.create_portfolio_tramos(p_title text, p_type text, p_modality text, p_starts timestamptz,
+  p_ends timestamptz, p_description text, p_tramos jsonb)
+returns setof public.portfolios
+language plpgsql security definer set search_path = public as $$
+declare c public.companies; p public.portfolios; t jsonb; k integer := 0; n integer; dur interval; base_code text; cnt integer;
+begin
+  c := public.require_company('vendedor');
+  cnt := jsonb_array_length(coalesce(p_tramos, '[]'::jsonb));
+  if cnt < 2 then raise exception 'Una cartera por tramos necesita al menos 2 tramos.'; end if;
+  if cnt > 10 then raise exception 'Máximo 10 tramos por cartera.'; end if;
+  if p_ends <= p_starts then raise exception 'El cierre debe ser después del inicio.'; end if;
+  if p_ends <= now() then raise exception 'La fecha de cierre debe ser futura.'; end if;
+  dur := p_ends - p_starts;
+
+  c.ref_prefix := public.company_ref_prefix(c.id);
+  select count(distinct coalesce(parent_code, code)) + 1 into n from public.portfolios where seller_company = c.id;
+  base_code := c.ref_prefix || lpad(n::text, 3, '0');
+
+  for t in select value from jsonb_array_elements(p_tramos) loop
+    if coalesce((t->>'nominal')::numeric, 0) <= 0 or coalesce((t->>'debtors')::integer, 0) <= 0 or coalesce((t->>'obligations')::integer, 0) <= 0 then
+      raise exception 'Completa valor, deudores y obligaciones del tramo %.', chr(65 + k);
+    end if;
+    if coalesce((t->>'reserve')::numeric, 0) not between 0.1 and 100 then
+      raise exception 'La tarifa del tramo % debe estar entre 0,1%% y 100%%.', chr(65 + k);
+    end if;
+    insert into public.portfolios (code, parent_code, tramo, tramo_label, seller_company, seller_name, title, type, modality,
+                                   nominal, debtors, obligations, reserve_percent, starts_at, ends_at, description)
+    values (base_code || '-' || chr(65 + k), base_code, chr(65 + k), nullif(trim(t->>'label'), ''), c.id, c.name, trim(p_title), p_type,
+            p_modality, (t->>'nominal')::numeric, (t->>'debtors')::integer, (t->>'obligations')::integer, (t->>'reserve')::numeric,
+            p_starts + dur * k, p_starts + dur * (k + 1), p_description)
+    returning * into p;
+    return next p;
+    k := k + 1;
+  end loop;
+end $$;
+
+-- Composición (ciudad × mora) para el mapa de calor; solo la entidad dueña
+create or replace function public.set_portfolio_composition(p_portfolio uuid, p_comp jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+declare c public.companies;
+begin
+  c := public.require_company('vendedor');
+  update public.portfolios set composition = p_comp where id = p_portfolio and seller_company = c.id;
+  if not found then raise exception 'Cartera no encontrada.'; end if;
 end $$;
 
 create or replace function public.cancel_portfolio(p_portfolio uuid) returns public.portfolios
@@ -287,17 +348,18 @@ begin
   return p;
 end $$;
 
--- Mercado para casas de cobranza: sin la tarifa del vendedor
+-- Mercado para casas de cobranza: sin la tarifa del vendedor (incluye los datos del tramo)
+drop function if exists public.market_portfolios();
 create or replace function public.market_portfolios()
 returns table (id uuid, code text, seller_name text, title text, type text, modality text, nominal numeric,
                debtors integer, obligations integer, starts_at timestamptz, ends_at timestamptz, description text,
-               status text, created_at timestamptz)
+               status text, created_at timestamptz, parent_code text, tramo text, tramo_label text)
 language plpgsql stable security definer set search_path = public as $$
 begin
   perform public.require_company(null);
   return query
     select p.id, p.code, p.seller_name, p.title, p.type, p.modality, p.nominal, p.debtors, p.obligations,
-           p.starts_at, p.ends_at, p.description, p.status, p.created_at
+           p.starts_at, p.ends_at, p.description, p.status, p.created_at, p.parent_code, p.tramo, p.tramo_label
       from public.portfolios p
      where p.status <> 'cancelada'
      order by p.ends_at;
@@ -502,7 +564,8 @@ begin
     'create_my_company(text,text,text,text,text,text,text)', 'set_company_doc(text,text,text,bigint)',
     'admin_review_company(uuid,text,text)', 'ref_prefix_for(text)', 'create_portfolio(text,text,text,numeric,integer,integer,numeric,timestamptz,timestamptz,text)',
     'cancel_portfolio(uuid)', 'market_portfolios()', 'bid_book()', 'place_bid(uuid,numeric,text)', 'reject_bid(uuid,boolean)',
-    'adjudicate_bid(uuid)', 'register_view(uuid)', 'portfolio_view_stats()', 'advance_operation(uuid,text,text,text,numeric,text,boolean)', 'cancel_operation(uuid)']
+    'adjudicate_bid(uuid)', 'register_view(uuid)', 'company_ref_prefix(uuid)',
+    'create_portfolio_tramos(text,text,text,timestamptz,timestamptz,text,jsonb)', 'set_portfolio_composition(uuid,jsonb)', 'portfolio_view_stats()', 'advance_operation(uuid,text,text,text,numeric,text,boolean)', 'cancel_operation(uuid)']
   loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);

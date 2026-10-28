@@ -145,10 +145,11 @@ function portfolioToLot(p) {
     : now >= end ? ["Subasta finalizada", "badge-gold"]
     : ["Subasta activa", "badge-green"];
   return {
-    id: p.code, uuid: p.id, real: true, title: p.title, vendedor: p.seller_name, type: p.type,
+    id: p.code, uuid: p.id, real: true, title: p.tramo ? `${p.title} · Tramo ${p.tramo}` : p.title, vendedor: p.seller_name, type: p.type,
     amount: fmtM(Number(p.nominal)), discount: "", debtors: fmtN(p.debtors), obligations: p.obligations,
     status, statusClass, modality: p.modality, deadline: new Date(end).toLocaleDateString("es-CO"),
-    score: "—", description: p.description || "", dbStatus: p.status
+    score: "—", description: p.description || "", dbStatus: p.status,
+    parentId: p.parent_code || null, tramo: p.tramo || null, tramoLabel: p.tramo_label || null, composition: p.composition || null
   };
 }
 
@@ -199,7 +200,7 @@ async function loadRealData() {
     const steps = {};
     (o.operation_steps || []).sort((a, b) => STEP_ORDER.indexOf(a.step_key) - STEP_ORDER.indexOf(b.step_key)).forEach(s => {
       steps[s.step_key] = {
-        at: new Date(s.created_at).toLocaleString("es-CO"), by: s.company_name,
+        at: new Date(s.created_at).toLocaleString("es-CO"), ts: Date.parse(s.created_at), by: s.company_name,
         signer: s.signer || undefined, reference: s.reference || undefined,
         amount: s.amount != null ? Number(s.amount) : undefined, file: s.file_path || undefined
       };
@@ -219,6 +220,10 @@ async function loadRealData() {
     const code = codeByUuid[v.portfolio_id];
     if (code && lotProfiles[code]) { lotProfiles[code].views = Number(v.views); lotProfiles[code].viewers = Number(v.viewers); }
   });
+  // Cuántos tramos tiene cada cartera
+  const tramoCount = {};
+  lots.forEach(l => { if (l.parentId) tramoCount[l.parentId] = (tramoCount[l.parentId] || 0) + 1; });
+  [lots, originatorLots, buyerOpportunities].forEach(list => list.forEach(l => { if (l.parentId) l.tramoCount = tramoCount[l.parentId]; }));
   lots.forEach(l => { l._base = null; });
   syncLotStatuses();
 }
@@ -392,6 +397,7 @@ async function refreshOnboarding() {
    PUBLICAR CARTERA (entidad vendedora)
    ========================================================= */
 function renderPublishForm() {
+  if (typeof lastParsedBase !== "undefined") lastParsedBase = null;
   const local = d => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
   const start = new Date(Date.now() + 5 * 6e4), end = new Date(Date.now() + 7 * DAY);
   return `
@@ -420,6 +426,18 @@ function renderPublishForm() {
         <div class="field"><label for="pf-reserve">Tarifa mínima (% del nominal) *</label><input id="pf-reserve" type="number" min="0.1" max="100" step="0.1" placeholder="18"></div>
         <div class="field"><label for="pf-starts">Inicio de la subasta *</label><input id="pf-starts" type="datetime-local" value="${local(start)}"></div>
         <div class="field"><label for="pf-ends">Cierre de la subasta *</label><input id="pf-ends" type="datetime-local" value="${local(end)}"></div>
+      </div>
+      <div class="tramos-box">
+        <label class="consent"><input type="checkbox" id="pf-use-tramos" onchange="toggleTramos(this.checked)">
+          <span><strong>Dividir la cartera en tramos.</strong> Cada tramo tiene su valor y su tarifa, y se subasta por separado, uno detrás del otro, con la misma duración que fijaste arriba.</span></label>
+        <button type="button" id="pf-suggest-tramos" class="btn btn-ghost btn-small hidden" onclick="suggestTramosByMora()">Sugerir tramos por altura de mora</button>
+        <div id="pf-tramos" class="hidden">
+          <div class="table-wrap"><table class="tramos-table">
+            <thead><tr><th>Tramo</th><th>Criterio</th><th>Valor nominal (M)</th><th>Deudores</th><th>Obligaciones</th><th>Tarifa %</th><th></th></tr></thead>
+            <tbody id="pf-tramos-body"></tbody>
+          </table></div>
+          <div class="tramos-actions"><button type="button" class="btn btn-ghost btn-small" onclick="addTramoRow()">Agregar tramo</button><span id="pf-tramos-sum" class="tramos-sum"></span></div>
+        </div>
       </div>
       <div class="field"><label for="pf-desc">Descripción para las casas de cobranza</label><textarea id="pf-desc" rows="3" placeholder="Antigüedad de mora, ciudades, estado de soportes…"></textarea></div>
       <div class="field">
@@ -497,32 +515,55 @@ async function submitPortfolio() {
   if (!data.p_starts || !data.p_ends || Date.parse(data.p_ends) <= Date.parse(data.p_starts)) return showToast("El cierre debe ser después del inicio.");
   const files = [...($("#pf-files")?.files || [])];
   if (files.some(f => f.size > MAX_DATAROOM_FILE)) return showToast("Algún archivo supera 500 MB.");
+  const tramos = $("#pf-use-tramos")?.checked ? readTramos() : null;
+  if (tramos) { const err = validateTramos(tramos, data.p_nominal); if (err) return showToast(err); }
 
   const btn = $("#pf-submit");
-  if (!appState.realMode) { createDemoPortfolio(data, files.length); return; }
+  if (!appState.realMode) { createDemoPortfolio(data, files.length, tramos); return; }
   btn.disabled = true; btn.textContent = "Publicando…";
-  const p = await rpcOrToast("create_portfolio", data);
-  if (!p) { btn.disabled = false; btn.textContent = "Publicar cartera"; return; }
+  let created;
+  if (tramos) {
+    created = await rpcOrToast("create_portfolio_tramos", {
+      p_title: data.p_title, p_type: data.p_type, p_modality: data.p_modality, p_starts: data.p_starts, p_ends: data.p_ends, p_description: data.p_description,
+      p_tramos: tramos.map(({ tramo, label, nominal, debtors, obligations, reserve }) => ({ tramo, label, nominal, debtors, obligations, reserve }))
+    });
+  } else {
+    const p = await rpcOrToast("create_portfolio", data);
+    created = p ? [p] : null;
+  }
+  if (!created || !created.length) { btn.disabled = false; btn.textContent = "Publicar cartera"; return; }
+  // Mapa de calor: composición de cada cartera o tramo, si se subió la base
+  for (const [i, p] of created.entries()) {
+    const comp = compositionFor(tramos ? tramos[i] : null);
+    if (comp) await sb.rpc("set_portfolio_composition", { p_portfolio: p.id, p_comp: comp });
+  }
   let failed = 0;
-  for (const f of files) {
-    try { await uploadTo("portfolio-docs", `${p.id}/${safeName(f.name)}`, f); } catch { failed++; }
+  for (const p of created) for (const f of files) {
+    try { await uploadTo("portfolio-docs", `${p.id}/${safeName(f.name)}`, f, true); } catch { failed++; }
   }
   await loadRealData();
-  showToast(failed ? `${p.code} publicada, pero ${failed} archivo(s) no se subieron.` : `${p.code} publicada. Ya la ven las casas de cobranza.`);
+  const base = created[0].parent_code || created[0].code;
+  showToast(`${base} publicada${tramos ? ` en ${created.length} tramos; el tramo A abre primero` : ""}.${failed ? ` ${failed} archivo(s) no se subieron.` : " Ya la ven las casas de cobranza."}`);
   navigate(null, "cartera");
 }
 
 /* Demo: la cartera publicada queda en este navegador y aparece para las casas de cobranza demo */
-function createDemoPortfolio(data, fileCount) {
-  const p = {
-    id: `LOTE-DEMO-${Date.now()}`, title: data.p_title, type: data.p_type, modality: data.p_modality,
-    nominal: data.p_nominal, debtors: data.p_debtors, obligations: data.p_obligations, reserve: data.p_reserve,
-    startsAt: Date.parse(data.p_starts), endsAt: Date.parse(data.p_ends), description: data.p_description
-  };
-  appState.demoPortfolios = [...(appState.demoPortfolios || []), p];
-  addDemoPortfolio(p);
+function createDemoPortfolio(data, fileCount, tramos) {
+  const id = `LOTE-DEMO-${Date.now()}`;
+  const start = Date.parse(data.p_starts), dur = Date.parse(data.p_ends) - start;
+  const common = { title: data.p_title, type: data.p_type, modality: data.p_modality, description: data.p_description };
+  const list = tramos
+    ? tramos.map((t, i) => ({
+        ...common, id: `${id}-${t.tramo}`, parentId: id, tramo: t.tramo, tramoLabel: t.label, tramoCount: tramos.length,
+        nominal: t.nominal, debtors: t.debtors, obligations: t.obligations, reserve: t.reserve,
+        startsAt: start + i * dur, endsAt: start + (i + 1) * dur, composition: compositionFor(t) // uno detrás del otro
+      }))
+    : [{ ...common, id, nominal: data.p_nominal, debtors: data.p_debtors, obligations: data.p_obligations, reserve: data.p_reserve,
+        startsAt: start, endsAt: start + dur, composition: compositionFor(null) }];
+  appState.demoPortfolios = [...(appState.demoPortfolios || []), ...list];
+  list.forEach(addDemoPortfolio);
   saveDemoState();
-  showToast(`${refOf(p.id)} publicada.${fileCount ? " En el demo los archivos no se guardan." : ""} Ya la ven las casas de cobranza demo.`);
+  showToast(`${tramos ? `${lotRefs[id]} publicada en ${list.length} tramos (${list.map(p => refOf(p.id)).join(", ")}); el tramo A abre primero` : `${refOf(id)} publicada`}.${fileCount ? " En el demo los archivos no se guardan." : ""} Ya la ven las casas de cobranza demo.`);
   navigate(null, "cartera");
 }
 

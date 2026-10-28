@@ -71,7 +71,7 @@ function adjudicateOffer(offerId) {
     value: +(parseLotAmount(lot) * bid.percent / 100).toFixed(1),
     nominal: parseLotAmount(lot),
     status: "En cierre", createdAt: Date.now(),
-    steps: { adjudicacion: { at: nowText(), by: seller } },
+    steps: { adjudicacion: { at: nowText(), ts: Date.now(), by: seller } },
     log: [{ at: nowText(), text: `${BROKER} registra la adjudicación: oferta ${bid.id} de ${bid.buyer} por ${bid.percent}% (${fmtM(parseLotAmount(lot) * bid.percent / 100)}).` }]
   };
   allOperations().push(op);
@@ -90,7 +90,7 @@ function advanceOperation(opId, key, payload = {}, role = currentRole) {
   if (!step || step.key !== key) return { error: `Este paso aún no está habilitado. Primero: ${step?.label || "—"}.` };
   if (step.role !== role) return { error: `Este paso le corresponde ${ROLE[step.role].al}.` };
 
-  const record = { at: nowText(), by: step.role === "vendedor" ? op.seller : op.buyer };
+  const record = { at: nowText(), ts: Date.now(), by: step.role === "vendedor" ? op.seller : op.buyer };
   if (step.kind === "firma") {
     const signer = String(payload.signer || "").trim();
     if (signer.length < 3) return { error: "Escribe el nombre completo de quien firma." };

@@ -12,14 +12,15 @@ const HOUR = 36e5;
 const PHASES = ["Exploración", "Data room", "Oferta", "Subasta", "Adjudicación", "Cierre"];
 
 // Tarifa mínima (% del nominal) que fija el vendedor para cada lote — DEMO
-const lotReserve = { "LOTE-TEST-001": 80, "LOTE-TEST-002": 83, "LOTE-TEST-003": 72, "LOTE-TEST-004": 86, "LOTE-TEST-005": 78 };
+const lotReserve = { "LOTE-TEST-001": 80, "LOTE-TEST-002": 83, "LOTE-TEST-003": 72, "LOTE-TEST-004": 86, "LOTE-TEST-005": 78, "LOTE-TEST-006-A": 20, "LOTE-TEST-006-B": 14 };
 
 // Ofertas de otros compradores — DEMO. [comprador, %, horas atrás]
 const seedBids = {
   "LOTE-TEST-001": [["Cobranzas Demo Andina", 76.5, 70], ["Recaudos Demo Capital", 79.2, 52], ["Gestión de Cobro Norte Demo", 80.4, 30], ["Cobranzas Demo Andina", 81.1, 18], ["Recuperadora Demo Pacífico", 79.8, 9], ["Recaudos Demo Capital", 82, 4]],
   "LOTE-TEST-002": [["Cobranzas Demo Andina", 84, 40], ["Gestión de Cobro Norte Demo", 82.5, 26], ["Recuperadora Demo Pacífico", 85, 12], ["Recaudos Demo Capital", 83.2, 5]],
   "LOTE-TEST-003": [["Recaudos Demo Capital", 70.5, 33], ["Cobranzas Demo Andina", 74, 20], ["Gestión de Cobro Norte Demo", 71.8, 6]],
-  "LOTE-TEST-004": [["Recuperadora Demo Pacífico", 87.1, 15], ["Cobranzas Demo Andina", 88, 7]]
+  "LOTE-TEST-004": [["Recuperadora Demo Pacífico", 87.1, 15], ["Cobranzas Demo Andina", 88, 7]],
+  "LOTE-TEST-006-A": [["Recaudos Demo Capital", 19.5, 20], ["Gestión de Cobro Norte Demo", 21, 6]]
 };
 
 const demoBids = Object.entries(seedBids).flatMap(([lotId, rows]) =>
@@ -168,6 +169,7 @@ function renderAuctionBanner(lot) {
       <div class="auction-banner-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
       <div><small>Oferta más alta</small><strong>${top ? top.percent + "%" : "—"}</strong></div>
       <div><small>Postores</small><strong>${bidderCount(lot.id)}</strong></div>
+      ${lot.tramo ? `<div><small>Tramo</small><strong>${lot.tramo}${lot.tramoCount ? ` de ${lot.tramoCount}` : ""}</strong></div>` : ""}
       ${seller ? `<div><small>Tu tarifa</small><strong>${reserveOf(lot.id)}%</strong></div>` : ""}
     </div>`;
 }
@@ -297,6 +299,7 @@ function renderMarketPage(title, description) {
           <article class="test-lot-card market-card clickable ${fav.has(lot.id) ? "is-fav" : ""}" role="button" tabindex="0" onclick="openDetail('${lot.id}')">
             <div class="market-card-top"><div class="lot-number">${refOf(lot.id)}</div>${favButton(lot.id)}</div>
             <div class="market-card-tags">
+              ${tramoChip(lot)}
               ${lot.id === topId ? '<span class="chip chip-hot">Más vendida</span>' : ""}
               ${lot.id === soonId ? '<span class="chip chip-urgent">Vence primero</span>' : ""}
               ${fav.has(lot.id) ? '<span class="chip chip-fav">Favorita</span>' : ""}
@@ -330,6 +333,7 @@ function auctionCard(lot, seller) {
     <article class="auction-card state-${st} clickable" role="button" tabindex="0" onclick="openDetail('${lot.id}')">
       <div class="auction-card-head"><span class="state-chip ${st}">${stateLabel}</span>${seller ? "" : favButton(lot.id)}</div>
       <div class="lot-number">${refOf(lot.id)}</div>
+      ${tramoChip(lot)}
       <h3>${lot.title}</h3>
       <span class="auction-sub">${lot.type} · ${lot.modality} · ${lot.amount}</span>
       <div class="auction-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
@@ -423,9 +427,9 @@ function svgDonut(data, centerValue, centerLabel, idp = "d") {
   const r = 72, C = 2 * Math.PI * r, gap = 3, DEPTH = 14, CY = 64;
   const ring = (cls, colorOf) => {
     let acc = 0;
-    return data.map(([label, value], i) => {
+    return data.map(([label, value, key = label], i) => {
       const len = C * value / total;
-      const seg = `<circle class="${cls}" ${cls === "donut-seg" ? `onclick="filterByType('${escapeHtml(label)}')" role="button" aria-label="Ver ${escapeHtml(label)}"` : ""} cx="100" cy="100" r="${r}" stroke="${colorOf(i)}" stroke-dasharray="${Math.max(0, len - gap).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" style="animation-delay:${i * .12}s">${cls === "donut-seg" ? `<title>${label}: ${value}%</title>` : ""}</circle>`;
+      const seg = `<circle class="${cls}" ${cls === "donut-seg" ? `onclick="filterByType('${escapeHtml(key)}')" role="button" aria-label="Ver ${escapeHtml(label)}"` : ""} cx="100" cy="100" r="${r}" stroke="${colorOf(i)}" stroke-dasharray="${Math.max(0, len - gap).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" style="animation-delay:${i * .12}s">${cls === "donut-seg" ? `<title>${label}: ${value}%</title>` : ""}</circle>`;
       acc += len;
       return seg;
     }).join("");
@@ -451,8 +455,8 @@ function svgDonut(data, centerValue, centerLabel, idp = "d") {
       </svg>
       <div class="donut-premium-center"><strong>${centerValue}</strong><span>${centerLabel}</span></div>
     </div>
-    <div class="legend-premium">${data.map(([label, value], i) => `
-      <div class="clickable" role="button" tabindex="0" title="Ver carteras de tipo ${escapeHtml(label)}" onclick="filterByType('${escapeHtml(label)}')"><i style="background:linear-gradient(135deg,${CHART_COLORS[i % 5][0]},${CHART_COLORS[i % 5][1]})"></i><span>${label}</span>
+    <div class="legend-premium">${data.map(([label, value, key = label], i) => `
+      <div class="clickable" role="button" tabindex="0" title="Ver carteras de tipo ${escapeHtml(key)}" onclick="filterByType('${escapeHtml(key)}')"><i style="background:linear-gradient(135deg,${CHART_COLORS[i % 5][0]},${CHART_COLORS[i % 5][1]})"></i><span>${label}</span>
         <div class="legend-bar"><b style="width:${value / Math.max(...data.map(d => d[1])) * 100}%;background:linear-gradient(90deg,${CHART_COLORS[i % 5][0]},${CHART_COLORS[i % 5][1]})"></b></div><strong>${value}%</strong></div>`).join("")}
     </div>`;
 }

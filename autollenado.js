@@ -189,7 +189,7 @@ function parseBase(rows) {
   const summary = [`Leímos ${fmtN(items.length)} filas con saldo.`];
   if (data.length > items.length) summary.push(`${fmtN(data.length - items.length)} filas sin saldo válido se ignoraron.`);
   if (missing.length) summary.push(`Revisa a mano: ${missing.join(" y ")}.`);
-  return { kind: "base", fields, summary, pii: headers.some(h => PII.test(h)) };
+  return { kind: "base", fields, summary, pii: headers.some(h => PII.test(h)), items, factor: total >= 1e6 ? 1e6 : 1 };
 }
 
 /* ----- Llenar el formulario ----- */
@@ -251,6 +251,8 @@ async function handlePortfolioFile(input) {
       return;
     }
     const filled = applyAutofill(result.fields);
+    lastParsedBase = result.kind === "base" ? { items: result.items, factor: result.factor } : null;
+    $("#pf-suggest-tramos")?.classList.toggle("hidden", !lastParsedBase?.items.some(x => isFinite(x.mora)));
     const attached = result.kind === "base" && !result.pii && attachToDataRoom(file);
     say(result.pii ? "warn" : "ok", `
       <strong>Llenamos ${filled.length ? filled.join(", ") : "ningún campo"} a partir de ${escapeHtml(file.name)}.</strong>
@@ -278,4 +280,120 @@ function downloadPortfolioTemplate() {
   a.href = url; a.download = "plantilla-base-cartera.csv";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+
+/* =========================================================
+   TRAMOS: una cartera dividida en partes que se subastan
+   una detrás de la otra
+   ========================================================= */
+let lastParsedBase = null; // última base leída en el formulario (para sugerir tramos y armar el mapa de calor)
+
+const MORA_RANGES = [[0, 0], [1, 90], [91, 180], [181, 360], [361, Infinity]];
+
+/* Composición ciudad × altura de mora para el mapa de calor */
+function buildComposition(items) {
+  const withMora = items.filter(x => isFinite(x.mora) && x.mora >= 0);
+  if (!withMora.length) return null;
+  const counts = {};
+  withMora.forEach(x => { const c = x.city || "Sin ciudad"; counts[c] = (counts[c] || 0) + 1; });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
+  const rows = Object.keys(counts).length > 5 ? [...top, "Otras"] : top;
+  const cells = rows.map(() => MORA_RANGES.map(() => 0));
+  withMora.forEach(x => {
+    const r = top.includes(x.city || "Sin ciudad") ? top.indexOf(x.city || "Sin ciudad") : rows.length - 1;
+    const c = MORA_RANGES.findIndex(([lo, hi]) => x.mora >= lo && x.mora <= hi);
+    if (c >= 0) cells[r][c]++;
+  });
+  return { rows, cols: HEAT_MORA, cells };
+}
+
+function toggleTramos(on) {
+  $("#pf-tramos")?.classList.toggle("hidden", !on);
+  if (on && !$$("#pf-tramos-body tr").length) { addTramoRow(); addTramoRow(); }
+  updateTramosSum();
+}
+
+function addTramoRow(values = {}) {
+  const body = $("#pf-tramos-body");
+  if (!body) return;
+  if (body.children.length >= 10) { showToast("Máximo 10 tramos por cartera."); return; }
+  const tr = document.createElement("tr");
+  if (values.min !== undefined) { tr.dataset.min = values.min; tr.dataset.max = values.max; }
+  const reserve = values.reserve ?? $("#pf-reserve")?.value ?? "";
+  tr.innerHTML = `
+    <td class="tramo-letter"></td>
+    <td><input type="text" class="t-label" placeholder="Ej: mora de 0 a 180 días" value="${escapeHtml(values.label || "")}"></td>
+    <td><input type="number" class="t-nominal" min="0.1" step="0.1" value="${values.nominal ?? ""}" oninput="updateTramosSum()"></td>
+    <td><input type="number" class="t-debtors" min="1" step="1" value="${values.debtors ?? ""}"></td>
+    <td><input type="number" class="t-obligations" min="1" step="1" value="${values.obligations ?? ""}"></td>
+    <td><input type="number" class="t-reserve" min="0.1" max="100" step="0.1" value="${reserve}"></td>
+    <td><button type="button" class="tramo-remove" onclick="this.closest('tr').remove();updateTramosSum()" aria-label="Quitar tramo">×</button></td>`;
+  body.appendChild(tr);
+  updateTramosSum();
+}
+
+function updateTramosSum() {
+  const rows = $$("#pf-tramos-body tr");
+  rows.forEach((tr, i) => { tr.querySelector(".tramo-letter").textContent = String.fromCharCode(65 + i); });
+  const sum = [...rows].reduce((s, tr) => s + (Number(tr.querySelector(".t-nominal").value) || 0), 0);
+  const total = Number($("#pf-nominal")?.value) || 0;
+  const out = $("#pf-tramos-sum");
+  if (!out) return;
+  const ok = total && Math.abs(sum - total) <= Math.max(0.5, total * 0.005);
+  out.className = ok ? "tramos-sum ok" : "tramos-sum";
+  out.textContent = `Suma de los tramos: ${fmtM(sum)} de ${fmtM(total)}${ok ? " ✓" : ""}`;
+}
+
+function readTramos() {
+  return [...$$("#pf-tramos-body tr")].map((tr, i) => ({
+    tramo: String.fromCharCode(65 + i),
+    label: tr.querySelector(".t-label").value.trim(),
+    nominal: Number(tr.querySelector(".t-nominal").value),
+    debtors: parseInt(tr.querySelector(".t-debtors").value, 10),
+    obligations: parseInt(tr.querySelector(".t-obligations").value, 10),
+    reserve: Number(tr.querySelector(".t-reserve").value),
+    min: tr.dataset.min !== undefined ? Number(tr.dataset.min) : null,
+    max: tr.dataset.max !== undefined ? Number(tr.dataset.max) : null
+  }));
+}
+
+function validateTramos(tramos, totalNominal) {
+  if (tramos.length < 2) return "Una cartera por tramos necesita al menos 2 tramos.";
+  const bad = tramos.find(t => !(t.nominal > 0) || !(t.debtors > 0) || !(t.obligations > 0) || !(t.reserve >= 0.1 && t.reserve <= 100));
+  if (bad) return `Completa el tramo ${bad.tramo}: valor, deudores, obligaciones y tarifa (0,1% a 100%).`;
+  const sum = tramos.reduce((s, t) => s + t.nominal, 0);
+  if (Math.abs(sum - totalNominal) > Math.max(0.5, totalNominal * 0.005)) return `Los tramos suman ${fmtM(sum)} y la cartera ${fmtM(totalNominal)}. Deben coincidir.`;
+  return null;
+}
+
+/* Sugerencia a partir de la base: tramos por altura de mora */
+function suggestTramosByMora() {
+  if (!lastParsedBase) return;
+  const { items, factor } = lastParsedBase;
+  const groups = [["Mora de 0 a 180 días", 0, 180], ["Mora de 181 a 360 días", 181, 360], ["Mora de más de 360 días", 361, 1e9]]
+    .map(([label, min, max]) => ({ label, min, max, list: items.filter(x => isFinite(x.mora) && x.mora >= min && x.mora <= max) }))
+    .filter(g => g.list.length);
+  if (groups.length < 2) { showToast("La base no tiene suficiente variedad de mora para dividirla en tramos."); return; }
+  $("#pf-use-tramos").checked = true;
+  $("#pf-tramos").classList.remove("hidden");
+  $("#pf-tramos-body").innerHTML = "";
+  groups.forEach(g => addTramoRow({
+    label: g.label, min: g.min, max: g.max,
+    nominal: +(g.list.reduce((s, x) => s + x.balance, 0) / factor).toFixed(1),
+    debtors: new Set(g.list.map(x => x.debtor).filter(Boolean)).size || g.list.length,
+    obligations: g.list.length
+  }));
+  // El total de la cartera debe ser la suma de sus tramos
+  const sum = readTramos().reduce((s, t) => s + t.nominal, 0);
+  if ($("#pf-nominal")) $("#pf-nominal").value = +sum.toFixed(1);
+  updateTramosSum();
+  showToast(`Sugerimos ${groups.length} tramos por altura de mora. Puedes ajustarlos.`);
+}
+
+/* Composición de un tramo (si salió de la base) o de la cartera completa */
+function compositionFor(tramo) {
+  if (!lastParsedBase) return null;
+  const items = tramo && tramo.min !== null ? lastParsedBase.items.filter(x => isFinite(x.mora) && x.mora >= tramo.min && x.mora <= tramo.max) : (tramo ? null : lastParsedBase.items);
+  return items ? buildComposition(items) : null;
 }
