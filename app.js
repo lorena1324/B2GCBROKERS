@@ -482,7 +482,7 @@ function navigate(event, page) {
   if (event && event.currentTarget) event.currentTarget.classList.add("active");
 
   currentPage = page;
-  if (event) resetFilters();
+  if (event) { resetFilters(); offerView.vigentes = false; offerView.cartera = null; offerView.tramo = null; }
   const titles = {
     dashboard: "Dashboard", cartera: "Mis carteras", oportunidades: currentRole === "vendedor" ? "Casas de cobranza interesadas" : "Oportunidades", negociaciones: "Negociaciones",
     documentos: "Documentos", reportes: "Reportes", mercado: "Mercado de oportunidades",
@@ -1364,8 +1364,36 @@ function renderOffersPage() {
   return currentRole === "comprador" ? renderBuyerOffersPage() : renderSellerOffersPage();
 }
 
+/* Filtros de "Ofertas recibidas": vigentes, cartera y tramo */
+const offerView = { vigentes: false, cartera: null, tramo: null };
+const parentRef = lot => refOf(lot.parentId || lot.id);
+const isLiveBid = (lot, b) => auctionState(lot.id) === "vivo" && b.decision !== "Rechazada";
+
+function setOfferView(key, value) {
+  offerView[key] = key === "vigentes" ? !offerView.vigentes : (offerView[key] === value ? null : value);
+  rerenderCurrent();
+}
+
+function renderOfferFilters() {
+  const carteras = [...new Set(originatorLots.map(parentRef))];
+  const tramos = [...new Set(originatorLots.map(l => l.tramo).filter(Boolean))].sort();
+  const btn = (key, value, label, active) => `<button type="button" class="${active ? "active" : ""}" aria-pressed="${active}" onclick="setOfferView('${key}','${escapeHtml(value)}')">${escapeHtml(label)}</button>`;
+  const n = [offerView.vigentes, offerView.cartera, offerView.tramo].filter(Boolean).length;
+  return `
+    <div class="filter-panel offer-filters">
+      <div class="filter-group"><span>Ofertas</span><div>${btn("vigentes", "1", "Solo vigentes", offerView.vigentes)}</div></div>
+      <div class="filter-group"><span>Cartera</span><div>${carteras.map(c => btn("cartera", c, c, offerView.cartera === c)).join("")}</div></div>
+      ${tramos.length ? `<div class="filter-group"><span>Tramo</span><div>${tramos.map(t => btn("tramo", t, `Tramo ${t}`, offerView.tramo === t)).join("")}</div></div>` : ""}
+      ${n ? `<div><button type="button" class="filter-clear" onclick="offerView.vigentes=false;offerView.cartera=null;offerView.tramo=null;rerenderCurrent()">Limpiar filtros</button></div>` : ""}
+    </div>`;
+}
+
 function renderSellerOffersPage() {
-  const groups = originatorLots.map(lot => ({ lot, bids: bidsFor(lot.id), reserve: reserveOf(lot.id) }));
+  const lotsShown = originatorLots.filter(l =>
+    (!offerView.cartera || parentRef(l) === offerView.cartera) &&
+    (!offerView.tramo || l.tramo === offerView.tramo) &&
+    (!offerView.vigentes || auctionState(l.id) === "vivo"));
+  const groups = lotsShown.map(lot => ({ lot, bids: bidsFor(lot.id).filter(b => !offerView.vigentes || isLiveBid(lot, b)), reserve: reserveOf(lot.id) }));
   const all = groups.flatMap(g => g.bids.map(b => ({ ...b, reserve: g.reserve })));
   const above = all.filter(b => b.percent >= b.reserve).length;
   const below = all.filter(b => b.belowLast).length;
@@ -1382,10 +1410,12 @@ function renderSellerOffersPage() {
         <div class="report-kpi warn"><span>Bajo la última ofertada</span><strong>${below}</strong><small>Quedaron bajo la oferta más alta previa</small></div>
         <div class="report-kpi"><span>Pendientes de decisión</span><strong>${pending}</strong><small>Aceptar o rechazar</small></div>
       </div>
+      ${renderOfferFilters()}
+      ${!groups.length ? `<div class="page-placeholder"><strong>Ninguna cartera cumple los filtros</strong><span>Cambia o quita alguno para ver más ofertas.</span></div>` : ""}
       ${groups.map(({ lot, bids, reserve, op = operationForLot(lot.id) }) => `
         <section class="offer-group">
           <div class="offer-group-head">
-            <div><div class="lot-number">${refOf(lot.id)} ${op ? `<span class="badge ${lot.statusClass}">${lot.status}</span>` : ""}</div><h3>${lot.title}</h3><span>${lot.amount} · ${lot.modality} · Tarifa ${reserve}%</span></div>
+            <div><div class="lot-number">${refOf(lot.id)} ${op ? `<span class="badge ${lot.statusClass}">${lot.status}</span>` : ""} ${tramoChip(lot)}</div><h3>${lot.title}</h3><span>${lot.amount} · ${lot.modality} · Tarifa ${reserve}%</span></div>
             <div class="offer-group-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
           </div>
           ${bids.length ? `<div class="table-wrap page-table"><table>

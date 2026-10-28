@@ -442,6 +442,9 @@ function renderPublishForm() {
       <div class="field"><label for="pf-desc">Descripción para las casas de cobranza</label><textarea id="pf-desc" rows="3" placeholder="Antigüedad de mora, ciudades, estado de soportes…"></textarea></div>
       <div class="field">
         <label for="pf-files">Archivos del data room <small>(opcional · hasta 500 MB cada uno)</small></label>
+        <ul class="doc-checklist" id="pf-doc-checklist">
+          ${DATAROOM_DOCS.map(d => `<li data-doc="${d.key}"><span class="doc-check" aria-hidden="true"></span><div><strong>${d.label}</strong><small>${d.hint}</small></div></li>`).join("")}
+        </ul>
         <div class="pf-files-zone" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')"
              ondrop="event.preventDefault();this.classList.remove('over');addDataRoomFiles(event.dataTransfer.files)">
           <input id="pf-files" type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.doc,.zip,.txt,.png,.jpg,.jpeg" class="hidden-file-input" onchange="renderDataRoomFiles()">
@@ -489,10 +492,20 @@ function removeDataRoomFile(index) {
   renderDataRoomFiles();
 }
 
+/* Documentos que deben ir en el data room de cada cartera */
+const DATAROOM_DOCS = [
+  { key: "base", label: "Base de obligaciones anonimizada", hint: "Excel o CSV, una fila por obligación, sin nombres ni datos de contacto.", re: /base|obligacion|cartera|\.(csv|xlsx?)$/i },
+  { key: "saldos", label: "Certificación de saldos", hint: "Firmada por el revisor fiscal o el representante legal.", re: /saldo|certific/i },
+  { key: "soportes", label: "Muestra de soportes", hint: "Pagarés, contratos o cartas de instrucción anonimizados.", re: /soporte|pagare|contrato|muestra|\.zip$/i },
+  { key: "historial", label: "Historial de gestión y recaudo", hint: "Pagos y acuerdos de los últimos meses, si los hay.", re: /recaudo|gestion|pagos|historial/i },
+  { key: "juridico", label: "Estado jurídico", hint: "Obligaciones en proceso judicial o con embargos.", re: /juridic|judicial|embargo|proceso/i }
+];
+
 function renderDataRoomFiles() {
   const list = $("#pf-files-list");
   const files = [...($("#pf-files")?.files || [])];
   if (!list) return;
+  DATAROOM_DOCS.forEach(d => $(`#pf-doc-checklist [data-doc="${d.key}"]`)?.classList.toggle("done", files.some(f => d.re.test(f.name))));
   list.innerHTML = files.map((f, i) => `
     <li><span class="pf-file-ext">${escapeHtml((f.name.split(".").pop() || "").toUpperCase().slice(0, 4))}</span>
       <span class="pf-file-name">${escapeHtml(f.name)}</span><small>${formatFileSize(f.size)}</small>
