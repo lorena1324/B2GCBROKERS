@@ -228,6 +228,7 @@ function attachToDataRoom(file) {
   [...(input.files || [])].forEach(f => { if (f.name !== file.name) dt.items.add(f); });
   dt.items.add(file);
   input.files = dt.files;
+  if (typeof renderDataRoomFiles === "function") renderDataRoomFiles();
   return true;
 }
 
@@ -236,7 +237,7 @@ async function handlePortfolioFile(input) {
   const box = $("#pf-autofill");
   if (!file || !box) return;
   const say = (cls, html) => { box.className = `offer-alert ${cls}`; box.innerHTML = html; };
-  if (file.size > 20 * 1024 * 1024) { say("warn", "<strong>El archivo supera 20 MB.</strong><span>Sube un archivo más liviano o divídelo.</span>"); return; }
+  if (file.size > 50 * 1024 * 1024) { say("warn", "<strong>El archivo supera 50 MB.</strong><span>Sube un archivo más liviano o divídelo.</span>"); return; }
   say("ok", `<strong>Leyendo ${escapeHtml(file.name)}…</strong>`);
   try {
     const XLSX = await loadSheetJS();

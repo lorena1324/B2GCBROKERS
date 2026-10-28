@@ -484,9 +484,9 @@ end $$;
 -- ---------------------------------------------------------
 insert into storage.buckets (id, name, public, file_size_limit)
 values ('company-docs', 'company-docs', false, 5242880),
-       ('portfolio-docs', 'portfolio-docs', false, 20971520),
+       ('portfolio-docs', 'portfolio-docs', false, null),       -- sin límite propio: manda el del plan (50 MB gratis; configurable en Pro)
        ('operation-docs', 'operation-docs', false, 10485760)
-on conflict (id) do nothing;
+on conflict (id) do update set file_size_limit = excluded.file_size_limit;
 
 drop policy if exists "docs empresa: subir la propia" on storage.objects;
 create policy "docs empresa: subir la propia" on storage.objects for insert to authenticated

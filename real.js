@@ -32,6 +32,7 @@ function friendlyError(error) {
   if (/User already registered/i.test(msg)) return "Ese correo ya tiene cuenta. Inicia sesión.";
   if (/Password should be at least/i.test(msg)) return "La contraseña debe tener al menos 8 caracteres.";
   if (/rate limit/i.test(msg)) return "Demasiados intentos seguidos. Espera unos minutos.";
+  if (/maximum allowed size|payload too large|entity too large|413/i.test(msg)) return "El archivo supera el tamaño que permite el plan de Supabase (50 MB en el plan gratuito). Divídelo o comprímelo, o amplía el límite en Supabase.";
   if (/Failed to fetch|NetworkError/i.test(msg)) return "Sin conexión con el servidor. Revisa tu internet.";
   return msg.replace(/^.*?ERROR:\s*/, "") || "Ocurrió un error inesperado.";
 }
@@ -409,12 +410,64 @@ function renderPublishForm() {
         <div class="field"><label for="pf-ends">Cierre de la subasta *</label><input id="pf-ends" type="datetime-local" value="${local(end)}"></div>
       </div>
       <div class="field"><label for="pf-desc">Descripción para las casas de cobranza</label><textarea id="pf-desc" rows="3" placeholder="Antigüedad de mora, ciudades, estado de soportes…"></textarea></div>
-      <div class="field"><label for="pf-files">Archivos del data room (opcional, máx. 20 MB cada uno)</label><input id="pf-files" type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.zip"></div>
+      <div class="field">
+        <label for="pf-files">Archivos del data room <small>(opcional · hasta 500 MB cada uno)</small></label>
+        <div class="pf-files-zone" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')"
+             ondrop="event.preventDefault();this.classList.remove('over');addDataRoomFiles(event.dataTransfer.files)">
+          <input id="pf-files" type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.doc,.zip,.txt,.png,.jpg,.jpeg" class="hidden-file-input" onchange="renderDataRoomFiles()">
+          <input id="pf-files-picker" type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.doc,.zip,.txt,.png,.jpg,.jpeg" class="hidden-file-input" onchange="addDataRoomFiles(this.files);this.value=''">
+          <div class="pf-files-intro">
+            <strong>Arrastra aquí la base anonimizada, soportes y anexos</strong>
+            <span>PDF, Excel, CSV, Word, ZIP o imágenes. Puedes subir varios a la vez.</span>
+          </div>
+          <button class="btn btn-ghost btn-small" type="button" onclick="$('#pf-files-picker').click()">Elegir archivos</button>
+          <ul id="pf-files-list" class="pf-files-list"></ul>
+        </div>
+      </div>
       <div class="offer-actions" style="justify-content:flex-start">
         <button class="btn btn-navy" id="pf-submit" onclick="submitPortfolio()">Publicar cartera</button>
         <button class="btn btn-ghost" onclick="navigate(null,'cartera')">Cancelar</button>
       </div>
     </div>`;
+}
+
+/* Archivos del data room del formulario: se pueden sumar de a varios y quitar uno por uno */
+// Límite de la plataforma. Supabase aplica además el de su plan: 50 MB en el gratuito, configurable en Pro.
+const MAX_DATAROOM_FILE = 500 * 1024 * 1024;
+
+function addDataRoomFiles(list) {
+  const input = $("#pf-files");
+  if (!input || typeof DataTransfer === "undefined") return;
+  const dt = new DataTransfer();
+  const current = [...(input.files || [])];
+  current.forEach(f => dt.items.add(f));
+  let skipped = 0;
+  [...list].forEach(f => {
+    if (f.size > MAX_DATAROOM_FILE) { skipped++; return; }
+    if (!current.some(c => c.name === f.name && c.size === f.size)) dt.items.add(f);
+  });
+  input.files = dt.files;
+  if (skipped) showToast(`${skipped} archivo(s) superan 500 MB y no se agregaron.`);
+  renderDataRoomFiles();
+}
+
+function removeDataRoomFile(index) {
+  const input = $("#pf-files");
+  const dt = new DataTransfer();
+  [...input.files].forEach((f, i) => { if (i !== index) dt.items.add(f); });
+  input.files = dt.files;
+  renderDataRoomFiles();
+}
+
+function renderDataRoomFiles() {
+  const list = $("#pf-files-list");
+  const files = [...($("#pf-files")?.files || [])];
+  if (!list) return;
+  list.innerHTML = files.map((f, i) => `
+    <li><span class="pf-file-ext">${escapeHtml((f.name.split(".").pop() || "").toUpperCase().slice(0, 4))}</span>
+      <span class="pf-file-name">${escapeHtml(f.name)}</span><small>${formatFileSize(f.size)}</small>
+      <button type="button" onclick="removeDataRoomFile(${i})" aria-label="Quitar ${escapeHtml(f.name)}">×</button></li>`).join("");
+  list.closest(".pf-files-zone")?.classList.toggle("has-files", files.length > 0);
 }
 
 async function submitPortfolio() {
@@ -431,7 +484,7 @@ async function submitPortfolio() {
   if (!(data.p_reserve >= 0.1 && data.p_reserve <= 100)) return showToast("La tarifa debe estar entre 0,1% y 100%.");
   if (!data.p_starts || !data.p_ends || Date.parse(data.p_ends) <= Date.parse(data.p_starts)) return showToast("El cierre debe ser después del inicio.");
   const files = [...($("#pf-files")?.files || [])];
-  if (files.some(f => f.size > 20 * 1024 * 1024)) return showToast("Algún archivo supera 20 MB.");
+  if (files.some(f => f.size > MAX_DATAROOM_FILE)) return showToast("Algún archivo supera 500 MB.");
 
   const btn = $("#pf-submit");
   if (!appState.realMode) { createDemoPortfolio(data, files.length); return; }
@@ -500,7 +553,7 @@ async function uploadDataRoom(code, input) {
   const files = [...(input.files || [])];
   let ok = 0;
   for (const f of files) {
-    if (f.size > 20 * 1024 * 1024) { showToast(`${f.name} supera 20 MB.`); continue; }
+    if (f.size > MAX_DATAROOM_FILE) { showToast(`${f.name} supera 500 MB.`); continue; }
     try { await uploadTo("portfolio-docs", `${lot.uuid}/${safeName(f.name)}`, f, true); ok++; } catch (e) { showToast(friendlyError(e)); }
   }
   if (ok) showToast(`${ok} archivo(s) subido(s) al data room.`);
