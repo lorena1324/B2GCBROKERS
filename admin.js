@@ -661,10 +661,10 @@ function renderAdminAnalytics(shell) {
       <div class="card" id="admin-history" style="margin-top:18px">
         <div class="card-header"><div><h3>Histórico de subastas</h3><p>Base del análisis de conversión</p></div></div>
         <div class="table-wrap"><table><thead><tr>
-          <th>Lote</th><th>Tipo</th><th>Duración</th><th>1.ª oferta</th><th>Ofertas</th><th>Postores</th><th>% final</th><th>Tarifa</th><th>Resultado</th>
+          <th>Referencia del proceso</th><th>Tipo</th><th>Duración</th><th>1.ª oferta</th><th>Ofertas</th><th>Postores</th><th>% final</th><th>Tarifa</th><th>Resultado</th>
         </tr></thead><tbody>
           ${AUCTION_HISTORY.map(h => `<tr>
-            <td><strong>${h.id}</strong></td><td>${h.type}</td><td>${h.days} días</td><td>${h.firstBidH} h</td><td>${h.offers}</td><td>${h.bidders}</td>
+            <td><strong>${refOf(h.id) === h.id ? h.id.replace("LOTE-", "") : refOf(h.id)}</strong></td><td>${h.type}</td><td>${h.days} días</td><td>${h.firstBidH} h</td><td>${h.offers}</td><td>${h.bidders}</td>
             <td>${h.final}%</td><td>${h.reserve}%</td>
             <td><span class="badge ${h.won ? "badge-green" : "badge-red"}">${h.won ? "Adjudicada" : "Desierta"}</span></td>
           </tr>`).join("")}

@@ -106,12 +106,12 @@ const composition = {
 };
 
 const testDocuments = [
-  { id: "DOC-TEST-001", name: "Resumen ejecutivo", type: "PDF", size: "320 KB", category: "Comercial", lotId: "LOTE-TEST-001", status: "Disponible", content: "RESUMEN EJECUTIVO — LOTE-TEST-001\n\nDocumento ficticio para pruebas de B²GC Brokers.\n\nValor nominal: $4.850 M\nTipo: Consumo\nModalidad: Subasta privada\nCalificación: A+\n\nEste documento no contiene información real y solo debe utilizarse para pruebas." },
-  { id: "DOC-TEST-002", name: "Base anonimizada", type: "XLSX", size: "1,2 MB", category: "Datos", lotId: "LOTE-TEST-001", status: "Disponible", content: "BASE ANONIMIZADA — LOTE-TEST-001\n\nArchivo de prueba. Registros ficticios: 2.840 deudores anonimizados.\nNo contiene PII real." },
-  { id: "DOC-TEST-003", name: "Información de saldos", type: "PDF", size: "540 KB", category: "Financiero", lotId: "LOTE-TEST-002", status: "Disponible", content: "INFORMACIÓN DE SALDOS — LOTE-TEST-002\n\nSaldo nominal de prueba: $3.240 M\nDeudores de prueba: 1.460\nTipo: Libranza\n\nInformación ficticia para validar el flujo documental." },
+  { id: "DOC-TEST-001", name: "Resumen ejecutivo", type: "PDF", size: "320 KB", category: "Comercial", lotId: "LOTE-TEST-001", status: "Disponible", content: "RESUMEN EJECUTIVO — BD001\n\nDocumento ficticio para pruebas de B²GC Brokers.\n\nValor nominal: $4.850 M\nTipo: Consumo\nModalidad: Subasta privada\nCalificación: A+\n\nEste documento no contiene información real y solo debe utilizarse para pruebas." },
+  { id: "DOC-TEST-002", name: "Base anonimizada", type: "XLSX", size: "1,2 MB", category: "Datos", lotId: "LOTE-TEST-001", status: "Disponible", content: "BASE ANONIMIZADA — BD001\n\nArchivo de prueba. Registros ficticios: 2.840 deudores anonimizados.\nNo contiene PII real." },
+  { id: "DOC-TEST-003", name: "Información de saldos", type: "PDF", size: "540 KB", category: "Financiero", lotId: "LOTE-TEST-002", status: "Disponible", content: "INFORMACIÓN DE SALDOS — BD002\n\nSaldo nominal de prueba: $3.240 M\nDeudores de prueba: 1.460\nTipo: Libranza\n\nInformación ficticia para validar el flujo documental." },
   { id: "DOC-TEST-004", name: "Metodología de valoración", type: "DOCX", size: "210 KB", category: "Valoración", lotId: "LOTE-TEST-003", status: "Disponible", content: "METODOLOGÍA DE VALORACIÓN — DEMO\n\nModelo ilustrativo para pruebas. La valoración utiliza escenarios y porcentajes configurables dentro del simulador." },
   { id: "DOC-TEST-005", name: "Documentación jurídica", type: "PDF", size: "760 KB", category: "Legal", lotId: "LOTE-TEST-004", status: "Disponible", content: "DOCUMENTACIÓN JURÍDICA — DEMO\n\nChecklist jurídico ficticio: contrato, certificaciones y anexos.\nEstado de prueba: documentación disponible para revisión." },
-  { id: "DOC-TEST-006", name: "Certificación de cartera", type: "PDF", size: "430 KB", category: "Legal", lotId: "LOTE-TEST-005", status: "Disponible", content: "CERTIFICACIÓN DE CARTERA — LOTE-TEST-005\n\nDocumento ficticio para validar consulta, descarga y trazabilidad." }
+  { id: "DOC-TEST-006", name: "Certificación de cartera", type: "PDF", size: "430 KB", category: "Legal", lotId: "LOTE-TEST-005", status: "Disponible", content: "CERTIFICACIÓN DE CARTERA — FDP002\n\nDocumento ficticio para validar consulta, descarga y trazabilidad." }
 ];
 
 /* ===== Persistencia demo ===== */
@@ -401,13 +401,13 @@ function buildSidebar() {
 
   if (appState.realMode) {
     const seller = currentRole === "vendedor";
-    const link = (page, icon, label, active) => `<a href="#" class="${active ? "active" : ""}" onclick="navigate(event,'${page}')">${label}</a>`;
+    const link = (page, label, active) => `<a href="#" class="${active ? "active" : ""}" onclick="navigate(event,'${page}')">${label}</a>`;
     nav.innerHTML = (seller ? [
-      link("dashboard", "▦", "Dashboard", true), link("cartera", "◫", "Mis carteras"), link("publicar", "＋", "Publicar cartera"),
-      link("subastas", "⏱", "Carteras en subasta"), link("ofertas", "↕", "Ofertas recibidas"), link("cierre", "✍", "Cierre de operaciones")
+      link("dashboard", "Dashboard", true), link("cartera", "Mis carteras"), link("publicar", "Publicar cartera"),
+      link("subastas", "Carteras en subasta"), link("ofertas", "Ofertas recibidas"), link("cierre", "Cierre de operaciones")
     ] : [
-      link("dashboard", "▦", "Dashboard", true), link("mercado", "◇", "Mercado"), link("subastas", "⏱", "Carteras en subasta"),
-      link("ofertas", "⇄", "Mis ofertas"), link("cierre", "✍", "Cierre de operaciones"), link("adjudicaciones", "", "Carteras adquiridas")
+      link("dashboard", "Dashboard", true), link("mercado", "Mercado"), link("subastas", "Carteras en subasta"),
+      link("ofertas", "Mis ofertas"), link("cierre", "Cierre de operaciones"), link("adjudicaciones", "Carteras adquiridas")
     ]).join("") + `<div class="sidebar-market-status"><div class="status-title">Conectado · datos reales</div><p>${escapeHtml(appState.company)}</p></div>`;
     return;
   }
@@ -642,7 +642,7 @@ function renderOriginatorCharts() {
   return `
     <div class="dashboard-chart-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <div class="dashboard-chart-card dashboard-chart-large">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">SUBASTAS</div><h3>Mejor oferta vs. tu tarifa</h3><p>La línea dorada marca la tarifa mínima que fijaste para cada lote.</p></div><button class="chart-period" onclick="navigate(null,'ofertas')">Ver ofertas</button></div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">SUBASTAS</div><h3>Mejor oferta vs. tu tarifa</h3><p>La línea dorada marca la tarifa mínima que fijaste para cada cartera.</p></div><button class="chart-period" onclick="navigate(null,'ofertas')">Ver ofertas</button></div>
         ${renderReserveChart(originatorLots)}
       </div>
       <div class="dashboard-chart-card">
@@ -740,7 +740,7 @@ function renderLotsCard() {
 function renderOriginatorLotsCard() {
   return `
     <div class="card">
-      <div class="card-header"><div><h3>Mis portafolios y operaciones</h3><p>Detalle completo dentro de cada lote</p></div>
+      <div class="card-header"><div><h3>Mis portafolios y operaciones</h3><p>Abre cada cartera para ver el detalle completo</p></div>
         <button class="btn btn-ghost btn-small" onclick="navigate(event,'cartera')">Ver todo</button>
       </div>
       <div class="table-wrap"><table><thead><tr>
@@ -773,10 +773,10 @@ function renderPage(page) {
 
   const isOrig = currentRole === "vendedor";
   const data = {
-    cartera: { title: "Mis carteras", description: "Portafolios publicados por el vendedor demo." },
+    cartera: { title: "Mis carteras", description: "Carteras publicadas por la entidad vendedora demo." },
     oportunidades: { title: isOrig ? "Casas de cobranza interesadas" : "Oportunidades", description: isOrig ? "Casas de cobranza demo que han mostrado interés en tus portafolios." : "Oportunidades disponibles para analizar y ofertar." },
-    negociaciones: { title: isOrig ? "Negociaciones con compradores" : "Mis negociaciones", description: isOrig ? "Seguimiento a propuestas recibidas y contrapropuestas de tus portafolios." : "Seguimiento a tus propuestas y contrapropuestas." },
-    mercado: { title: "Mercado de oportunidades", description: "Lotes demo disponibles para explorar y ofertar." },
+    negociaciones: { title: isOrig ? "Negociaciones con casas de cobranza" : "Mis negociaciones", description: isOrig ? "Seguimiento a propuestas recibidas y contrapropuestas de tus portafolios." : "Seguimiento a tus propuestas y contrapropuestas." },
+    mercado: { title: "Mercado de oportunidades", description: "Carteras de ejemplo disponibles para revisar y ofertar." },
     reportes: { title: "Reportes", description: "Indicadores simulados para validar visualizaciones." },
     pruebas: { title: "Centro de pruebas", description: "Herramientas para validar el prototipo sin usar datos reales." }
   };
@@ -818,7 +818,7 @@ function renderPage(page) {
                 <span class="badge ${lot.statusClass}">${lot.status}</span>
                 <span>${fmtN(profileOf(lot).obligations)} obligaciones</span>
               </div>
-              <button class="btn btn-ghost btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">Ver lote</button>
+              <button class="btn btn-ghost btn-small" onclick="event.stopPropagation();openDetail('${lot.id}')">Ver cartera</button>
             </article>`).join("")}
         </div>
       </div>`;
@@ -846,7 +846,7 @@ function renderPage(page) {
         <p>${current.description}</p>
         <div class="table-wrap page-table"><table>
           <thead><tr><th>Proceso</th><th>Referencia del proceso</th><th>Contraparte</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead>
-          <tbody>${rows.map(row => `<tr><td><strong>${row.id}</strong></td><td>${refOf(row.lotId)}</td><td>${row.counterparty || "Vendedor / contraparte demo"}</td><td>${row.amount}</td><td><span class="badge badge-blue">${row.status}</span></td><td>${row.date}</td></tr>`).join("")}</tbody>
+          <tbody>${rows.map(row => `<tr><td><strong>${row.id}</strong></td><td>${refOf(row.lotId)}</td><td>${row.counterparty || "Contraparte demo"}</td><td>${row.amount}</td><td><span class="badge badge-blue">${row.status}</span></td><td>${row.date}</td></tr>`).join("")}</tbody>
         </table></div>
       </div>`;
     return;
@@ -902,7 +902,7 @@ function renderDocumentsPage(page = "documentos") {
                 <div class="document-icon ${uploadedDoc ? "uploaded" : "test"}">${escapeHtml(doc.type || "DOC")}</div>
                 <div class="document-info">
                   <strong>${escapeHtml(doc.name)}</strong>
-                  <span>${uploadedDoc ? "Archivo cargado" : "Documento de prueba"} · ${escapeHtml(doc.category || "General")} · ${escapeHtml(doc.lotId || "Sin lote")}</span>
+                  <span>${uploadedDoc ? "Archivo cargado" : "Documento de prueba"} · ${escapeHtml(doc.category || "General")} · ${escapeHtml(doc.lotId ? refOf(doc.lotId) : "Sin cartera asociada")}</span>
                   <small>${escapeHtml(doc.size || "Tamaño demo")} · ${escapeHtml(doc.status || "Disponible")}</small>
                 </div>
               </div>
@@ -946,7 +946,7 @@ function handleDocumentUpload(event) {
     const existingIndex = appState.uploadedDocuments.findIndex(doc => doc.id === id);
     const uploaded = {
       id, name: file.name, type: extension, size: formatFileSize(file.size), category: "Cargado por usuario",
-      lotId: pendingDocumentLotId || "Sin lote", status: "Cargado", source: "upload",
+      lotId: pendingDocumentLotId || "", status: "Cargado", source: "upload",
       mimeType: file.type || "application/octet-stream", dataUrl, uploadedAt: new Date().toLocaleString("es-CO")
     };
     try {
@@ -1056,7 +1056,7 @@ function renderAdjudicationsPage() {
       <h2>Cierres de mis portafolios</h2>
       <p>Operaciones de tus portafolios que avanzan hacia cierre.</p>
       ${renderOpsMiniTable()}
-      <div class="table-wrap page-table"><table><thead><tr><th>Adjudicación</th><th>Referencia del proceso</th><th>Comprador</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+      <div class="table-wrap page-table"><table><thead><tr><th>Adjudicación</th><th>Referencia del proceso</th><th>Casa de cobranza</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
         ${adjudications.map(item => `<tr><td><strong>${item.id}</strong></td><td>${refOf(item.lot)}</td><td>${item.buyer}</td><td>${item.value}</td><td><span class="badge badge-green">${item.status}</span></td><td>${item.date}</td></tr>`).join("")}
       </tbody></table></div>
     </div>`;
@@ -1108,8 +1108,8 @@ function renderReportsPage() {
       <div class="report-kpi-grid">
         <div class="report-kpi"><span>${isOriginator ? "Valor de cartera propia" : "Valor de oportunidades"}</span><strong>${fmtM(totalNominal)}</strong><small>${items.length} registros demo</small></div>
         <div class="report-kpi"><span>${isOriginator ? "Portafolios activos" : "Oportunidades activas"}</span><strong>${active}</strong><small>Escenario actual</small></div>
-        <div class="report-kpi"><span>${isOriginator ? "Negociaciones" : "Ofertas"}</span><strong>${isOriginator ? negotiations : appState.offers.length}</strong><small>${isOriginator ? "Con compradores demo" : "Registradas en este navegador"}</small></div>
-        <div class="report-kpi"><span>${isOriginator ? "Compradores interesados" : "Adjudicaciones"}</span><strong>${isOriginator ? "47" : "8"}</strong><small>Dato ficticio de prueba</small></div>
+        <div class="report-kpi"><span>${isOriginator ? "Negociaciones" : "Ofertas"}</span><strong>${isOriginator ? negotiations : appState.offers.length}</strong><small>${isOriginator ? "Con casas de cobranza demo" : "Registradas en este navegador"}</small></div>
+        <div class="report-kpi"><span>${isOriginator ? "Casas de cobranza interesadas" : "Adjudicaciones"}</span><strong>${isOriginator ? "47" : "8"}</strong><small>Dato ficticio de prueba</small></div>
       </div>
       <div class="report-bars">
         ${items.map(lot => `<div class="report-bar-row"><span>${refOf(lot.id)}</span><div><i style="width:${Math.min(100, parseLotAmount(lot) / 89.5 * 100)}%"></i></div><strong>${lot.amount}</strong></div>`).join("")}
@@ -1133,9 +1133,9 @@ function renderSellerOffersPage() {
     <div class="card page-card">
       <div class="section-kicker">ACTIVIDAD DEL VENDEDOR</div>
       <h2>Ofertas recibidas</h2>
-      <p>Todas las ofertas con el detalle completo del comprador, ordenadas de la más alta a la más baja. Acepta o rechaza cada una.</p>
+      <p>Todas las ofertas con el detalle completo de cada casa de cobranza, ordenadas de la más alta a la más baja. Acepta o rechaza cada una.</p>
       <div class="report-kpi-grid">
-        <div class="report-kpi"><span>Ofertas recibidas</span><strong>${all.length}</strong><small>${originatorLots.length} lotes</small></div>
+        <div class="report-kpi"><span>Ofertas recibidas</span><strong>${all.length}</strong><small>${originatorLots.length} carteras</small></div>
         <div class="report-kpi"><span>Sobre tu tarifa</span><strong>${above}</strong><small>${all.length ? Math.round(above / all.length * 100) : 0}% del total</small></div>
         <div class="report-kpi warn"><span>Bajo la última ofertada</span><strong>${below}</strong><small>Quedaron bajo la oferta más alta previa</small></div>
         <div class="report-kpi"><span>Pendientes de decisión</span><strong>${pending}</strong><small>Aceptar o rechazar</small></div>
@@ -1164,7 +1164,7 @@ function renderSellerOffersPage() {
                   ? `<span class="badge ${b.decision === "Aceptada" ? "badge-green" : "badge-red"}">${b.decision}</span> <button class="btn-text" onclick="decideOffer('${b.id}',null)">Deshacer</button>`
                   : `<div class="decision-actions"><button class="btn btn-blue-soft btn-small" onclick="uiAdjudicate('${b.id}')">Aceptar y adjudicar</button><button class="btn btn-danger-soft btn-small" onclick="decideOffer('${b.id}','Rechazada')">Rechazar</button></div>`}</td>
             </tr>`).join("")}</tbody>
-          </table></div>` : `<div class="page-placeholder"><strong>Sin ofertas todavía</strong><span>Cuando un comprador oferte, aparecerá aquí.</span></div>`}
+          </table></div>` : `<div class="page-placeholder"><strong>Sin ofertas todavía</strong><span>Cuando una casa de cobranza oferte, aparecerá aquí.</span></div>`}
         </section>`).join("")}
     </div>`;
 }
@@ -1176,7 +1176,7 @@ function renderBuyerOffersPage() {
       <div class="card page-card">
         <div class="section-kicker">ACTIVIDAD DEL COMPRADOR</div>
         <h2>Mis ofertas</h2>
-        <div class="page-placeholder"><strong>Aún no has ofertado</strong><span>Entra a una cartera en subasta y usa “Presentar oferta”. Aquí verás todas las ofertas del lote, de la más alta a la más baja, con los demás postores en anónimo.</span>
+        <div class="page-placeholder"><strong>Aún no has ofertado</strong><span>Entra a una cartera en subasta y usa “Presentar oferta”. Aquí verás todas las ofertas de la cartera, de la más alta a la más baja, con los demás postores en anónimo.</span>
           <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'subastas')">Ver carteras en subasta</button></div>
       </div>`;
   }
@@ -1231,8 +1231,8 @@ function renderTestCenter() {
       </div>
       <div id="test-results" class="test-results"></div>
       <div class="test-credentials">
-        <div><strong>Vendedor demo</strong><span>vendedor@demo.b2gc.co</span><span>Demo123!</span></div>
-        <div><strong>Comprador demo</strong><span>comprador@demo.b2gc.co</span><span>Demo123!</span></div>
+        <div><strong>Entidad vendedora demo</strong><span>vendedor@demo.b2gc.co</span><span>Demo123!</span></div>
+        <div><strong>Casa de cobranza demo</strong><span>comprador@demo.b2gc.co</span><span>Demo123!</span></div>
       </div>
     </div>`;
 }
@@ -1242,16 +1242,16 @@ function runSelfTests(showFeedback = true) {
   const assert = (name, condition) => results.push({ name, ok: Boolean(condition) });
 
   assert("Existen las 5 carteras de prueba de base", lots.filter(l => !l.id.startsWith("LOTE-DEMO-")).length === 5);
-  assert("Todos los lotes tienen ID único", new Set(lots.map(lot => lot.id)).size === lots.length);
-  assert("Todos los lotes tienen valor nominal", lots.every(lot => lot.amount.includes("$")));
-  assert("Todos los lotes tienen modalidad", lots.every(lot => lot.modality));
+  assert("Todas las carteras tienen referencia única", new Set(lots.map(lot => lot.id)).size === lots.length);
+  assert("Todas las carteras tienen valor nominal", lots.every(lot => lot.amount.includes("$")));
+  assert("Todas las carteras tienen modalidad", lots.every(lot => lot.modality));
   assert("Simulador puede calcular un valor", Number.isFinite(parseLotAmount(lots[0])));
   assert("El estado de ofertas es un arreglo", Array.isArray(appState.offers));
   assert("Las cuentas demo están configuradas", Object.values(demoAccounts).every(account => account.password));
   assert("Existen documentos demo consultables", testDocuments.length >= 5);
   assert("Los documentos demo tienen contenido", testDocuments.every(doc => doc.name && doc.content));
   assert("Los archivos cargados se manejan como arreglo", Array.isArray(appState.uploadedDocuments));
-  assert("Cada lote tiene perfil (obligaciones y cuenta regresiva)", lots.every(lot => lotProfiles[lot.id]));
+  assert("Cada cartera tiene obligaciones y cuenta regresiva", lots.every(lot => lotProfiles[lot.id]));
   assert("La composición de tipos suma 100%", Math.abs(composition.tipos.reduce((s, t) => s + t[1], 0) - 1) < 0.001 && Math.abs(composition.tipos.reduce((s, t) => s + t[2], 0) - 1) < 0.001);
 
   assert("Una operación completa cierra de punta a punta", runClosingFlowTest(false).ok);
@@ -1416,7 +1416,7 @@ function renderSimulator(lot) {
         </div>
 
         <div class="simulator-main-value">
-          <div class="metric-caption">VALOR ESTIMADO DE OFERTA</div>
+          <div class="metric-caption">Valor estimado de la oferta</div>
           <div class="simulator-price" id="simulated-value">$0 M</div>
           <div class="simulator-price-sub" id="simulated-discount">Calculando...</div>
         </div>
@@ -1683,7 +1683,7 @@ function submitOffer(lotId) {
   const note = ($("#offer-form-note")?.value || "").trim();
 
   if (!lot || !percent) { showToast("Ingresa un porcentaje válido."); return; }
-  if (auctionState(lot.id) === "cerrada") { showToast("La subasta de este lote ya cerró."); return; }
+  if (auctionState(lot.id) === "cerrada") { showToast("La subasta de esta cartera ya cerró."); return; }
   if (lot.real) { realPlaceBid(lot, +percent.toFixed(1), note); return; }
 
   const top = topBid(lot.id);

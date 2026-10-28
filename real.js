@@ -385,7 +385,7 @@ function renderPublishForm() {
     <div class="card page-card" id="publish-form">
       <div class="section-kicker">PUBLICAR CARTERA · ${escapeHtml(real.company?.name || "")}</div>
       <h2>Publicar una cartera</h2>
-      <p>B²GC Brokers la mostrará a las casas de cobranza aprobadas. Tu tarifa mínima nunca la ven los compradores.</p>
+      <p>B²GC Brokers la mostrará a las casas de cobranza aprobadas. Tu tarifa mínima nunca la ven las casas de cobranza.</p>
       <div class="offer-alert warn"><strong>Protección de datos (Ley 1581)</strong><span>Los archivos del data room deben ir anonimizados: sin nombres, cédulas ni datos de contacto de los deudores.</span></div>
       <div class="form-grid publish-grid">
         <div class="field"><label for="pf-title">Nombre de la cartera *</label><input id="pf-title" type="text" placeholder="Cartera de consumo castigada 2024"></div>
@@ -398,7 +398,7 @@ function renderPublishForm() {
         <div class="field"><label for="pf-starts">Inicio de la subasta *</label><input id="pf-starts" type="datetime-local" value="${local(start)}"></div>
         <div class="field"><label for="pf-ends">Cierre de la subasta *</label><input id="pf-ends" type="datetime-local" value="${local(end)}"></div>
       </div>
-      <div class="field"><label for="pf-desc">Descripción para los compradores</label><textarea id="pf-desc" rows="3" placeholder="Antigüedad de mora, ciudades, estado de soportes…"></textarea></div>
+      <div class="field"><label for="pf-desc">Descripción para las casas de cobranza</label><textarea id="pf-desc" rows="3" placeholder="Antigüedad de mora, ciudades, estado de soportes…"></textarea></div>
       <div class="field"><label for="pf-files">Archivos del data room (opcional, máx. 20 MB cada uno)</label><input id="pf-files" type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.zip"></div>
       <div class="offer-actions" style="justify-content:flex-start">
         <button class="btn btn-navy" id="pf-submit" onclick="submitPortfolio()">Publicar cartera</button>

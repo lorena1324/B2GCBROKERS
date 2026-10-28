@@ -183,7 +183,7 @@ function scoreLot(lot, a) {
   else {
     const over = price / a.budget - 1;
     score += Math.max(0, 25 - over * 50);
-    why.push(`Excede tu capital en ${money(price - a.budget)} (puedes negociar o entrar en un lote menor)`);
+    why.push(`Excede tu capital en ${money(price - a.budget)} (puedes negociar o buscar una cartera más pequeña)`);
   }
 
   if (a.risk) {

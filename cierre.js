@@ -202,7 +202,7 @@ function renderClosingPage() {
       </div>
       ${mine.length ? `<div class="op-list">${mine.map(opCard).join("")}</div>` : `
         <div class="page-placeholder"><strong>Aún no hay operaciones en cierre</strong>
-          <span>${seller ? "Ve a “Ofertas recibidas” y adjudica una oferta para abrir el cierre." : "Cuando un vendedor adjudique tu oferta, la operación aparecerá aquí."}</span>
+          <span>${seller ? "Ve a “Ofertas recibidas” y adjudica una oferta para abrir el cierre." : "Cuando una entidad vendedora adjudique tu oferta, la operación aparecerá aquí."}</span>
           <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'${seller ? "ofertas" : "subastas"}')">${seller ? "Ir a ofertas recibidas" : "Ver carteras en subasta"}</button></div>`}
     </div>`;
 }
