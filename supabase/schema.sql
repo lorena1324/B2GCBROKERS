@@ -461,6 +461,39 @@ begin
   return o;
 end $$;
 
+-- ---------------------------------------------------------
+-- VISUALIZACIONES: veces que una casa de cobranza entra a una cartera
+-- ---------------------------------------------------------
+create table if not exists public.portfolio_views (
+  id bigint generated always as identity primary key,
+  portfolio_id uuid not null references public.portfolios on delete cascade,
+  company_id uuid not null references public.companies,
+  viewed_at timestamptz not null default now()
+);
+create index if not exists portfolio_views_lookup on public.portfolio_views (portfolio_id, company_id, viewed_at desc);
+alter table public.portfolio_views enable row level security; -- sin políticas: solo se usa por las funciones de abajo
+
+create or replace function public.register_view(p_portfolio uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare me uuid := public.my_company_id();
+begin
+  if me is null or not public.i_am_approved() then return; end if;
+  if exists (select 1 from public.portfolios where id = p_portfolio and seller_company = me) then return; end if; -- el dueño no cuenta
+  if exists (select 1 from public.portfolio_views where portfolio_id = p_portfolio and company_id = me
+             and viewed_at > now() - interval '30 minutes') then return; end if;                           -- evita contar recargas
+  insert into public.portfolio_views (portfolio_id, company_id) values (p_portfolio, me);
+end $$;
+
+create or replace function public.portfolio_view_stats()
+returns table (portfolio_id uuid, views bigint, viewers bigint)
+language sql stable security definer set search_path = public as $$
+  select v.portfolio_id, count(*), count(distinct v.company_id)
+    from public.portfolio_views v
+    join public.portfolios p on p.id = v.portfolio_id
+   where p.seller_company = public.my_company_id() or public.is_admin()
+   group by v.portfolio_id;
+$$;
+
 -- Solo usuarios con sesión pueden llamar las funciones
 do $$
 declare f text;
@@ -469,7 +502,7 @@ begin
     'create_my_company(text,text,text,text,text,text,text)', 'set_company_doc(text,text,text,bigint)',
     'admin_review_company(uuid,text,text)', 'ref_prefix_for(text)', 'create_portfolio(text,text,text,numeric,integer,integer,numeric,timestamptz,timestamptz,text)',
     'cancel_portfolio(uuid)', 'market_portfolios()', 'bid_book()', 'place_bid(uuid,numeric,text)', 'reject_bid(uuid,boolean)',
-    'adjudicate_bid(uuid)', 'advance_operation(uuid,text,text,text,numeric,text,boolean)', 'cancel_operation(uuid)']
+    'adjudicate_bid(uuid)', 'register_view(uuid)', 'portfolio_view_stats()', 'advance_operation(uuid,text,text,text,numeric,text,boolean)', 'cancel_operation(uuid)']
   loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);

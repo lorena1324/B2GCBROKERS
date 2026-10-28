@@ -155,11 +155,12 @@ function portfolioToLot(p) {
 async function loadRealData() {
   if (!sb || !real.company) return;
   const seller = real.company.role === "vendedor";
-  const [ports, mine, book, ops] = await Promise.all([
+  const [ports, mine, book, ops, viewStats] = await Promise.all([
     sb.rpc("market_portfolios"),
     seller ? sb.from("portfolios").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
     sb.rpc("bid_book"),
-    sb.from("operations").select("*, operation_steps(*)").order("created_at", { ascending: false })
+    sb.from("operations").select("*, operation_steps(*)").order("created_at", { ascending: false }),
+    seller ? sb.rpc("portfolio_view_stats") : Promise.resolve({ data: [] })
   ]);
   const err = ports.error || mine.error || book.error || ops.error;
   if (err) { showToast(friendlyError(err)); return; }
@@ -213,8 +214,19 @@ async function loadRealData() {
       log: STEP_ORDER.filter(k => steps[k]).map(k => ({ at: steps[k].at, text: `${CLOSING_STEPS.find(s => s.key === k).done} · ${steps[k].by}${steps[k].signer ? ` (firmó ${steps[k].signer})` : ""}${steps[k].reference ? ` · ref. ${steps[k].reference}` : ""}` }))
     });
   });
+  // Visualizaciones (solo las ve la entidad vendedora); si la función aún no existe, se muestran en cero
+  (viewStats?.data || []).forEach(v => {
+    const code = codeByUuid[v.portfolio_id];
+    if (code && lotProfiles[code]) { lotProfiles[code].views = Number(v.views); lotProfiles[code].viewers = Number(v.viewers); }
+  });
   lots.forEach(l => { l._base = null; });
   syncLotStatuses();
+}
+
+/* Una casa de cobranza abrió una cartera: el servidor la cuenta (máx. una vez cada 30 min por empresa) */
+function realRegisterView(lot) {
+  if (!sb || !lot?.uuid) return;
+  sb.rpc("register_view", { p_portfolio: lot.uuid }).then(({ error }) => { if (error) console.warn("No se registró la visualización.", error.message); });
 }
 
 /* =========================================================

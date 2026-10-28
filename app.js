@@ -30,6 +30,7 @@ const appState = {
   offers: [],
   uploadedDocuments: [],
   decisions: {},  // { idOferta: "Aceptada" | "Rechazada" } — decisión del vendedor
+  views: {},      // { idCartera: { count, viewers: [empresas] } } — entradas registradas en este navegador (demo)
   favorites: [],  // lotes que el comprador marcó como favoritos
   operations: []  // operaciones en cierre (ver cierre.js)
 };
@@ -86,11 +87,11 @@ const DAY = 864e5;
 const SOLD_DEMO = 3977; // M COP ya vendidos (demo)
 
 const lotProfiles = {
-  "LOTE-TEST-001": { obligations: 6120, likes: 128, favs: 41, comments: 17, offers: 6, bestPercent: 82, startsAt: Date.now() - 3 * DAY, endsAt: Date.now() + 5 * 36e5 },
-  "LOTE-TEST-002": { obligations: 3010, likes: 76, favs: 22, comments: 9, offers: 4, bestPercent: 85, startsAt: Date.now() - 2 * DAY, endsAt: Date.now() + 2.25 * DAY },
-  "LOTE-TEST-003": { obligations: 1930, likes: 54, favs: 15, comments: 6, offers: 3, bestPercent: 74, startsAt: Date.now() - 1.5 * DAY, endsAt: Date.now() + 4 * DAY },
-  "LOTE-TEST-004": { obligations: 980, likes: 33, favs: 10, comments: 3, offers: 2, bestPercent: 88, startsAt: Date.now() - 1 * DAY, endsAt: Date.now() + 6 * DAY },
-  "LOTE-TEST-005": { obligations: 720, likes: 21, favs: 7, comments: 2, offers: 0, bestPercent: 0, startsAt: Date.now() + 18 * 36e5, endsAt: Date.now() + 8 * DAY }
+  "LOTE-TEST-001": { views: 412, viewers: 38, obligations: 6120, likes: 128, favs: 41, comments: 17, offers: 6, bestPercent: 82, startsAt: Date.now() - 3 * DAY, endsAt: Date.now() + 5 * 36e5 },
+  "LOTE-TEST-002": { views: 236, viewers: 24, obligations: 3010, likes: 76, favs: 22, comments: 9, offers: 4, bestPercent: 85, startsAt: Date.now() - 2 * DAY, endsAt: Date.now() + 2.25 * DAY },
+  "LOTE-TEST-003": { views: 168, viewers: 17, obligations: 1930, likes: 54, favs: 15, comments: 6, offers: 3, bestPercent: 74, startsAt: Date.now() - 1.5 * DAY, endsAt: Date.now() + 4 * DAY },
+  "LOTE-TEST-004": { views: 96, viewers: 9, obligations: 980, likes: 33, favs: 10, comments: 3, offers: 2, bestPercent: 88, startsAt: Date.now() - 1 * DAY, endsAt: Date.now() + 6 * DAY },
+  "LOTE-TEST-005": { views: 41, viewers: 6, obligations: 720, likes: 21, favs: 7, comments: 2, offers: 0, bestPercent: 0, startsAt: Date.now() + 18 * 36e5, endsAt: Date.now() + 8 * DAY }
 };
 const profileOf = lot => lotProfiles[lot.id] || lotProfiles["LOTE-TEST-001"];
 
@@ -123,6 +124,7 @@ function loadDemoState() {
     if (saved && Array.isArray(saved.demoPortfolios)) appState.demoPortfolios = saved.demoPortfolios;
     if (saved && saved.decisions && typeof saved.decisions === "object") appState.decisions = saved.decisions;
     if (saved && Array.isArray(saved.favorites)) appState.favorites = saved.favorites;
+    if (saved && saved.views && typeof saved.views === "object") appState.views = saved.views;
     if (saved && Array.isArray(saved.operations)) appState.operations = saved.operations;
   } catch (error) {
     console.warn("No fue posible cargar el estado demo.", error);
@@ -135,7 +137,7 @@ function saveDemoState() {
     try { localStorage.setItem(`b2gc_real_favs_${real.user?.id}`, JSON.stringify(appState.favorites || [])); } catch { }
     return;
   }
-  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites, operations: appState.operations, demoPortfolios: appState.demoPortfolios || [] }));
+  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites, views: appState.views, operations: appState.operations, demoPortfolios: appState.demoPortfolios || [] }));
 }
 
 function resetDemoData() {
@@ -143,6 +145,7 @@ function resetDemoData() {
   appState.uploadedDocuments = [];
   appState.decisions = {};
   appState.favorites = [];
+  appState.views = {};
   appState.operations = [];
   const hadPortfolios = (appState.demoPortfolios || []).length;
   appState.demoPortfolios = [];
@@ -207,7 +210,10 @@ function toggleCountdown() {
   const [id, kind] = el.dataset.cd.split("|");
   const next = kind === "inicio" ? "cierre" : "inicio";
   el.dataset.cd = `${id}|${next}`;
-  label.textContent = next === "inicio" ? "Tiempo para inicio de subasta" : "Tiempo para cierre de subasta";
+  const started = (lotProfiles[id]?.startsAt || 0) <= Date.now();
+  label.textContent = next === "inicio"
+    ? (started ? "Estado de la subasta" : "Tiempo para el inicio de la subasta")
+    : "Tiempo para el cierre de la subasta";
   tickCountdowns();
 }
 
@@ -404,7 +410,7 @@ function buildSidebar() {
     const link = (page, label, active) => `<a href="#" class="${active ? "active" : ""}" onclick="navigate(event,'${page}')">${label}</a>`;
     nav.innerHTML = (seller ? [
       link("dashboard", "Dashboard", true), link("cartera", "Mis carteras"), link("publicar", "Publicar cartera"),
-      link("subastas", "Carteras en subasta"), link("ofertas", "Ofertas recibidas"), link("cierre", "Cierre de operaciones")
+      link("subastas", "Carteras en subasta"), link("ofertas", "Ofertas recibidas"), link("oportunidades", "Casas de cobranza interesadas"), link("cierre", "Cierre de operaciones")
     ] : [
       link("dashboard", "Dashboard", true), link("mercado", "Mercado"), link("subastas", "Carteras en subasta"),
       link("ofertas", "Mis ofertas"), link("cierre", "Cierre de operaciones"), link("adjudicaciones", "Carteras adquiridas")
@@ -450,7 +456,7 @@ function navigate(event, page) {
   currentPage = page;
   if (event) resetFilters();
   const titles = {
-    dashboard: "Dashboard", cartera: "Mis carteras", oportunidades: "Oportunidades", negociaciones: "Negociaciones",
+    dashboard: "Dashboard", cartera: "Mis carteras", oportunidades: currentRole === "vendedor" ? "Casas de cobranza interesadas" : "Oportunidades", negociaciones: "Negociaciones",
     documentos: "Documentos", reportes: "Reportes", mercado: "Mercado de oportunidades",
     ofertas: currentRole === "vendedor" ? "Ofertas recibidas" : "Mis ofertas",
     adjudicaciones: currentRole === "comprador" ? "Carteras adquiridas" : "Adjudicaciones", dataroom: "Data room", pruebas: "Centro de pruebas",
@@ -515,6 +521,51 @@ function kpiCard(label, value, change, direction = "up", action = "") {
       <div class="label">${label}</div>
       <div class="value">${value}</div>
       <div class="change ${direction === "down" ? "down" : ""}">${change}</div>
+    </div>`;
+}
+
+/* ----- Visualizaciones: veces que una casa de cobranza entra a una cartera ----- */
+function viewsOf(lotId) {
+  const base = lotProfiles[lotId] || {};
+  const tracked = appState.views?.[lotId] || { count: 0, viewers: [] };
+  return { views: (base.views || 0) + tracked.count, viewers: (base.viewers || 0) + tracked.viewers.length };
+}
+
+function registerView(lot) {
+  if (currentRole !== "comprador" || !appState.loggedIn) return;
+  if (appState.realMode) { if (typeof realRegisterView === "function") realRegisterView(lot); return; }
+  if (!appState.views) appState.views = {};
+  const v = appState.views[lot.id] || (appState.views[lot.id] = { count: 0, viewers: [] });
+  v.count++;
+  if (!v.viewers.includes(appState.company)) v.viewers.push(appState.company);
+  saveDemoState();
+}
+
+/* Página del vendedor: quién está mirando sus carteras */
+function renderInterestPage() {
+  const rows = originatorLots.map(l => ({ lot: l, ...viewsOf(l.id), favs: profileOf(l).favs || 0, offers: bidsFor(l.id).length, bidders: bidderCount(l.id) }))
+    .sort((a, b) => b.views - a.views);
+  const total = rows.reduce((s, r) => s + r.views, 0);
+  const viewers = rows.reduce((s, r) => s + r.viewers, 0);
+  const bidders = rows.reduce((s, r) => s + r.bidders, 0);
+  return `
+    <div class="card page-card">
+      <h2>Casas de cobranza interesadas</h2>
+      <p>Cuántas veces entraron a ver cada cartera, cuántas casas de cobranza distintas lo hicieron y cuántas terminaron ofertando.</p>
+      <div class="report-kpi-grid">
+        <div class="report-kpi"><span>Visualizaciones</span><strong>${fmtN(total)}</strong><small>Entradas a tus carteras</small></div>
+        <div class="report-kpi"><span>Casas de cobranza</span><strong>${fmtN(viewers)}</strong><small>Visitantes distintos, sumados por cartera</small></div>
+        <div class="report-kpi"><span>Postores</span><strong>${fmtN(bidders)}</strong><small>Casas que ofertaron</small></div>
+        <div class="report-kpi"><span>De visita a oferta</span><strong>${viewers ? Math.round(bidders / viewers * 100) : 0}%</strong><small>Postores sobre visitantes</small></div>
+      </div>
+      ${rows.length ? `<div class="table-wrap page-table"><table>
+        <thead><tr><th>Referencia del proceso</th><th>Cartera</th><th>Visualizaciones</th><th>Casas distintas</th><th>Favoritos</th><th>Ofertas</th><th>De visita a oferta</th></tr></thead>
+        <tbody>${rows.map(r => `<tr class="clickable" role="button" tabindex="0" onclick="openDetail('${r.lot.id}')">
+          <td><strong>${refOf(r.lot.id)}</strong></td><td>${escapeHtml(r.lot.title)}</td>
+          <td><strong>${fmtN(r.views)}</strong></td><td>${fmtN(r.viewers)}</td><td>${fmtN(r.favs)}</td><td>${fmtN(r.offers)}</td>
+          <td>${r.viewers ? Math.round(r.bidders / r.viewers * 100) + "%" : "—"}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>` : `<div class="page-placeholder"><strong>Aún no tienes carteras publicadas</strong></div>`}
     </div>`;
 }
 
@@ -596,9 +647,9 @@ function renderOriginatorKpis() {
   const total = originatorLots.reduce((s, l) => s + parseLotAmount(l), 0); // M COP
   const usd = total * 1e6 / TRM_DEMO;
   const featured = originatorLots[0];
-  const likes = originatorLots.reduce((s, l) => s + profileOf(l).likes, 0);
-  const favs = originatorLots.reduce((s, l) => s + profileOf(l).favs, 0);
-  const comments = originatorLots.reduce((s, l) => s + profileOf(l).comments, 0);
+  const views = originatorLots.map(l => ({ lot: l, ...viewsOf(l.id) }));
+  const totalViews = views.reduce((s, v) => s + v.views, 0);
+  const mostViewed = [...views].sort((a, b) => b.views - a.views)[0];
   const nOffers = originatorLots.reduce((s, l) => s + bidsFor(l.id).length, 0);
   const best = originatorLots.map(l => ({ lot: l, p: topBid(l.id)?.percent || 0 })).sort((a, b) => b.p - a.p)[0];
   const bestValue = parseLotAmount(best.lot) * best.p / 100;
@@ -613,8 +664,8 @@ function renderOriginatorKpis() {
 
     <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'oportunidades')" title="Ver casas de cobranza interesadas">
       <div class="label">Visualizaciones</div>
-      <div class="value">${fmtN(likes + favs + comments)}</div>
-      <div class="change" style="color:var(--muted)">${fmtN(likes)} me gusta, ${fmtN(favs)} favoritos y ${fmtN(comments)} comentarios</div>
+      <div class="value">${fmtN(totalViews)}</div>
+      <div class="change" style="color:var(--muted)">${totalViews ? `Veces que casas de cobranza entraron a tus carteras. La más vista: ${refOf(mostViewed.lot.id)} (${fmtN(mostViewed.views)})` : "Aún nadie ha entrado a tus carteras"}</div>
     </div>
 
     <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'ofertas')" title="Ver ofertas recibidas">
@@ -623,8 +674,8 @@ function renderOriginatorKpis() {
       <div class="change">Vendido ${fmtM(SOLD_DEMO)} de ${fmtM(total)} (${(SOLD_DEMO / total * 100).toFixed(1)}%) · ${nOffers} ofertas</div>
     </div>
 
-    <div class="kpi-card clickable" role="button" tabindex="0" onclick="toggleCountdown()" title="Clic para alternar inicio ⇄ cierre">
-      <div class="label"><span id="cd-label">Tiempo para cierre de subasta</span> ⇄</div>
+    <div class="kpi-card clickable" role="button" tabindex="0" onclick="toggleCountdown()" title="Toca para ver si la subasta está en curso o cuánto falta para el cierre">
+      <div class="label"><span id="cd-label">Tiempo para el cierre de la subasta</span> ⇄</div>
       <div class="value" id="cd-main" data-cd="${featured.id}|cierre" style="font-size:20px">—</div>
       <div class="change" style="color:var(--muted)" onclick="event.stopPropagation()">
         Avisar por:
@@ -786,6 +837,7 @@ function renderPage(page) {
   if (page === "ofertas") { content.innerHTML = renderOffersPage(); startCountdowns(); return; }
   if (page === "publicar") { content.innerHTML = renderPublishForm(); return; }
   if (page === "cierre") { content.innerHTML = renderClosingPage(); return; }
+  if (isOrig && page === "oportunidades") { content.innerHTML = renderInterestPage(); return; }
   if (page === "subastas") { content.innerHTML = renderAuctionsPage(); startCountdowns(); return; }
   if (!isOrig && ["oportunidades", "mercado"].includes(page)) { content.innerHTML = renderMarketPage(current.title, current.description); startCountdowns(); return; }
 
@@ -1276,6 +1328,7 @@ function openDetail(lotId) {
   const lot = lots.find(item => item.id === lotId);
   if (!lot) return;
   currentDetail = lot;
+  registerView(lot);
 
   const overlay = $("#detail-overlay");
   if (!overlay) return;
