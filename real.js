@@ -605,19 +605,19 @@ async function renderRealAdmin() {
   shell.innerHTML = `
     <header class="admin-top">
       <a class="brand" href="#">B<span class="sup">2</span>GC Brokers <em class="admin-tag">ADMIN</em></a>
-      <nav class="admin-nav">${tabBtn("empresas", "Empresas")}${tabBtn("carteras", "Carteras")}${tabBtn("operaciones", "Operaciones")}</nav>
+      <nav class="admin-nav">${tabBtn("empresas", "Empresas")}${tabBtn("carteras", "Carteras")}${tabBtn("operaciones", "Operaciones")}${tabBtn("analitica", "Analítica")}</nav>
       <div class="admin-top-right"><span class="admin-user">${escapeHtml(real.user?.email || "")}</span><button class="btn btn-ghost btn-small" onclick="realSignOut()">Cerrar sesión</button></div>
     </header>
     <main class="admin-main">
       <div class="section-kicker">B²GC BROKERS · DATOS REALES</div>
-      <h2 class="admin-h2">${{ empresas: "Empresas registradas", carteras: "Carteras publicadas", operaciones: "Operaciones" }[realAdminTab]}</h2>
+      <h2 class="admin-h2">${{ empresas: "Empresas registradas", carteras: "Carteras publicadas", operaciones: "Operaciones", analitica: "Subastas, tiempos y conversión" }[realAdminTab]}</h2>
       ${err ? `<div class="offer-alert warn"><span>${escapeHtml(friendlyError(err))}</span></div>` : ""}
-      <div class="kpi-grid">
+      ${realAdminTab === "analitica" ? "" : `<div class="kpi-grid">
         ${kpiCard("Pendientes de revisión", count("pendiente"), "Empresas por aprobar", "up", "setRealAdminTab('empresas');setRealAdminFilter('pendiente')")}
         ${kpiCard("Empresas aprobadas", count("aprobada"), `${C.filter(c => c.status === "aprobada" && c.role === "vendedor").length} vendedoras · ${C.filter(c => c.status === "aprobada" && c.role === "comprador").length} casas de cobranza`, "up", "setRealAdminTab('empresas');setRealAdminFilter('aprobada')")}
         ${kpiCard("Carteras publicadas", P.filter(p => p.status !== "cancelada").length, `${B.length} ofertas recibidas`, "up", "setRealAdminTab('carteras')")}
         ${kpiCard("Operaciones cerradas", appState.operations.filter(o => o.status === "Cerrada").length, `${fmtM(closedValue)} intermediados`, "up", "setRealAdminTab('operaciones')")}
-      </div>
+      </div>`}
       ${realAdminTab === "empresas" ? `
         <div class="admin-tabs">${[["pendiente", "Pendientes"], ["aprobada", "Aprobadas"], ["rechazada", "Rechazadas"], ["suspendida", "Suspendidas"], ["todas", "Todas"]]
           .map(t => `<button class="${realAdminFilter === t[0] ? "active" : ""}" onclick="setRealAdminFilter('${t[0]}')">${t[1]}${t[0] !== "todas" ? ` <b>${count(t[0])}</b>` : ""}</button>`).join("")}</div>
@@ -641,6 +641,7 @@ async function renderRealAdmin() {
             <td><span class="badge">${p.status}</span></td></tr>`; }).join("")}</tbody></table></div>` : `<div class="page-placeholder" style="margin:22px"><strong>Aún no hay carteras publicadas</strong></div>`}</div>` : ""}
       ${realAdminTab === "operaciones" ? `
         ${appState.operations.length ? `<div class="op-list">${appState.operations.map(opCard).join("")}</div>` : `<div class="card"><div class="page-placeholder" style="margin:22px"><strong>Aún no hay operaciones</strong><span>Aparecerán cuando una entidad vendedora adjudique una oferta.</span></div></div>`}` : ""}
+      ${realAdminTab === "analitica" ? renderRealAnalytics(P, B, O, C) : ""}
     </main>`;
 }
 
@@ -691,6 +692,165 @@ async function realReview(id, status) {
   closeReview();
   showToast({ aprobada: "Empresa aprobada. Ya puede entrar a la plataforma.", rechazada: "Empresa rechazada.", suspendida: "Acceso suspendido." }[status]);
   renderRealAdmin();
+}
+
+/* =========================================================
+   ADMIN REAL · ANALÍTICA DE SUBASTAS Y CONVERSIÓN
+   Todo sale de los datos reales de Supabase. La lectura
+   automática es un conjunto de reglas; con poco historial lo
+   dice en lugar de inventar conclusiones.
+   ========================================================= */
+function realAnalyticsData(P, B, O, C) {
+  const now = Date.now();
+  const active = P.filter(p => p.status !== "cancelada");
+  const opsLive = O.filter(o => o.status !== "cancelada");
+  const won = p => p.status === "adjudicada" || p.status === "vendida";
+  const finished = active.filter(p => won(p) || Date.parse(p.ends_at) <= now);
+  const bidsOf = id => B.filter(b => b.portfolio_id === id);
+  const days = p => (Date.parse(p.ends_at) - Date.parse(p.starts_at)) / DAY;
+  const firstBidHours = p => {
+    const first = bidsOf(p.id).map(b => Date.parse(b.created_at)).sort((a, b) => a - b)[0];
+    return first ? Math.max(0, (first - Date.parse(p.starts_at)) / HOUR) : null;
+  };
+  const rateOf = list => list.length ? list.filter(won).length / list.length * 100 : null;
+  const mean = list => list.length ? list.reduce((s, v) => s + v, 0) / list.length : null;
+  return {
+    now, active, opsLive, finished, won, bidsOf, days, firstBidHours, rateOf, mean,
+    live: active.filter(p => p.status === "publicada" && Date.parse(p.starts_at) <= now && Date.parse(p.ends_at) > now),
+    upcoming: active.filter(p => p.status === "publicada" && Date.parse(p.starts_at) > now),
+    closedOps: O.filter(o => o.status === "cerrada"),
+    pendingCompanies: C.filter(c => c.status === "pendiente").length
+  };
+}
+
+function realCloseProbability(d, p) {
+  const bids = d.bidsOf(p.id).filter(b => b.status !== "rechazada");
+  const top = Math.max(0, ...bids.map(b => Number(b.percent)));
+  let score = 25 + Math.min(new Set(bids.map(b => b.buyer_name)).size, 5) * 8;
+  if (bids.length) score += top >= Number(p.reserve_percent) ? 25 : -10 + (top - Number(p.reserve_percent)) * 3;
+  if (Date.parse(p.starts_at) > d.now) score -= 15;
+  return Math.round(Math.min(97, Math.max(5, score)));
+}
+
+function realInsights(d) {
+  const out = [];
+  const pct = n => `${Math.round(n)}%`;
+  if (d.finished.length < 3) {
+    out.push({ tone: "info", title: "Todavía hay poco historial", text: `Hay ${d.finished.length} ${d.finished.length === 1 ? "subasta terminada" : "subastas terminadas"}. Las conclusiones sobre duración y conversión aparecerán cuando haya al menos 3.` });
+  } else {
+    const short = d.finished.filter(p => d.days(p) <= 7), long = d.finished.filter(p => d.days(p) > 7);
+    if (short.length && long.length) {
+      const better = d.rateOf(short) >= d.rateOf(long);
+      const same = Math.round(d.rateOf(short)) === Math.round(d.rateOf(long));
+      out.push({ tone: "ok", title: "Duración de las subastas", text: `Las de 7 días o menos se adjudican en ${pct(d.rateOf(short))} de los casos y las más largas en ${pct(d.rateOf(long))}. ${same ? "Por ahora la duración no marca diferencia." : better ? "Conviene ventanas cortas." : "Las ventanas largas están funcionando mejor."}` });
+    }
+    const withBid = d.finished.filter(p => d.firstBidHours(p) !== null);
+    const fast = withBid.filter(p => d.firstBidHours(p) <= 12), slow = withBid.filter(p => d.firstBidHours(p) > 12);
+    if (fast.length && slow.length) {
+      const f = d.rateOf(fast), sl = d.rateOf(slow);
+      out.push({ tone: "info", title: "Primera oferta", text: Math.round(f) === Math.round(sl)
+        ? `Por ahora la rapidez de la primera oferta no cambia el resultado: ambas se adjudican en ${pct(f)} de los casos.`
+        : `Cuando la primera oferta llega en menos de 12 h se adjudica el ${pct(f)}; si tarda más, el ${pct(sl)}.` });
+    }
+    const noBids = d.finished.filter(p => !d.bidsOf(p.id).length).length;
+    if (noBids) out.push({ tone: "warn", title: "Subastas sin ofertas", text: `${noBids} de ${d.finished.length} subastas terminaron sin ofertas. Revisa precio de salida, información del data room o la difusión entre casas de cobranza.` });
+  }
+  d.live.forEach(p => {
+    const bids = d.bidsOf(p.id).filter(b => b.status !== "rechazada");
+    const top = Math.max(0, ...bids.map(b => Number(b.percent)));
+    const hoursIn = (d.now - Date.parse(p.starts_at)) / HOUR, left = Date.parse(p.ends_at) - d.now;
+    if (!bids.length && hoursIn > 24) out.push({ tone: "warn", title: `${p.code} sin ofertas`, text: `Lleva ${Math.floor(hoursIn / 24) || 1} día(s) abierta sin ofertas. Avisa a las casas de cobranza que la marcaron como favorita.` });
+    else if (bids.length && top < Number(p.reserve_percent)) out.push({ tone: "warn", title: `${p.code} bajo tarifa`, text: `La mejor oferta (${top}%) está bajo la tarifa de ${p.seller_name} (${p.reserve_percent}%).` });
+    else if (bids.length && left < DAY) out.push({ tone: "ok", title: `${p.code} cierra en menos de 24 h`, text: `Tiene oferta sobre tarifa (${top}%). Probabilidad de cierre: ${realCloseProbability(d, p)}%.` });
+  });
+  d.opsLive.filter(o => o.status === "en_cierre").forEach(o => {
+    const last = Math.max(Date.parse(o.created_at), ...(o.operation_steps || []).map(s => Date.parse(s.created_at)));
+    const idle = (d.now - last) / DAY;
+    if (idle >= 3) {
+      const done = new Set((o.operation_steps || []).map(s => s.step_key));
+      const next = CLOSING_STEPS.find(s => !done.has(s.key));
+      out.push({ tone: "warn", title: `${o.code} detenida`, text: `Lleva ${Math.floor(idle)} días sin avanzar. Falta: ${next?.label || "—"} (${next ? ROLE[next.role].el : ""}).` });
+    }
+  });
+  if (d.pendingCompanies) out.push({ tone: "info", title: "Empresas por aprobar", text: `${d.pendingCompanies} ${d.pendingCompanies === 1 ? "empresa espera" : "empresas esperan"} la revisión de documentos.` });
+  if (!out.length) out.push({ tone: "ok", title: "Todo en orden", text: "No hay subastas en riesgo ni operaciones detenidas." });
+  return out;
+}
+
+function renderRealAnalytics(P, B, O, C) {
+  const d = realAnalyticsData(P, B, O, C);
+  const fmt1 = n => n === null ? "—" : n.toLocaleString("es-CO", { maximumFractionDigits: 1 });
+  const conv = d.rateOf(d.finished);
+  const firstBids = d.finished.concat(d.live).map(d.firstBidHours).filter(h => h !== null);
+  const closeDays = d.closedOps.map(o => (Date.parse(o.closed_at) - Date.parse(o.created_at)) / DAY);
+  const funnel = [
+    ["Carteras publicadas", d.active.length],
+    ["Con al menos una oferta", d.active.filter(p => d.bidsOf(p.id).length).length],
+    ["Adjudicadas", d.active.filter(d.won).length],
+    ["Vendidas (cierre completo)", d.active.filter(p => p.status === "vendida").length]
+  ];
+  const buckets = [["Hasta 5 días", p => d.days(p) <= 5], ["6 a 7 días", p => d.days(p) > 5 && d.days(p) <= 7], ["8 días o más", p => d.days(p) > 7]]
+    .map(([label, fn]) => { const g = d.finished.filter(fn); return { label, n: g.length, rate: d.rateOf(g) }; });
+  const icon = { ok: "✓", warn: "!", info: "i" };
+
+  // Para que la cuenta regresiva funcione en la tabla
+  [...d.live, ...d.upcoming].forEach(p => { lotProfiles[p.code] = { obligations: p.obligations, likes: 0, favs: 0, comments: 0, offers: 0, bestPercent: 0, startsAt: Date.parse(p.starts_at), endsAt: Date.parse(p.ends_at) }; });
+  setTimeout(startCountdowns, 0);
+
+  return `
+    <div class="kpi-grid" style="margin-top:18px">
+      ${kpiCard("Subastas en vivo", d.live.length, `${d.upcoming.length} por abrir`, "up")}
+      ${kpiCard("Ofertas recibidas", B.length, `${new Set(B.map(b => b.buyer_name)).size} casas de cobranza distintas`, "up")}
+      ${kpiCard("Conversión", conv === null ? "—" : `${Math.round(conv)}%`, `${d.active.filter(d.won).length} de ${d.finished.length} subastas terminadas se adjudicaron`, "up")}
+      ${kpiCard("Tiempos", `${fmt1(d.mean(d.active.map(d.days)))} días`, `Primera oferta en ${fmt1(d.mean(firstBids))} h · cierre en ${fmt1(d.mean(closeDays))} días`, "up")}
+    </div>
+
+    <div class="ai-card">
+      <div class="ai-card-head"><div class="ai-avatar">B²</div><div><strong>Lectura automática de tiempos y conversión</strong><span>Reglas sobre los datos reales de la plataforma</span></div></div>
+      <div class="ai-insights">${realInsights(d).map(i => `<div class="ai-insight ${i.tone}"><b>${icon[i.tone]}</b><div><strong>${escapeHtml(i.title)}</strong><span>${escapeHtml(i.text)}</span></div></div>`).join("")}</div>
+    </div>
+
+    <div class="dashboard-chart-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+      <div class="dashboard-chart-card">
+        <div class="dashboard-chart-header"><div><h3>Conversión del mercado</h3><p>De la publicación a la venta</p></div></div>
+        ${d.active.length ? `<div class="funnel">${funnel.map(([label, v], i) => `
+          <div class="funnel-row"><span>${label}</span><div class="funnel-track"><b style="width:${Math.max(3, v / (funnel[0][1] || 1) * 100)}%"></b></div><strong>${v}</strong>
+          <small>${i && funnel[i - 1][1] ? Math.round(v / funnel[i - 1][1] * 100) + "%" : ""}</small></div>`).join("")}</div>`
+          : '<div class="page-placeholder"><strong>Aún no hay carteras publicadas</strong></div>'}
+      </div>
+      <div class="dashboard-chart-card">
+        <div class="dashboard-chart-header"><div><h3>Conversión según duración</h3><p>Subastas terminadas, por días de duración</p></div></div>
+        ${d.finished.length ? `<div class="activity-chart" style="grid-template-columns:repeat(3,minmax(0,1fr))">${buckets.map(b => `
+          <div class="activity-column">
+            <div class="activity-value" style="height:${b.rate === null ? 4 : Math.max(6, b.rate)}%"><b>${b.rate === null ? "—" : Math.round(b.rate) + "%"}</b></div>
+            <span>${b.label}<br>${b.n} ${b.n === 1 ? "subasta" : "subastas"}</span>
+          </div>`).join("")}</div>`
+          : '<div class="page-placeholder"><strong>Sin subastas terminadas todavía</strong><span>La gráfica aparece cuando termine la primera.</span></div>'}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="card-header"><div><h3>Subastas en curso y por abrir</h3><p>Probabilidad de cierre según postores, tarifa y tiempo</p></div></div>
+      ${d.live.length + d.upcoming.length ? `<div class="table-wrap"><table><thead><tr>
+        <th>Referencia del proceso</th><th>Entidad vendedora</th><th>Tiempo</th><th>Ofertas</th><th>Postores</th><th>Más alta</th><th>Tarifa</th><th>Prob. de cierre</th>
+      </tr></thead><tbody>
+        ${[...d.live, ...d.upcoming].map(p => {
+          const bids = d.bidsOf(p.id).filter(b => b.status !== "rechazada");
+          const top = bids.length ? Math.max(...bids.map(b => Number(b.percent))) : null;
+          const prob = realCloseProbability(d, p);
+          const upcoming = Date.parse(p.starts_at) > d.now;
+          return `<tr>
+            <td><strong>${escapeHtml(p.code)}</strong><br><small style="color:var(--muted-2)">${escapeHtml(p.title)}</small></td>
+            <td>${escapeHtml(p.seller_name)}</td>
+            <td><small class="cd-label">${upcoming ? "Abre en" : "Cierra en"}</small> <span class="cd" data-cd="${p.code}|${upcoming ? "inicio" : "cierre"}">—</span></td>
+            <td>${d.bidsOf(p.id).length}</td><td>${new Set(bids.map(b => b.buyer_name)).size}</td>
+            <td>${top === null ? "—" : top + "%"}</td>
+            <td>${p.reserve_percent}% ${top === null ? "" : reserveBadge(top, Number(p.reserve_percent))}</td>
+            <td><div class="prob"><div><b style="width:${prob}%"></b></div><strong>${prob}%</strong></div></td>
+          </tr>`;
+        }).join("")}
+      </tbody></table></div>` : '<div class="page-placeholder" style="margin:22px"><strong>No hay subastas en curso</strong></div>'}
+    </div>`;
 }
 
 /* =========================================================
