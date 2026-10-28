@@ -527,7 +527,7 @@ function renderRealDashboard() {
         <p style="color:var(--muted);font-size:13px;margin-top:5px;">${seller ? "Publica carteras, revisa ofertas y cierra con B²GC Brokers como intermediario." : "Oferta en las carteras que publican bancos, fintech y cooperativas a través de B²GC Brokers."}</p>
         ${seller ? `<button class="btn btn-navy btn-small" style="margin-top:14px" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>` : ""}
       </div>
-      <div class="kpi-grid">${kpis.map(k => kpiCard(k[0], k[1], k[2], "up", k[3])).join("")}</div>
+      <div class="kpi-grid">${seller ? kpis.map(k => kpiCard(k[0], k[1], k[2], "up", k[3])).join("") : buyerKpiCards()}</div>
       <div class="dashboard-chart-grid">
         <div class="dashboard-chart-card dashboard-chart-large">
           ${seller

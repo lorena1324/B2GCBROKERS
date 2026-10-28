@@ -219,7 +219,7 @@ async function botRecommend() {
   ranked.forEach((r, i) => {
     botSay(`
       <div class="bot-card">
-        <div class="bot-card-top"><span>${i + 1}. ${r.lot.id}</span><b class="${r.score >= 70 ? "hi" : r.score >= 45 ? "mid" : "lo"}">${r.score}% afín</b></div>
+        <div class="bot-card-top"><span>${i + 1}. ${refOf(r.lot.id)}</span><b class="${r.score >= 70 ? "hi" : r.score >= 45 ? "mid" : "lo"}">${r.score}% afín</b></div>
         <strong>${r.lot.title}</strong>
         <div class="bot-card-meta">${money(parseLotAmount(r.lot))} nominal · ${r.lot.discount} descuento · ${r.lot.modality}</div>
         <ul>${r.why.length ? r.why.map(w => `<li>${w}</li>`).join("") : "<li>Coincide parcialmente con tus criterios</li>"}</ul>

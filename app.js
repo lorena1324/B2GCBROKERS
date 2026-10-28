@@ -41,14 +41,44 @@ const originatorLots = [
 ];
 
 const lots = [
-  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", vendedor: "Banco Demo A", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
-  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Fintech Demo B", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
-  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Cooperativa Demo C", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Precalificación", statusClass: "badge-gold", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" },
-  { id: "LOTE-TEST-004", title: "Cartera hipotecaria — Demo", vendedor: "Banco Demo D", type: "Hipotecaria", amount: "$8.920 M", discount: "12%", debtors: "420", status: "Data room abierto", statusClass: "badge-blue", modality: "Subasta privada", deadline: "30 Sep 2026", score: "A+" },
-  { id: "LOTE-TEST-005", title: "Cartera pyme — Demo", vendedor: "Fintech Demo E", type: "PYME", amount: "$2.160 M", discount: "20%", debtors: "315", status: "Nueva", statusClass: "badge-green", modality: "Compra directa", deadline: "02 Oct 2026", score: "A" }
+  { id: "LOTE-TEST-001", title: "Cartera de consumo — Demo", vendedor: "Banco Demo S.A.", type: "Consumo", amount: "$4.850 M", discount: "18%", debtors: "2.840", status: "Subasta activa", statusClass: "badge-green", modality: "Subasta privada", deadline: "18 Sep 2026", score: "A+" },
+  { id: "LOTE-TEST-002", title: "Cartera libranza — Demo", vendedor: "Banco Demo S.A.", type: "Libranza", amount: "$3.240 M", discount: "15%", debtors: "1.460", status: "En negociación", statusClass: "badge-blue", modality: "Compra directa", deadline: "22 Sep 2026", score: "A" },
+  { id: "LOTE-TEST-003", title: "Cartera comercial — Demo", vendedor: "Banco Demo S.A.", type: "Comercial", amount: "$6.780 M", discount: "22%", debtors: "860", status: "Precalificación", statusClass: "badge-gold", modality: "Híbrida", deadline: "25 Sep 2026", score: "B+" },
+  { id: "LOTE-TEST-004", title: "Cartera hipotecaria — Demo", vendedor: "Cooperativa Demo Andina", type: "Hipotecaria", amount: "$8.920 M", discount: "12%", debtors: "420", status: "Data room abierto", statusClass: "badge-blue", modality: "Subasta privada", deadline: "30 Sep 2026", score: "A+" },
+  { id: "LOTE-TEST-005", title: "Cartera pyme — Demo", vendedor: "Fintech Demo Pacífico", type: "PYME", amount: "$2.160 M", discount: "20%", debtors: "315", status: "Nueva", statusClass: "badge-green", modality: "Compra directa", deadline: "02 Oct 2026", score: "A" }
 ];
 
 const buyerOpportunities = lots.map(lot => ({ ...lot }));
+
+/* Carteras que la casa de cobranza demo ya compró antes (histórico) */
+const buyerAcquisitionsDemo = [
+  { lotId: "LOTE-HIST-011", title: "Cartera de libranza", vendedor: "Fintech Demo Pacífico", type: "Libranza", nominal: 2100, percent: 85, date: "28/7/2026", status: "Cerrada" },
+  { lotId: "LOTE-HIST-018", title: "Cartera de consumo", vendedor: "Cooperativa Demo Andina", type: "Consumo", nominal: 4850, percent: 82, date: "12/9/2026", status: "Cerrada" }
+];
+
+/* ===== Referencia del proceso =====
+   Iniciales de la entidad que vende + consecutivo de sus procesos.
+   Ej.: Banco Santander → BS004. En el modo real la asigna el servidor. */
+const REF_SKIP = /^(de|del|la|las|los|el|y|s\.?a\.?s?\.?|ltda\.?|e\.?u\.?)$/i;
+const lotRefs = {};
+const refOf = id => lotRefs[id] || id;
+
+function refPrefix(name) {
+  return String(name || "").split(/\s+/)
+    .filter(w => w && !REF_SKIP.test(w) && /^[\p{L}\d]/u.test(w))
+    .map(w => w[0].toUpperCase()).join("").slice(0, 4) || "EN";
+}
+
+(function assignDemoRefs() {
+  const seq = {};
+  // El histórico va primero porque esas compras son anteriores
+  [...buyerAcquisitionsDemo.map(h => ({ id: h.lotId, vendedor: h.vendedor })), ...lots].forEach(item => {
+    if (lotRefs[item.id]) return;
+    const p = refPrefix(item.vendedor);
+    seq[p] = (seq[p] || 0) + 1;
+    lotRefs[item.id] = p + String(seq[p]).padStart(3, "0");
+  });
+})();
 
 /* ===== TRM y perfil ampliado de cada lote (DEMO: reemplazar por API/BD) ===== */
 const TRM_DEMO = 3950; // COP por USD; conectar a la TRM oficial cuando haya backend
@@ -373,7 +403,7 @@ function buildSidebar() {
       link("subastas", "⏱", "Carteras en subasta"), link("ofertas", "↕", "Ofertas recibidas"), link("cierre", "✍", "Cierre de operaciones")
     ] : [
       link("dashboard", "▦", "Dashboard", true), link("mercado", "◇", "Mercado"), link("subastas", "⏱", "Carteras en subasta"),
-      link("ofertas", "⇄", "Mis ofertas"), link("cierre", "✍", "Cierre de operaciones")
+      link("ofertas", "⇄", "Mis ofertas"), link("cierre", "✍", "Cierre de operaciones"), link("adjudicaciones", "", "Carteras adquiridas")
     ]).join("") + `<div class="sidebar-market-status"><div class="status-title">Conectado · datos reales</div><p>${escapeHtml(appState.company)}</p></div>`;
     return;
   }
@@ -398,7 +428,7 @@ function buildSidebar() {
       <a href="#" onclick="navigate(event,'subastas')">Carteras en subasta</a>
       <a href="#" onclick="navigate(event,'ofertas')">Mis ofertas</a>
       <a href="#" onclick="navigate(event,'cierre')">Cierre de operaciones</a>
-      <a href="#" onclick="navigate(event,'adjudicaciones')">Adjudicaciones</a>
+      <a href="#" onclick="navigate(event,'adjudicaciones')">Carteras adquiridas</a>
       <a href="#" onclick="navigate(event,'dataroom')">Data room</a>
       <a href="#" onclick="navigate(event,'reportes')">Reportes</a>
       <a href="#" onclick="navigate(event,'pruebas')">Pruebas</a>
@@ -418,7 +448,7 @@ function navigate(event, page) {
     dashboard: "Dashboard", cartera: "Mis carteras", oportunidades: "Oportunidades", negociaciones: "Negociaciones",
     documentos: "Documentos", reportes: "Reportes", mercado: "Mercado de oportunidades",
     ofertas: currentRole === "vendedor" ? "Ofertas recibidas" : "Mis ofertas",
-    adjudicaciones: "Adjudicaciones", dataroom: "Data room", pruebas: "Centro de pruebas",
+    adjudicaciones: currentRole === "comprador" ? "Carteras adquiridas" : "Adjudicaciones", dataroom: "Data room", pruebas: "Centro de pruebas",
     subastas: "Carteras en subasta", cierre: "Cierre de operaciones", publicar: "Publicar cartera"
   };
   if (pageTitle) pageTitle.textContent = titles[page] || "Dashboard";
@@ -460,7 +490,7 @@ function renderDashboard() {
         <p style="color:var(--muted);font-size:13px;margin-top:5px;">${roleData.description}</p>
       </div>
       <div class="kpi-grid">
-        ${isOriginator ? renderOriginatorKpis() : roleData.kpis.map(k => kpiCard(k[0], k[1], k[2], "up", k[3])).join("")}
+        ${isOriginator ? renderOriginatorKpis() : buyerKpiCards()}
       </div>
       ${isOriginator ? renderOriginatorCharts() : renderDashboardCharts("comprador")}
       ${renderLotsCard()}
@@ -478,6 +508,59 @@ function kpiCard(label, value, change, direction = "up", action = "") {
       <div class="value">${value}</div>
       <div class="change ${direction === "down" ? "down" : ""}">${change}</div>
     </div>`;
+}
+
+/* ----- KPIs de la casa de cobranza (demo y real) ----- */
+const fmtPct = n => n.toLocaleString("es-CO", { maximumFractionDigits: 1 }) + "%";
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+/* Carteras que la casa de cobranza ganó: histórico demo + operaciones adjudicadas */
+function buyerAcquisitions() {
+  const fromOps = (appState.operations || [])
+    .filter(o => o.status !== "Cancelada" && o.buyer === appState.company)
+    .map(o => ({
+      lotId: o.lotId, title: o.lotTitle, vendedor: o.seller, type: lotById(o.lotId)?.type || "—",
+      nominal: o.nominal, percent: o.percent, value: o.value, paid: o.steps.pago ? Number(o.steps.pago.amount) || o.value : 0,
+      date: new Date(o.createdAt).toLocaleDateString("es-CO"), status: o.status, opId: o.id
+    }));
+  const history = appState.realMode ? [] : buyerAcquisitionsDemo.map(h => {
+    const value = +(h.nominal * h.percent / 100).toFixed(1);
+    return { ...h, value, paid: value };
+  });
+  return [...history, ...fromOps];
+}
+
+function buyerKpiCards() {
+  // Disponibles: carteras con subasta abierta o por abrir que no se han adjudicado
+  const available = buyerOpportunities.filter(l => auctionState(l.id) !== "cerrada");
+  const availableNominal = available.reduce((s, l) => s + parseLotAmount(l), 0);
+
+  // Activas: mi mejor oferta vigente en cada cartera cuya subasta sigue abierta
+  const myBest = {};
+  (appState.offers || []).forEach(o => {
+    if (appState.decisions?.[o.id] === "Rechazada" || auctionState(o.lotId) === "cerrada") return;
+    myBest[o.lotId] = Math.max(myBest[o.lotId] || 0, o.percent);
+  });
+  const activeIds = Object.keys(myBest).filter(id => lotById(id));
+  const offered = activeIds.reduce((s, id) => s + parseLotAmount(lotById(id)) * myBest[id] / 100, 0);
+
+  // Adquiridas y precio promedio (ponderado por valor nominal)
+  const acquired = buyerAcquisitions();
+  const paid = acquired.reduce((s, a) => s + a.paid, 0);
+  const pending = acquired.reduce((s, a) => s + a.value - a.paid, 0);
+  const nominal = acquired.reduce((s, a) => s + a.nominal, 0);
+  const avgPrice = nominal ? acquired.reduce((s, a) => s + a.value, 0) / nominal * 100 : 0;
+
+  return [
+    kpiCard("Oportunidades disponibles", available.length,
+      `${available.length === 1 ? "cartera o tramo" : "carteras o tramos"} por ${fmtM(availableNominal)} de valor nominal`, "up", "navigate(null,'subastas')"),
+    kpiCard("Ofertas activas", activeIds.length,
+      activeIds.length ? `${activeIds.length === 1 ? "cartera o tramo" : "carteras o tramos"} con ${fmtM(offered)} ofertados` : "No tienes ofertas vigentes", "up", "navigate(null,'ofertas')"),
+    acquired.length ? kpiCard("Carteras adquiridas", acquired.length,
+      `${fmtM(paid)} pagados${pending > 0.05 ? ` y ${fmtM(pending)} por pagar` : ""}`, "up", "navigate(null,'adjudicaciones')") : "",
+    acquired.length ? kpiCard("Precio promedio de adquisición", `${fmtPct(avgPrice)} <small class="kpi-unit">del nominal</small>`,
+      `Descuento promedio de ${fmtPct(100 - avgPrice)} sobre ${plural(acquired.length, "cartera", "carteras")}`, "up", "navigate(null,'adjudicaciones')") : ""
+  ].join("");
 }
 
 /* ----- KPIs del vendedor ----- */
@@ -507,7 +590,7 @@ function renderOriginatorKpis() {
     </div>
 
     <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'ofertas')" title="Ver ofertas recibidas">
-      <div class="label">Mejor oferta actual · ${best.lot.id}</div>
+      <div class="label">Mejor oferta actual · ${refOf(best.lot.id)}</div>
       <div class="value">${fmtM(bestValue)} <small style="font-size:13px;color:var(--blue)">${best.p}%</small></div>
       <div class="change">Vendido ${fmtM(SOLD_DEMO)} de ${fmtM(total)} (${(SOLD_DEMO / total * 100).toFixed(1)}%) · ${nOffers} ofertas</div>
     </div>
@@ -608,13 +691,13 @@ function renderLotsCard() {
         <button class="btn btn-ghost btn-small" onclick="navigate(event,'mercado')">Ver todo</button>
       </div>
       <div class="table-wrap"><table><thead><tr>
-        <th></th><th>Lote</th><th>Tipo</th><th>Valor</th><th>Oferta más alta</th><th>Tiempo de subasta</th><th>Estado</th><th></th>
+        <th></th><th>Referencia del proceso</th><th>Tipo</th><th>Valor</th><th>Oferta más alta</th><th>Tiempo de subasta</th><th>Estado</th><th></th>
       </tr></thead><tbody>
         ${items.map(lot => {
           const top = topBid(lot.id);
           return `<tr>
             <td>${favButton(lot.id)}</td>
-            <td><strong style="color:var(--navy);">${lot.id}</strong>${lot.id === topSellerId() ? ' <span class="chip chip-hot">Más vendida</span>' : ""}</td>
+            <td><strong style="color:var(--navy);">${refOf(lot.id)}</strong>${lot.id === topSellerId() ? ' <span class="chip chip-hot">Más vendida</span>' : ""}</td>
             <td>${lot.type}</td><td><strong>${lot.amount}</strong></td>
             <td>${top ? top.percent + "%" : "—"}</td>
             <td><small class="cd-label">${cdLabel(lot.id)}</small> ${cdHtml(lot.id)}</td>
@@ -633,13 +716,13 @@ function renderOriginatorLotsCard() {
         <button class="btn btn-ghost btn-small" onclick="navigate(event,'cartera')">Ver todo</button>
       </div>
       <div class="table-wrap"><table><thead><tr>
-        <th>Lote</th><th>Valor</th><th>Tarifa</th><th>Mejor oferta</th><th>Cuenta regresiva</th><th>Modalidad</th><th>Estado</th><th></th>
+        <th>Referencia del proceso</th><th>Valor</th><th>Tarifa</th><th>Mejor oferta</th><th>Cuenta regresiva</th><th>Modalidad</th><th>Estado</th><th></th>
       </tr></thead><tbody>
         ${originatorLots.map(lot => {
           const top = topBid(lot.id);
           const reserve = reserveOf(lot.id);
           return `<tr>
-            <td><strong style="color:var(--navy);">${lot.id}</strong></td>
+            <td><strong style="color:var(--navy);">${refOf(lot.id)}</strong></td>
             <td><strong>${lot.amount}</strong></td>
             <td>${reserve}%</td>
             <td>${top ? `${fmtM(parseLotAmount(lot) * top.percent / 100)} · ${top.percent}% ${reserveBadge(top.percent, reserve)}` : "Sin ofertas"}</td>
@@ -702,7 +785,7 @@ function renderPage(page) {
         <div class="test-lot-grid">
           ${items.map(lot => `
             <article class="test-lot-card clickable" role="button" tabindex="0" onclick="openDetail('${lot.id}')">
-              <div class="lot-number">${lot.id}</div>
+              <div class="lot-number">${refOf(lot.id)}</div>
               <h3>${lot.title}</h3>
               <span>${lot.type} · ${lot.modality}</span>
               <strong>${lot.amount}</strong>
@@ -738,8 +821,8 @@ function renderPage(page) {
         <h2>${current.title}</h2>
         <p>${current.description}</p>
         <div class="table-wrap page-table"><table>
-          <thead><tr><th>Proceso</th><th>Lote</th><th>Contraparte</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead>
-          <tbody>${rows.map(row => `<tr><td><strong>${row.id}</strong></td><td>${row.lotId}</td><td>${row.counterparty || "Vendedor / contraparte demo"}</td><td>${row.amount}</td><td><span class="badge badge-blue">${row.status}</span></td><td>${row.date}</td></tr>`).join("")}</tbody>
+          <thead><tr><th>Proceso</th><th>Referencia del proceso</th><th>Contraparte</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead>
+          <tbody>${rows.map(row => `<tr><td><strong>${row.id}</strong></td><td>${refOf(row.lotId)}</td><td>${row.counterparty || "Vendedor / contraparte demo"}</td><td>${row.amount}</td><td><span class="badge badge-blue">${row.status}</span></td><td>${row.date}</td></tr>`).join("")}</tbody>
         </table></div>
       </div>`;
     return;
@@ -938,27 +1021,52 @@ function removeUploadedDocument(documentId) {
    ADJUDICACIONES, REPORTES, OFERTAS, PRUEBAS
    ========================================================= */
 function renderAdjudicationsPage() {
-  const isOrig = currentRole === "vendedor";
-  const adjudications = isOrig
-    ? [
-      { id: "ADJ-ORIG-001", lot: "LOTE-TEST-001", buyer: "Casa de Cobranza Demo S.A.S.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
-      { id: "ADJ-ORIG-002", lot: "LOTE-TEST-002", buyer: "Cobranzas Demo Andina", value: "$2.754 M", status: "En cierre", date: "15 Sep 2026" },
-      { id: "ADJ-ORIG-003", lot: "LOTE-TEST-003", buyer: "Recaudos Demo Capital", value: "$5.220 M", status: "Documental", date: "16 Sep 2026" }
-    ]
-    : [
-      { id: "ADJ-COMP-001", lot: "LOTE-HIST-018", buyer: "Banco Demo S.A.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
-      { id: "ADJ-COMP-002", lot: "LOTE-TEST-004", buyer: "Banco Demo D", value: "$7.850 M", status: "En cierre", date: "14 Sep 2026" },
-      { id: "ADJ-COMP-003", lot: "LOTE-TEST-002", buyer: "Banco Demo S.A.", value: "$2.754 M", status: "Documental", date: "15 Sep 2026" }
-    ];
+  if (currentRole === "comprador") return renderBuyerAcquisitionsPage();
+  const adjudications = [
+    { id: "ADJ-ORIG-001", lot: "LOTE-TEST-001", buyer: "Casa de Cobranza Demo S.A.S.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
+    { id: "ADJ-ORIG-002", lot: "LOTE-TEST-002", buyer: "Cobranzas Demo Andina", value: "$2.754 M", status: "En cierre", date: "15 Sep 2026" },
+    { id: "ADJ-ORIG-003", lot: "LOTE-TEST-003", buyer: "Recaudos Demo Capital", value: "$5.220 M", status: "Documental", date: "16 Sep 2026" }
+  ];
   return `
     <div class="card page-card">
-      <div class="section-kicker">CIERRES · ${isOrig ? "VENDEDOR" : "COMPRADOR"}</div>
-      <h2>${isOrig ? "Cierres de mis portafolios" : "Mis adjudicaciones"}</h2>
-      <p>${isOrig ? "Operaciones de tus portafolios que avanzan hacia cierre." : "Operaciones adjudicadas a tu cuenta de comprador demo."}</p>
+      <h2>Cierres de mis portafolios</h2>
+      <p>Operaciones de tus portafolios que avanzan hacia cierre.</p>
       ${renderOpsMiniTable()}
-      <div class="table-wrap page-table"><table><thead><tr><th>Adjudicación</th><th>Lote</th><th>${isOrig ? "Comprador" : "Vendedor"}</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
-        ${adjudications.map(item => `<tr><td><strong>${item.id}</strong></td><td>${item.lot}</td><td>${item.buyer}</td><td>${item.value}</td><td><span class="badge badge-green">${item.status}</span></td><td>${item.date}</td></tr>`).join("")}
+      <div class="table-wrap page-table"><table><thead><tr><th>Adjudicación</th><th>Referencia del proceso</th><th>Comprador</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+        ${adjudications.map(item => `<tr><td><strong>${item.id}</strong></td><td>${refOf(item.lot)}</td><td>${item.buyer}</td><td>${item.value}</td><td><span class="badge badge-green">${item.status}</span></td><td>${item.date}</td></tr>`).join("")}
       </tbody></table></div>
+    </div>`;
+}
+
+/* Histórico de carteras adquiridas por la casa de cobranza */
+function renderBuyerAcquisitionsPage() {
+  const rows = buyerAcquisitions();
+  const nominal = rows.reduce((s, r) => s + r.nominal, 0);
+  const value = rows.reduce((s, r) => s + r.value, 0);
+  const avgPrice = nominal ? value / nominal * 100 : 0;
+  return `
+    <div class="card page-card">
+      <h2>Carteras adquiridas</h2>
+      <p>Todas las carteras que has ganado: cuánto valían, qué porcentaje del nominal pagaste y el descuento que obtuviste.</p>
+      ${rows.length ? `
+      <div class="report-kpi-grid">
+        <div class="report-kpi"><span>Carteras adquiridas</span><strong>${rows.length}</strong><small>${fmtM(nominal)} de valor nominal</small></div>
+        <div class="report-kpi"><span>Valor pagado</span><strong>${fmtM(rows.reduce((s, r) => s + r.paid, 0))}</strong><small>${fmtM(value)} adjudicados</small></div>
+        <div class="report-kpi"><span>Precio promedio</span><strong>${fmtPct(avgPrice)}</strong><small>del valor nominal</small></div>
+        <div class="report-kpi"><span>Descuento promedio</span><strong>${fmtPct(100 - avgPrice)}</strong><small>100% menos el precio pagado</small></div>
+      </div>
+      <div class="table-wrap page-table"><table>
+        <thead><tr><th>Referencia del proceso</th><th>Entidad vendedora</th><th>Tipo</th><th>Valor nominal</th><th>Precio pagado</th><th>Descuento</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead>
+        <tbody>${rows.map(r => `<tr ${r.opId ? `class="clickable" role="button" tabindex="0" onclick="navigate(null,'cierre');openOperation('${r.opId}')"` : ""}>
+          <td><strong>${refOf(r.lotId)}</strong><br><small style="color:var(--muted-2)">${escapeHtml(r.title)}</small></td>
+          <td>${escapeHtml(r.vendedor)}</td><td>${escapeHtml(r.type)}</td><td>${fmtM(r.nominal)}</td>
+          <td>${fmtPct(r.percent)}</td><td>${fmtPct(100 - r.percent)}</td><td>${fmtM(r.value)}</td>
+          <td><span class="badge ${r.status === "Cerrada" ? "badge-green" : "badge-gold"}">${r.paid ? (r.status === "Cerrada" ? "Pagada y recibida" : "Pagada") : "Por pagar"}</span></td>
+          <td>${r.date}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>` : `
+      <div class="page-placeholder"><strong>Aún no has adquirido carteras</strong><span>Cuando una entidad vendedora te adjudique una oferta, la verás aquí con su precio y su descuento.</span>
+        <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'subastas')">Ver carteras en subasta</button></div>`}
     </div>`;
 }
 
@@ -980,7 +1088,7 @@ function renderReportsPage() {
         <div class="report-kpi"><span>${isOriginator ? "Compradores interesados" : "Adjudicaciones"}</span><strong>${isOriginator ? "47" : "8"}</strong><small>Dato ficticio de prueba</small></div>
       </div>
       <div class="report-bars">
-        ${items.map(lot => `<div class="report-bar-row"><span>${lot.id}</span><div><i style="width:${Math.min(100, parseLotAmount(lot) / 89.5 * 100)}%"></i></div><strong>${lot.amount}</strong></div>`).join("")}
+        ${items.map(lot => `<div class="report-bar-row"><span>${refOf(lot.id)}</span><div><i style="width:${Math.min(100, parseLotAmount(lot) / 89.5 * 100)}%"></i></div><strong>${lot.amount}</strong></div>`).join("")}
       </div>
     </div>`;
 }
@@ -1011,7 +1119,7 @@ function renderSellerOffersPage() {
       ${groups.map(({ lot, bids, reserve, op = operationForLot(lot.id) }) => `
         <section class="offer-group">
           <div class="offer-group-head">
-            <div><div class="lot-number">${lot.id} ${op ? `<span class="badge ${lot.statusClass}">${lot.status}</span>` : ""}</div><h3>${lot.title}</h3><span>${lot.amount} · ${lot.modality} · Tarifa ${reserve}%</span></div>
+            <div><div class="lot-number">${refOf(lot.id)} ${op ? `<span class="badge ${lot.statusClass}">${lot.status}</span>` : ""}</div><h3>${lot.title}</h3><span>${lot.amount} · ${lot.modality} · Tarifa ${reserve}%</span></div>
             <div class="offer-group-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
           </div>
           ${bids.length ? `<div class="table-wrap page-table"><table>
@@ -1061,7 +1169,7 @@ function renderBuyerOffersPage() {
         return `
         <section class="offer-group">
           <div class="offer-group-head">
-            <div><div class="lot-number">${lot.id}</div><h3>${lot.title}</h3>
+            <div><div class="lot-number">${refOf(lot.id)}</div><h3>${lot.title}</h3>
               <span>Tu mejor posición: <strong>${myBest} de ${bids.length}</strong> · ${bidderCount(lot.id)} postores</span></div>
             <div class="offer-group-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
           </div>
@@ -1149,7 +1257,7 @@ function openDetail(lotId) {
   if (!overlay) return;
   overlay.classList.remove("hidden");
 
-  if ($("#d-lot")) $("#d-lot").textContent = lot.id;
+  if ($("#d-lot")) $("#d-lot").textContent = refOf(lot.id);
   if ($("#d-title")) $("#d-title").textContent = lot.title;
 
   renderDetailSummary(lot);
@@ -1267,7 +1375,7 @@ function renderSimulator(lot) {
           <h3>Simulador de oferta</h3>
           <p>Analiza diferentes escenarios de compra y visualiza cómo cambia el valor de tu oferta.</p>
         </div>
-        <div class="simulator-lot"><span>${lot.id}</span><strong>${lot.type}</strong></div>
+        <div class="simulator-lot"><span>${refOf(lot.id)}</span><strong>${lot.type}</strong></div>
       </div>
 
       <div class="simulator-top">
@@ -1495,7 +1603,7 @@ function makeOffer(lotId) {
       <button class="detail-close" type="button" aria-label="Cerrar" onclick="closeOfferModal()">×</button>
       <div class="section-kicker">NUEVA OFERTA · ${lot.modality.toUpperCase()}</div>
       <h2>Presentar oferta</h2>
-      <p>${lot.id} · ${lot.title}</p>
+      <p>${refOf(lot.id)} · ${lot.title}</p>
       <div class="offer-auction-strip">
         <div><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id)}</div>
         <div><small>Última oferta más alta</small><strong>${top ? top.percent + "%" : "Sin ofertas"}</strong></div>

@@ -553,9 +553,9 @@ function aiInsights(live) {
   live.forEach(lot => {
     const top = topBid(lot.id);
     const left = profileOf(lot).endsAt - Date.now();
-    if (!top) out.push({ tone: "warn", title: `${lot.id} sin ofertas`, text: "Aún no recibe ofertas. Sugerencia: destacarla en el mercado y avisar a quienes la marcaron como favorita." });
-    else if (top.percent < reserveOf(lot.id)) out.push({ tone: "warn", title: `${lot.id} bajo tarifa`, text: `La mejor oferta (${top.percent}%) está bajo la tarifa del vendedor (${reserveOf(lot.id)}%). Sugerencia: extender 48 h o revisar la tarifa con el vendedor.` });
-    else if (left < DAY) out.push({ tone: "ok", title: `${lot.id} cierra en menos de 24 h`, text: `Tiene oferta sobre tarifa (${top.percent}%) y ${bidderCount(lot.id)} postores: probabilidad de cierre ${closeProbability(lot)}%.` });
+    if (!top) out.push({ tone: "warn", title: `${refOf(lot.id)} sin ofertas`, text: "Aún no recibe ofertas. Sugerencia: destacarla en el mercado y avisar a quienes la marcaron como favorita." });
+    else if (top.percent < reserveOf(lot.id)) out.push({ tone: "warn", title: `${refOf(lot.id)} bajo tarifa`, text: `La mejor oferta (${top.percent}%) está bajo la tarifa del vendedor (${reserveOf(lot.id)}%). Sugerencia: extender 48 h o revisar la tarifa con el vendedor.` });
+    else if (left < DAY) out.push({ tone: "ok", title: `${refOf(lot.id)} cierra en menos de 24 h`, text: `Tiene oferta sobre tarifa (${top.percent}%) y ${bidderCount(lot.id)} postores: probabilidad de cierre ${closeProbability(lot)}%.` });
   });
   const pendingBelow = lots.flatMap(l => bidsFor(l.id)).filter(b => b.belowLast && !b.decision).length;
   if (pendingBelow) out.push({ tone: "info", title: "Ofertas bajo la última ofertada", text: `${pendingBelow} ofertas quedaron por debajo de la última y esperan que el vendedor las acepte o rechace.` });
@@ -619,14 +619,14 @@ function renderAdminAnalytics(shell) {
       <div class="card" id="admin-live" style="margin-top:18px">
         <div class="card-header"><div><h3>Subastas en curso y próximas</h3><p>Decisiones de los vendedores: ${accepted} aceptadas · ${rejected} rechazadas</p></div></div>
         <div class="table-wrap"><table><thead><tr>
-          <th>Lote</th><th>Estado</th><th>Tiempo</th><th>Duración</th><th>Ofertas</th><th>Postores</th><th>Más alta</th><th>Tarifa</th><th>Bajo la última</th><th>Prob. de cierre</th>
+          <th>Referencia del proceso</th><th>Estado</th><th>Tiempo</th><th>Duración</th><th>Ofertas</th><th>Postores</th><th>Más alta</th><th>Tarifa</th><th>Bajo la última</th><th>Prob. de cierre</th>
         </tr></thead><tbody>
           ${[...live, ...upcoming].map(lot => {
             const p = profileOf(lot), top = topBid(lot.id), lb = bidsFor(lot.id);
             const prob = closeProbability(lot);
             const st = auctionState(lot.id);
             return `<tr>
-              <td><strong style="color:var(--navy)">${lot.id}</strong><br><small style="color:var(--muted-2)">${lot.type} · ${escapeHtml(lot.vendedor)}</small></td>
+              <td><strong style="color:var(--navy)">${refOf(lot.id)}</strong><br><small style="color:var(--muted-2)">${lot.type} · ${escapeHtml(lot.vendedor)}</small></td>
               <td><span class="state-chip ${st}">${st === "vivo" ? "<i></i> En vivo" : "Próxima"}</span></td>
               <td><small class="cd-label">${cdLabel(lot.id)}</small> ${cdHtml(lot.id)}</td>
               <td>${((p.endsAt - p.startsAt) / DAY).toFixed(1)} días</td>
@@ -643,12 +643,12 @@ function renderAdminAnalytics(shell) {
       <div class="card" style="margin-top:18px">
         <div class="card-header"><div><h3>Operaciones en cierre</h3><p>Seguimiento de firmas, pago, entrega y paz y salvo</p></div></div>
         ${(appState.operations || []).filter(o => o.status !== "Cancelada").length ? `<div class="table-wrap"><table><thead><tr>
-          <th>Operación</th><th>Lote</th><th>Entidad vendedora</th><th>Casa de cobranza</th><th>Valor</th><th>Avance</th><th>Siguiente paso</th><th>Estado</th>
+          <th>Operación</th><th>Referencia del proceso</th><th>Entidad vendedora</th><th>Casa de cobranza</th><th>Valor</th><th>Avance</th><th>Siguiente paso</th><th>Estado</th>
         </tr></thead><tbody>
           ${(appState.operations || []).filter(o => o.status !== "Cancelada").map(o => {
             const st = nextStep(o);
             return `<tr>
-              <td><strong>${o.id}</strong></td><td>${o.lotId}</td><td>${escapeHtml(o.seller)}</td><td>${escapeHtml(o.buyer)}</td>
+              <td><strong>${o.id}</strong></td><td>${refOf(o.lotId)}</td><td>${escapeHtml(o.seller)}</td><td>${escapeHtml(o.buyer)}</td>
               <td>${fmtM(o.value)}</td>
               <td><div class="prob"><div><b style="width:${stepsDone(o) / CLOSING_STEPS.length * 100}%"></b></div><strong>${stepsDone(o)}/${CLOSING_STEPS.length}</strong></div></td>
               <td>${st ? `${st.label} · ${st.role}` : "—"}</td>

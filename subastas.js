@@ -29,7 +29,7 @@ const demoBids = Object.entries(seedBids).flatMap(([lotId, rows]) =>
 
 // Procesos del comprador que no salen de sus ofertas — DEMO
 const processDemo = {
-  "LOTE-HIST-018": { phase: 6, title: "Cartera de consumo — Histórico" },
+  "LOTE-HIST-018": { phase: 6, title: "Cartera de consumo" },
   "LOTE-TEST-003": { phase: 2 },
   "LOTE-TEST-005": { phase: 1 }
 };
@@ -142,7 +142,7 @@ function toggleFavorite(lotId, event) {
   adding ? favs.add(lotId) : favs.delete(lotId);
   appState.favorites = [...favs];
   saveDemoState();
-  showToast(adding ? `${lotId} agregada a favoritas. Aparecerá arriba.` : `${lotId} quitada de favoritas.`);
+  showToast(adding ? `${refOf(lotId)} agregada a favoritas. Aparecerá arriba.` : `${refOf(lotId)} quitada de favoritas.`);
   rerenderCurrent();
 }
 
@@ -213,7 +213,7 @@ function spotlightCards(pool) {
       <div class="spotlight-card ${cls}" onclick="openDetail('${id}')" role="button" tabindex="0">
         <div class="spotlight-kicker">${kicker}</div>
         <h3>${lot.title}</h3>
-        <span>${lot.id} · ${lot.amount} · ${bidsFor(id).length} ofertas${top ? ` · más alta ${top.percent}%` : ""}</span>
+        <span>${refOf(lot.id)} · ${lot.amount} · ${bidsFor(id).length} ofertas${top ? ` · más alta ${top.percent}%` : ""}</span>
         <div class="spotlight-timer"><small>${cdLabel(id)}</small>${cdHtml(id, "big")}</div>
       </div>`;
   };
@@ -249,7 +249,7 @@ function renderMarketPage(title, description) {
         const top = topBid(lot.id);
         return `
           <article class="test-lot-card market-card clickable ${fav.has(lot.id) ? "is-fav" : ""}" role="button" tabindex="0" onclick="openDetail('${lot.id}')">
-            <div class="market-card-top"><div class="lot-number">${lot.id}</div>${favButton(lot.id)}</div>
+            <div class="market-card-top"><div class="lot-number">${refOf(lot.id)}</div>${favButton(lot.id)}</div>
             <div class="market-card-tags">
               ${lot.id === topId ? '<span class="chip chip-hot">Más vendida</span>' : ""}
               ${lot.id === soonId ? '<span class="chip chip-urgent">Vence primero</span>' : ""}
@@ -283,7 +283,7 @@ function auctionCard(lot, seller) {
   return `
     <article class="auction-card state-${st} clickable" role="button" tabindex="0" onclick="openDetail('${lot.id}')">
       <div class="auction-card-head"><span class="state-chip ${st}">${stateLabel}</span>${seller ? "" : favButton(lot.id)}</div>
-      <div class="lot-number">${lot.id}</div>
+      <div class="lot-number">${refOf(lot.id)}</div>
       <h3>${lot.title}</h3>
       <span class="auction-sub">${lot.type} · ${lot.modality} · ${lot.amount}</span>
       <div class="auction-timer"><small>${cdLabel(lot.id)}</small>${cdHtml(lot.id, "big")}</div>
@@ -349,14 +349,14 @@ function renderBuyerProcess() {
   return `
     <div class="dashboard-chart-header">
       <div><div class="chart-kicker">TU PROCESO</div><h3>¿En qué fase vas?</h3>
-        <p>${lead ? `Tu proceso más avanzado: <strong>${lead.id}</strong> · fase ${lead.phase} de ${PHASES.length} (${PHASES[lead.phase - 1]})` : "Marca una cartera como favorita o presenta una oferta para empezar."}</p></div>
+        <p>${lead ? `Tu proceso más avanzado: <strong>${refOf(lead.id)}</strong> · fase ${lead.phase} de ${PHASES.length} (${PHASES[lead.phase - 1]})` : "Marca una cartera como favorita o presenta una oferta para empezar."}</p></div>
       <div class="chart-period">${rows.length} procesos</div>
     </div>
     <div class="process">
       <div class="process-row process-head"><div></div><div class="process-track labels">${PHASES.map((p, i) => `<label style="left:${i / last * 100}%"><b>${i + 1}</b>${p}</label>`).join("")}</div><div></div></div>
       ${rows.map(r => `
-        <div class="process-row clickable" role="button" tabindex="0" title="Abrir ${r.id}" onclick="openProcess('${r.id}')">
-          <div class="process-info"><strong>${r.id}</strong><span>${escapeHtml(r.title)}</span></div>
+        <div class="process-row clickable" role="button" tabindex="0" title="Abrir ${refOf(r.id)}" onclick="openProcess('${r.id}')">
+          <div class="process-info"><strong>${refOf(r.id)}</strong><span>${escapeHtml(r.title)}</span></div>
           <div class="process-track">
             <div class="process-fill" style="width:${(r.phase - 1) / last * 100}%"></div>
             ${PHASES.map((p, i) => `<span class="process-step ${i + 1 < r.phase ? "done" : i + 1 === r.phase ? "current" : ""}" style="left:${i / last * 100}%" title="Fase ${i + 1}: ${p}"></span>`).join("")}
@@ -419,8 +419,8 @@ function renderReserveChart(pool) {
         const reserve = reserveOf(lot.id);
         const ok = top && top.percent >= reserve;
         return `
-          <div class="reserve-row clickable" role="button" tabindex="0" title="Abrir ${lot.id}" onclick="openDetail('${lot.id}')">
-            <div class="reserve-label"><strong>${lot.id}</strong><span>${lot.type} · ${bidsFor(lot.id).length} ofertas</span></div>
+          <div class="reserve-row clickable" role="button" tabindex="0" title="Abrir ${refOf(lot.id)}" onclick="openDetail('${lot.id}')">
+            <div class="reserve-label"><strong>${refOf(lot.id)}</strong><span>${lot.type} · ${bidsFor(lot.id).length} ofertas</span></div>
             <div class="reserve-track">
               ${top ? `<div class="reserve-bar ${ok ? "ok" : "low"}" style="width:${x(top.percent)}%"><b>${top.percent}%</b></div>` : ""}
               <i class="reserve-mark" style="left:${x(reserve)}%"><span>Tarifa ${reserve}%</span></i>

@@ -42,6 +42,9 @@ create table if not exists public.companies (
   created_at timestamptz not null default now()
 );
 
+-- Prefijo de la entidad para la referencia del proceso (ej. Banco Santander → BS, y su cartera BS004)
+alter table public.companies add column if not exists ref_prefix text unique;
+
 create sequence if not exists public.portfolio_seq;
 create table if not exists public.portfolios (
   id uuid primary key default gen_random_uuid(),
@@ -234,18 +237,41 @@ end $$;
 -- ---------------------------------------------------------
 -- CARTERAS
 -- ---------------------------------------------------------
+-- Iniciales del nombre, sin palabras como "de", "la" o "S.A.S." (máx. 4 letras)
+create or replace function public.ref_prefix_for(p_name text) returns text
+language sql immutable set search_path = public as $$
+  select coalesce(nullif(left(upper(string_agg(left(w, 1), '' order by n)), 4), ''), 'EN')
+    from regexp_split_to_table(trim(coalesce(p_name, '')), '\s+') with ordinality as t(w, n)
+   where w <> '' and w !~* '^(de|del|la|las|los|el|y|s\.?a\.?s?\.?|ltda\.?|e\.?u\.?)$' and w ~ '^[[:alnum:]]';
+$$;
+
 create or replace function public.create_portfolio(p_title text, p_type text, p_modality text, p_nominal numeric,
   p_debtors integer, p_obligations integer, p_reserve numeric, p_starts timestamptz, p_ends timestamptz, p_description text)
 returns public.portfolios
 language plpgsql security definer set search_path = public as $$
-declare c public.companies; p public.portfolios;
+declare c public.companies; p public.portfolios; base text; pref text; i integer := 1; n integer;
 begin
   c := public.require_company('vendedor');
   if p_ends <= now() then raise exception 'La fecha de cierre debe ser futura.'; end if;
   if p_ends <= p_starts then raise exception 'El cierre debe ser después del inicio.'; end if;
-  insert into public.portfolios (seller_company, seller_name, title, type, modality, nominal, debtors, obligations,
+
+  -- Referencia del proceso: prefijo único de la entidad + consecutivo de sus carteras
+  select * into c from public.companies where id = c.id for update;
+  if c.ref_prefix is null then
+    base := public.ref_prefix_for(c.name);
+    pref := base;
+    while exists (select 1 from public.companies where ref_prefix = pref) loop
+      i := i + 1; pref := base || i;
+    end loop;
+    update public.companies set ref_prefix = pref where id = c.id;
+    c.ref_prefix := pref;
+  end if;
+  select count(*) + 1 into n from public.portfolios where seller_company = c.id;
+
+  insert into public.portfolios (code, seller_company, seller_name, title, type, modality, nominal, debtors, obligations,
                                  reserve_percent, starts_at, ends_at, description)
-  values (c.id, c.name, trim(p_title), p_type, p_modality, p_nominal, p_debtors, p_obligations, p_reserve, p_starts, p_ends, p_description)
+  values (c.ref_prefix || lpad(n::text, 3, '0'), c.id, c.name, trim(p_title), p_type, p_modality, p_nominal, p_debtors,
+          p_obligations, p_reserve, p_starts, p_ends, p_description)
   returning * into p;
   return p;
 end $$;
@@ -441,7 +467,7 @@ declare f text;
 begin
   foreach f in array array['is_admin()', 'my_company_id()', 'i_am_approved()', 'require_company(text)',
     'create_my_company(text,text,text,text,text,text,text)', 'set_company_doc(text,text,text,bigint)',
-    'admin_review_company(uuid,text,text)', 'create_portfolio(text,text,text,numeric,integer,integer,numeric,timestamptz,timestamptz,text)',
+    'admin_review_company(uuid,text,text)', 'ref_prefix_for(text)', 'create_portfolio(text,text,text,numeric,integer,integer,numeric,timestamptz,timestamptz,text)',
     'cancel_portfolio(uuid)', 'market_portfolios()', 'bid_book()', 'place_bid(uuid,numeric,text)', 'reject_bid(uuid,boolean)',
     'adjudicate_bid(uuid)', 'advance_operation(uuid,text,text,text,numeric,text,boolean)', 'cancel_operation(uuid)']
   loop

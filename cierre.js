@@ -58,7 +58,7 @@ function adjudicateOffer(offerId) {
   if (!bid) return { error: "No encontramos esa oferta." };
   const lot = lotById(bid.lotId);
   if (!lot || !sellerLotIds().includes(lot.id)) return { error: "Solo el vendedor dueño de la cartera puede adjudicarla." };
-  if (operationForLot(lot.id)) return { error: `${lot.id} ya fue adjudicada (${operationForLot(lot.id).id}).` };
+  if (operationForLot(lot.id)) return { error: `${refOf(lot.id)} ya fue adjudicada (${operationForLot(lot.id).id}).` };
   if (bid.decision === "Rechazada") return { error: "Esa oferta fue rechazada; deshaz el rechazo antes de adjudicarla." };
 
   const seq = allOperations().length + 1;
@@ -151,7 +151,7 @@ function uiAdjudicate(offerId) {
   el.innerHTML = `
     <div class="offer-modal">
       <button class="detail-close" type="button" onclick="$('#op-confirm-overlay').remove()">×</button>
-      <div class="meta-line">${lot.id}</div>
+      <div class="meta-line">${refOf(lot.id)}</div>
       <h2>¿Adjudicar esta oferta?</h2>
       <p>${escapeHtml(lot.title)}</p>
       <div class="op-parties">
@@ -215,7 +215,7 @@ function opCard(op) {
   return `
     <article class="op-card ${op.status === "Cerrada" ? "closed" : mine ? "my-turn" : ""}" onclick="openOperation('${op.id}')" role="button" tabindex="0">
       <div class="op-card-head">
-        <div><div class="lot-number">${op.id} · ${op.lotId}</div><h3>${escapeHtml(op.lotTitle)}</h3><span>${currentRole === "vendedor" ? "Casa de cobranza" : "Entidad vendedora"}: ${escapeHtml(counterpart)} · vía ${BROKER}</span></div>
+        <div><div class="lot-number">${op.id} · ${refOf(op.lotId)}</div><h3>${escapeHtml(op.lotTitle)}</h3><span>${currentRole === "vendedor" ? "Casa de cobranza" : "Entidad vendedora"}: ${escapeHtml(counterpart)} · vía ${BROKER}</span></div>
         <div class="op-card-value"><strong>${fmtM(op.value)}</strong><small>${op.percent}% del nominal</small></div>
       </div>
       <div class="op-mini-steps">${CLOSING_STEPS.map(s => `<i class="${op.steps[s.key] ? "done" : step?.key === s.key ? "current" : ""}" title="${s.label}"></i>`).join("")}</div>
@@ -252,7 +252,7 @@ function openOperation(opId) {
   el.innerHTML = `
     <div class="offer-modal op-modal">
       <button class="detail-close" type="button" onclick="closeOperation()">×</button>
-      <div class="meta-line">${op.id} · ${op.lotId}</div>
+      <div class="meta-line">${op.id} · ${refOf(op.lotId)}</div>
       <h2>${escapeHtml(op.lotTitle)}</h2>
       <span class="badge ${op.status === "Cerrada" ? "badge-green" : op.status === "Cancelada" ? "badge-red" : "badge-gold"}">${op.status}</span>
 
@@ -378,7 +378,7 @@ function downloadOpDoc(opId, kind) {
   const head = kind === "acta" ? "ACTA DE CIERRE DE OPERACIÓN" : "CONTRATO DE CESIÓN DE CARTERA";
   const text = [
     `${head} — ${op.id}`, "Documento de prueba generado por B²GC Brokers (entorno demo).", "",
-    `Lote: ${op.lotId} · ${op.lotTitle}`,
+    `Referencia del proceso: ${refOf(op.lotId)} · ${op.lotTitle}`,
     `Cedente (entidad vendedora): ${op.seller}`, `Cesionario (casa de cobranza): ${op.buyer}`,
     `Intermediario: ${BROKER} — conecta a las partes y verifica el cierre.`,
     `Valor nominal: ${fmtM(op.nominal)}`, `Precio: ${op.percent}% · ${fmtM(op.value)}`, "",

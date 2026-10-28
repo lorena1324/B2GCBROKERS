@@ -5203,3 +5203,24 @@ th, .badge, .chip, .lot-number, .state-chip, .kpi-card .label, .admin-tag, .docu
 .spotlight-card.hot, .spotlight-card.urgent, .auction-banner, .ai-card { background-image: none; }
 .spotlight-card.hot, .auction-banner, .ai-card { background-color: var(--navy); }
 .spotlight-card.urgent { background-color: #9b2c22; }
+
+/* KPIs: la grilla se ajusta cuando se esconde un indicador */
+.kpi-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; }
+.kpi-unit { margin-left: 4px; color: var(--muted); font-size: 13px; font-weight: 600; }
+tr.clickable:hover td { background: var(--paper); }
+
+/* Menú en pantallas angostas: barra superior con los nombres de las secciones
+   (antes era una columna de íconos; ahora el menú solo tiene texto) */
+@media (max-width: 900px) {
+  .sidebar { position: sticky; top: 0; bottom: auto; width: 100%; height: auto; padding: 10px 16px; flex-direction: row; align-items: center; gap: 14px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .sidebar .brand { flex: 0 0 auto; font-size: 20px; }
+  .sidebar .brand::before { content: none; }
+  .sidebar > .sidebar-market-status, #sidebar-nav .sidebar-market-status { display: none; }
+  .sidebar nav, #sidebar-nav { display: flex; flex-direction: row; gap: 4px; margin: 0; }
+  .sidebar nav a, .sidebar nav button { flex: 0 0 auto; width: auto; margin: 0; justify-content: flex-start; padding: 8px 12px; font-size: 13px; white-space: nowrap; }
+  .sidebar { scrollbar-width: none; }
+  .sidebar::-webkit-scrollbar { display: none; }
+  .sidebar-footer { flex: 0 0 auto; margin: 0; padding: 0; border: 0; font-size: 13px; }
+  .sidebar-footer .logout-btn { white-space: nowrap; font-size: 13px; }
+  .main { margin-left: 0; }
+}
