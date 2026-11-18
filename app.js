@@ -668,7 +668,7 @@ function renderInterestPage() {
 /* ----- Carteras publicadas en el demo ----- */
 function addDemoPortfolio(p) {
   if (lots.some(l => l.id === p.id)) return;
-  const vendedor = demoAccounts.vendedor.company;
+  const vendedor = p.vendedor || demoAccounts.vendedor.company;
   const now = Date.now();
   const [status, statusClass] = now < p.startsAt ? ["Por abrir", "badge-blue"] : now >= p.endsAt ? ["Subasta finalizada", "badge-gold"] : ["Subasta activa", "badge-green"];
   const lot = {

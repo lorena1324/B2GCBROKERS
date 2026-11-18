@@ -133,7 +133,7 @@ function openRegister(role) {
       <button type="button" class="modal-close" onclick="closeRegister()">×</button>
       <div class="modal-brand">B<span>2</span>GC</div>
       <h2>Registrar mi empresa</h2>
-      <p class="sub">Crea tu cuenta. Después de confirmar tu correo subirás el RUT, la Cámara de Comercio y la cédula del representante legal; B²GC Brokers revisa y aprueba tu empresa.</p>
+      <p class="sub">Registra tu empresa. B²GC Brokers revisará la solicitud y podrás entrar a la plataforma cuando quede aprobada.</p>
 
       <div class="role-pick" id="reg-role-pick">
         <div class="role-opt active" data-role="vendedor" onclick="pickRegRole(this)">
@@ -192,21 +192,42 @@ async function submitRegistration() {
   if (data.password.length < 8) { showToast("La contraseña debe tener al menos 8 caracteres."); return; }
   if (data.password !== ($("#reg-password2")?.value || "")) { showToast("Las contraseñas no coinciden."); return; }
   if (!$("#reg-consent")?.checked) { showToast("Debes autorizar el tratamiento de datos."); return; }
+  if (loadCompanies().some(c => (c.email || "").toLowerCase() === data.email)) { showToast("Ese correo ya tiene una solicitud registrada."); return; }
   if (isDemoEmail(data.email)) { showToast("Ese correo es de una cuenta demo. Usa el correo real de tu empresa."); return; }
 
   const btn = $("#reg-submit");
-  btn.disabled = true; btn.textContent = "Creando cuenta…";
+  btn.disabled = true; btn.textContent = "Registrando…";
   const res = await realSignUp(data); // real.js
+  if (res.offline) { showRegistrationPending(data, saveLocalRequest(data).id); return; } // sin servidor: queda en este navegador
   if (res.error) { btn.disabled = false; btn.textContent = "Crear cuenta"; showToast(res.error); return; }
   if (res.session) return;
+  showRegistrationPending(data);
+}
 
+/* Solicitud guardada en este navegador; la ve el panel de administración */
+function saveLocalRequest(data) {
+  const list = loadCompanies();
+  const company = {
+    id: "EMP-" + String(list.length + 1).padStart(4, "0"), role: data.role, entityType: data.entityType, name: data.name, nit: data.nit,
+    nitDigits: data.nit.replace(/\D/g, ""), contactName: data.contactName, email: data.email, phone: data.phone, city: data.city,
+    status: "pendiente", createdAt: new Date().toISOString(), docs: {}, user: null, reviewNote: "", reviewedAt: null
+  };
+  list.push(company);
+  saveCompanies(list);
+  return company;
+}
+
+/* Alerta final del registro: la empresa debe esperar la aprobación */
+function showRegistrationPending(data, radicado = "") {
   $("#register-overlay .register-modal").innerHTML = `
-    <div class="register-success">
+    <div class="register-success" role="alertdialog" aria-labelledby="reg-ok-title">
       <div class="success-mark">✓</div>
-      <h2>Revisa tu correo</h2>
-      <p>Enviamos un enlace de confirmación a <strong>${escapeHtml(data.email)}</strong>.</p>
-      <p class="muted">Ábrelo, vuelve aquí e inicia sesión para subir los documentos de <strong>${escapeHtml(data.name)}</strong>. B²GC Brokers los revisará y aprobará tu empresa.</p>
-      <button type="button" class="btn btn-navy" onclick="closeRegister();openAuth('login')">Ir a iniciar sesión</button>
+      <h2 id="reg-ok-title">Tu empresa se ha registrado</h2>
+      <div class="offer-alert warn" style="text-align:left"><strong>Debes esperar la aprobación de B²GC Brokers.</strong><span>Aún no puedes entrar a la plataforma. B²GC Brokers revisará la solicitud de ${escapeHtml(data.name)} antes de darte acceso.</span></div>
+      ${radicado
+        ? `<p>Número de radicado: <strong>${escapeHtml(radicado)}</strong></p><p class="muted">Cuando se apruebe, B²GC Brokers te entregará tu usuario y contraseña.</p>`
+        : `<p class="muted">Enviamos un enlace de confirmación a <strong>${escapeHtml(data.email)}</strong>. Ábrelo e inicia sesión para subir los documentos de tu empresa.</p>`}
+      <button type="button" class="btn btn-navy" onclick="closeRegister()">Entendido</button>
     </div>`;
 }
 
@@ -220,6 +241,8 @@ function setAdminView(view) { adminView = view; renderAdmin(); }
 
 function openAdminPanel() {
   appState.loggedIn = false;
+  adminFilter = null;
+  adminView = "solicitudes";
   $("#public-site")?.classList.add("hidden");
   $("#app-shell")?.classList.add("hidden");
   let shell = $("#admin-shell");
@@ -230,8 +253,16 @@ function openAdminPanel() {
   }
   shell.classList.remove("hidden");
   renderAdmin();
-  showToast("Panel de administración.");
+  const pending = loadCompanies().filter(c => c.status === "pendiente").length;
+  showToast(pending ? `${pending === 1 ? "1 empresa espera" : `${pending} empresas esperan`} tu aprobación.` : "Panel de administración.");
 }
+
+/* Si el panel está abierto en otra pestaña, la solicitud nueva aparece sola */
+window.addEventListener("storage", event => {
+  if (event.key !== COMPANIES_KEY || $("#admin-shell")?.classList.contains("hidden") || !$("#admin-shell") || appState.realMode) return;
+  if (adminView === "solicitudes" && !$("#admin-review")) { adminFilter = "pendiente"; renderAdmin(); }
+  showToast("Hay una actualización en las solicitudes de empresas.");
+});
 
 function closeAdminPanel() {
   $("#admin-shell")?.classList.add("hidden");
@@ -260,6 +291,8 @@ function renderAdmin() {
       <div class="section-kicker">GESTIÓN DE ACCESOS</div>
       <h2 class="admin-h2">Solicitudes de empresas</h2>
       <p class="admin-sub">Revisa el RUT, la Cámara de Comercio y la cédula del representante legal; luego aprueba y entrega el usuario a la empresa.</p>
+
+      ${count("pendiente") ? `<div class="offer-alert warn" role="alert" style="margin-bottom:18px"><strong>${count("pendiente") === 1 ? "1 empresa espera" : `${count("pendiente")} empresas esperan`} tu aprobación.</strong><span>Abre cada solicitud con “Revisar” para aprobarla o rechazarla.</span></div>` : ""}
 
       <div class="kpi-grid">
         ${kpiCard("Pendientes de revisión", count("pendiente"), "Requieren tu atención", "up", "setAdminFilter('pendiente')")}
@@ -338,7 +371,7 @@ function openReview(id) {
               <button class="btn btn-ghost btn-small" onclick="viewCompanyDoc('${c.id}','${d.key}')">Ver</button>
               <button class="btn btn-ghost btn-small" onclick="downloadCompanyDoc('${c.id}','${d.key}')">Descargar</button>
             </div>` : ""}
-            ${pend ? `<label class="review-check" title="Marca cuando verifiques el documento"><input type="checkbox" class="rv-check"><span>Verificado</span></label>` : ""}
+            ${pend && f ? `<label class="review-check" title="Marca cuando verifiques el documento"><input type="checkbox" class="rv-check"><span>Verificado</span></label>` : ""}
           </div>`;
         }).join("")}
       </div>
@@ -405,7 +438,7 @@ function genPassword() {
 
 function approveCompany(id) {
   const checks = $$("#admin-review .rv-check");
-  if ([...checks].some(c => !c.checked)) { showToast("Marca como verificados los tres documentos antes de aprobar."); return; }
+  if ([...checks].some(c => !c.checked)) { showToast("Marca como verificados los documentos antes de aprobar."); return; }
   const userEmail = ($("#rv-user")?.value || "").trim().toLowerCase();
   if (!/^\S+@\S+\.\S+$/.test(userEmail)) { showToast("El usuario debe ser un correo válido."); return; }
 
@@ -506,7 +539,7 @@ function adminHeader() {
     <header class="admin-top">
       <a class="brand" href="#">B<span class="sup">2</span>GC Brokers <em class="admin-tag">ADMIN</em></a>
       <nav class="admin-nav">
-        <button class="${adminView === "solicitudes" ? "active" : ""}" onclick="setAdminView('solicitudes')">Solicitudes de empresas</button>
+        <button class="${adminView === "solicitudes" ? "active" : ""}" onclick="setAdminView('solicitudes')">Solicitudes de empresas${loadCompanies().some(c => c.status === "pendiente") ? ` <b>${loadCompanies().filter(c => c.status === "pendiente").length}</b>` : ""}</button>
         <button class="${adminView === "subastas" ? "active" : ""}" onclick="setAdminView('subastas')">Subastas y conversión</button>
       </nav>
       <div class="admin-top-right">

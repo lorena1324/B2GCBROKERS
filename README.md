@@ -80,6 +80,12 @@ Si la contraparte es un comprador demo, el botón **Simular respuesta** completa
 
 El módulo incluye documentos ficticios de tipo PDF/XLSX/DOCX como registros de prueba. No son archivos reales de clientes y no contienen información personal real.
 
+## Registro de empresas
+
+Al registrarse, la empresa ve una alerta que le indica que debe esperar la aprobación de B²GC Brokers. La solicitud aparece como **Pendiente** en **Administración** (`admin@b2gc.co`), donde se aprueba o se rechaza.
+
+Si el servidor de Supabase no responde, la solicitud se guarda solo en ese navegador: el administrador debe entrar desde el mismo navegador para verla.
+
 ## Probar desde cero
 
 Las cuentas demo de vendedor y comprador tienen dos botones en la barra superior y en **Pruebas**:

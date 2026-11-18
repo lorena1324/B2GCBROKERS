@@ -22,7 +22,7 @@ const BID_STATUS = { rechazada: "Rechazada", adjudicada: "Aceptada" };
 function isDemoEmail(email) {
   return Object.values(demoAccounts).some(a => a.email === email)
     || email === ADMIN_ACCOUNT.email
-    || loadCompanies().some(c => c.user?.email === email);
+    || loadCompanies().some(c => c.user?.email === email || (c.email || "").toLowerCase() === email);
 }
 
 function friendlyError(error) {
@@ -308,7 +308,8 @@ async function realCancelOperation(opCode) {
    REGISTRO
    ========================================================= */
 async function realSignUp(data) {
-  if (!requireSb()) return { error: "Sin conexión." };
+  if (navigator.onLine === false) return { error: "Sin conexión a internet. Revisa tu red e inténtalo de nuevo." };
+  if (!sb) return { offline: true };
   const { data: res, error } = await sb.auth.signUp({
     email: data.email,
     password: data.password,
@@ -317,6 +318,7 @@ async function realSignUp(data) {
       data: { registration: { role: data.role, entityType: data.entityType, name: data.name, nit: data.nit, contactName: data.contactName, city: data.city, phone: data.phone } }
     }
   });
+  if (error && (error.name === "AuthRetryableFetchError" || /Failed to fetch|NetworkError|Load failed/i.test(error.message || ""))) return { offline: true }; // el servidor no responde
   if (error) return { error: friendlyError(error) };
   // Supabase no revela si el correo ya existía: devuelve un usuario sin identidades
   if (res.user && Array.isArray(res.user.identities) && !res.user.identities.length) return { error: "Ese correo ya tiene cuenta. Inicia sesión." };
@@ -564,7 +566,7 @@ async function submitPortfolio() {
 function createDemoPortfolio(data, fileCount, tramos) {
   const id = `LOTE-DEMO-${Date.now()}`;
   const start = Date.parse(data.p_starts), dur = Date.parse(data.p_ends) - start;
-  const common = { title: data.p_title, type: data.p_type, modality: data.p_modality, description: data.p_description };
+  const common = { title: data.p_title, type: data.p_type, modality: data.p_modality, description: data.p_description, vendedor: appState.company };
   const list = tramos
     ? tramos.map((t, i) => ({
         ...common, id: `${id}-${t.tramo}`, parentId: id, tramo: t.tramo, tramoLabel: t.label, tramoCount: tramos.length,
