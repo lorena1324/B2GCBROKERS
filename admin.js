@@ -546,7 +546,7 @@ function closeProbability(lot) {
 function aiInsights(live) {
   const short = AUCTION_HISTORY.filter(h => h.days <= 7), long = AUCTION_HISTORY.filter(h => h.days > 7);
   const fast = AUCTION_HISTORY.filter(h => h.firstBidH <= 12), slow = AUCTION_HISTORY.filter(h => h.firstBidH > 12);
-  const out = [
+  const out = !AUCTION_HISTORY.length ? [] : [
     { tone: "ok", title: "Duración ideal de subasta", text: `Las subastas de 7 días o menos convierten ${winRate(short).toFixed(0)}% frente a ${winRate(long).toFixed(0)}% de las más largas. Recomienda ventanas de 5 a 7 días.` },
     { tone: "info", title: "La primera oferta marca el resultado", text: `Cuando la primera oferta llega en menos de 12 h, se adjudica el ${winRate(fast).toFixed(0)}% (vs ${winRate(slow).toFixed(0)}%). Avisa a quienes tienen la cartera en favoritos apenas abra la subasta.` }
   ];
@@ -603,8 +603,8 @@ function renderAdminAnalytics(shell) {
         <div class="dashboard-chart-card">
           <div class="dashboard-chart-header"><div><div class="chart-kicker">EMBUDO</div><h3>Conversión del mercado</h3><p>De la visualización a la adjudicación</p></div></div>
           <div class="funnel">${funnel.map(([label, v], i) => `
-            <div class="funnel-row"><span>${label}</span><div class="funnel-track"><b style="width:${Math.max(4, v / funnel[0][1] * 100)}%"></b></div><strong>${fmtN(v)}</strong>
-            <small>${i ? (v / funnel[i - 1][1] * 100).toFixed(0) + "%" : ""}</small></div>`).join("")}</div>
+            <div class="funnel-row"><span>${label}</span><div class="funnel-track"><b style="width:${Math.max(4, v / (funnel[0][1] || 1) * 100)}%"></b></div><strong>${fmtN(v)}</strong>
+            <small>${i ? (v / (funnel[i - 1][1] || 1) * 100).toFixed(0) + "%" : ""}</small></div>`).join("")}</div>
         </div>
         <div class="dashboard-chart-card">
           <div class="dashboard-chart-header"><div><div class="chart-kicker">TIEMPOS</div><h3>Conversión según duración</h3><p>Subastas cerradas agrupadas por días de duración</p></div></div>

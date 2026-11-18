@@ -109,7 +109,7 @@ const lotProfiles = {
   "LOTE-TEST-006-A": { views: 133, viewers: 14, obligations: 240, likes: 22, favs: 9, comments: 4, offers: 2, bestPercent: 21, startsAt: Date.now() - 1 * DAY, endsAt: Date.now() + 1 * DAY },
   "LOTE-TEST-006-B": { views: 58, viewers: 8, obligations: 205, likes: 9, favs: 5, comments: 1, offers: 0, bestPercent: 0, startsAt: Date.now() + 1 * DAY, endsAt: Date.now() + 3 * DAY }
 };
-const profileOf = lot => lotProfiles[lot.id] || lotProfiles["LOTE-TEST-001"];
+const profileOf = lot => lotProfiles[lot.id] || lotProfiles["LOTE-TEST-001"] || {};
 
 // Composición de cartera (DEMO, porcentajes). tipos: [nombre, %obligaciones, %valor]
 const composition = {
@@ -135,6 +135,8 @@ const testDocuments = [
 function loadDemoState() {
   try {
     const saved = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || "null");
+    appState.wiped = !!saved?.wiped;     // true: el usuario pulsó "Eliminar todo"
+    appState.wipedAt = saved?.wipedAt || 0;
     if (saved && Array.isArray(saved.offers)) appState.offers = saved.offers;
     if (saved && Array.isArray(saved.uploadedDocuments)) appState.uploadedDocuments = saved.uploadedDocuments;
     if (saved && Array.isArray(saved.demoPortfolios)) appState.demoPortfolios = saved.demoPortfolios;
@@ -149,32 +151,90 @@ function loadDemoState() {
 }
 
 function saveDemoState() {
+  if (appState.qaRunning) return; // las pruebas automáticas no dejan rastro
   if (appState.realMode) { // en modo real los datos viven en Supabase; aquí solo las favoritas
     try { localStorage.setItem(`b2gc_real_favs_${real.user?.id}`, JSON.stringify(appState.favorites || [])); } catch { }
     return;
   }
-  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites, views: appState.views, operations: appState.operations, demoPortfolios: appState.demoPortfolios || [] }));
+  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ wiped: !!appState.wiped, wipedAt: appState.wipedAt || 0, offers: appState.offers, uploadedDocuments: appState.uploadedDocuments, decisions: appState.decisions, favorites: appState.favorites, views: appState.views, operations: appState.operations, demoPortfolios: appState.demoPortfolios || [] }));
+}
+
+/* ===== Eliminar todo / Restablecer datos (solo cuentas demo) =====
+   Eliminar todo: deja la plataforma vacía para probar desde cero.
+   Restablecer datos: vuelve a las carteras y ofertas de ejemplo.
+   Ambos recargan la página y conservan el rol con el que se estaba probando. */
+const DEMO_RESUME_KEY = "b2gc_demo_resume";
+
+function reloadKeepingSession(toast = "") {
+  try {
+    if (appState.loggedIn && appState.session?.demo) {
+      sessionStorage.setItem(DEMO_RESUME_KEY, JSON.stringify({ role: currentRole, page: currentPage, toast }));
+    }
+  } catch { }
+  location.reload();
+}
+
+function clearDemoStorage() {
+  [DEMO_STORAGE_KEY, COMPANIES_KEY, "b2gc_notif"].forEach(key => localStorage.removeItem(key));
+  try { indexedDB.deleteDatabase(FILES_DB); } catch { }
+}
+
+function wipeDemoData() {
+  if (!confirm("¿Eliminar todo?\n\nSe borran las carteras, ofertas, operaciones, documentos y solicitudes de este navegador, para vendedor y comprador. Podrás recuperar los datos de ejemplo con “Restablecer datos”.")) return;
+  clearDemoStorage();
+  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ wiped: true, wipedAt: Date.now() }));
+  currentPage = "dashboard";
+  reloadKeepingSession("Todo eliminado. La plataforma quedó vacía para probar desde cero.");
 }
 
 function resetDemoData() {
-  appState.offers = [];
-  appState.uploadedDocuments = [];
-  appState.decisions = {};
-  appState.favorites = [];
-  appState.views = {};
-  appState.operations = [];
-  const hadPortfolios = (appState.demoPortfolios || []).length;
-  appState.demoPortfolios = [];
-  saveDemoState();
-  if (hadPortfolios) { location.reload(); return; } // las carteras publicadas ya están cargadas en memoria
-  if (typeof syncLotStatuses === "function") syncLotStatuses();
-  showToast("Datos de prueba restaurados.");
-  if (appState.loggedIn) {
-    const page = document.querySelector("#page-h1")?.textContent || "";
-    if (page === "Centro de pruebas") renderPage("pruebas");
-    else setRole(currentRole);
-  }
+  if (!confirm("¿Restablecer los datos de ejemplo?\n\nSe pierde lo que hayas creado en las pruebas y vuelven las carteras y ofertas iniciales.")) return;
+  clearDemoStorage();
+  currentPage = "dashboard";
+  reloadKeepingSession("Datos de ejemplo restablecidos.");
 }
+
+/* Vacía los datos de ejemplo cargados en memoria */
+function applyDemoWipe() {
+  if (!appState.wiped) return;
+  [lots, originatorLots, buyerOpportunities, buyerAcquisitionsDemo, sellerSalesDemo, testDocuments, demoBids, AUCTION_HISTORY]
+    .forEach(list => { list.length = 0; });
+  [lotProfiles, lotReserve, lotRefs, processDemo]
+    .forEach(map => Object.keys(map).forEach(key => delete map[key]));
+}
+
+/* Vuelve a entrar con el rol que estaba activo antes de recargar */
+function resumeDemoSession() {
+  let resume = null;
+  try {
+    resume = JSON.parse(sessionStorage.getItem(DEMO_RESUME_KEY) || "null");
+    sessionStorage.removeItem(DEMO_RESUME_KEY);
+  } catch { return; }
+  const account = resume && demoAccounts[resume.role];
+  if (!account) return;
+  appState.loggedIn = true;
+  appState.demoMode = true;
+  appState.userEmail = account.email;
+  appState.session = { role: resume.role, company: account.company, avatar: account.avatar, demo: true, email: account.email };
+  $("#public-site")?.classList.add("hidden");
+  $("#app-shell")?.classList.remove("hidden");
+  const toggle = $(".role-toggle");
+  if (toggle) toggle.style.display = "";
+  setRole(resume.role);
+  if (resume.page && resume.page !== "dashboard") {
+    navigate(null, resume.page);
+    $$("#sidebar-nav a").forEach(link => link.classList.toggle("active", link.getAttribute("onclick")?.includes(`'${resume.page}'`)));
+  }
+  if (resume.toast) showToast(resume.toast);
+}
+
+
+/* Mensaje para las secciones que todavía no tienen datos */
+function emptyState(title, text, action = "") {
+  return `<div class="page-placeholder"><strong>${title}</strong><span>${text}</span>${action}</div>`;
+}
+const publishAction = () => `<button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'publicar')">＋ Publicar cartera</button>`;
+const NO_LOTS_BUYER = "Entra como entidad vendedora, publica una cartera y aparecerá aquí.";
 
 loadDemoState();
 
@@ -409,6 +469,8 @@ function exitApp() {
    ========================================================= */
 function setRole(role) {
   currentRole = role;
+  const demoActions = $("#demo-actions");
+  if (demoActions) demoActions.hidden = !appState.session?.demo; // las cuentas reales nunca ven estos botones
   if (typeof closeOperation === "function") closeOperation();
   const account = (appState.session && !appState.session.demo) ? appState.session : demoAccounts[role];
   if (account) { appState.company = account.company; appState.avatar = account.avatar; }
@@ -459,7 +521,7 @@ function buildSidebar() {
       <a href="#" onclick="navigate(event,'documentos')">Documentos</a>
       <a href="#" onclick="navigate(event,'reportes')">Reportes</a>
       <a href="#" onclick="navigate(event,'pruebas')">Pruebas</a>
-      <div class="sidebar-market-status"><div class="status-title">Mercado activo</div><p>47 casas de cobranza conectadas</p></div>`;
+      ${appState.wiped ? "" : `<div class="sidebar-market-status"><div class="status-title">Mercado activo</div><p>47 casas de cobranza conectadas</p></div>`}`;
   } else {
     nav.innerHTML = `
       <a href="#" class="active" onclick="navigate(event,'dashboard')">Dashboard</a>
@@ -471,7 +533,7 @@ function buildSidebar() {
       <a href="#" onclick="navigate(event,'dataroom')">Data room</a>
       <a href="#" onclick="navigate(event,'reportes')">Reportes</a>
       <a href="#" onclick="navigate(event,'pruebas')">Pruebas</a>
-      <div class="sidebar-market-status"><div class="status-title">Mercado activo</div><p>32 oportunidades disponibles</p></div>`;
+      ${appState.wiped ? "" : `<div class="sidebar-market-status"><div class="status-title">Mercado activo</div><p>32 oportunidades disponibles</p></div>`}`;
   }
 }
 
@@ -684,6 +746,14 @@ function buyerKpiCards() {
 
 /* ----- KPIs del vendedor ----- */
 function renderOriginatorKpis() {
+  if (!originatorLots.length) {
+    return [
+      kpiCard("Cartera en comercialización · Saldo a capital", fmtM(0), "Publica tu primera cartera para empezar", "up", "navigate(null,'publicar')"),
+      kpiCard("Visualizaciones", "0", "Aún nadie ha entrado a tus carteras"),
+      kpiCard("Mejor oferta actual", "—", "Aún no has recibido ofertas"),
+      kpiCard("Subastas en curso", "0", "Sin subastas abiertas")
+    ].join("");
+  }
   const total = originatorLots.reduce((s, l) => s + parseLotAmount(l), 0); // M COP
   const usd = total * 1e6 / TRM_DEMO;
   // Cartera destacada en el temporizador: la que está en cierre o la que cierra primero
@@ -718,7 +788,7 @@ function renderOriginatorKpis() {
 
     <div class="kpi-card clickable" role="button" tabindex="0" onclick="navigate(null,'ofertas')" title="Ver ofertas recibidas">
       <div class="label">Mejor oferta actual · ${refOf(best.lot.id)}</div>
-      <div class="value">${fmtM(bestValue)} <small style="font-size:13px;color:var(--blue)">${best.p}%</small></div>
+      <div class="value">${best.p ? `${fmtM(bestValue)} <small style="font-size:13px;color:var(--blue)">${best.p}%</small>` : "Sin ofertas"}</div>
       <div class="change">Vendido ${fmtM(soldValue)} de ${fmtM(total)} (${total ? (soldValue / total * 100).toLocaleString("es-CO", { maximumFractionDigits: 1 }) : 0}%) · ${nOffers} ofertas</div>
     </div>
 
@@ -775,6 +845,7 @@ function renderSellerTimeline() {
     </details>
     <div class="process">
       <div class="process-row process-head"><div></div><div class="process-track labels">${SELLER_PHASES.map((p, i) => `<label style="left:${i / last * 100}%"><b>${i + 1}</b>${p}</label>`).join("")}</div><div></div></div>
+      ${rows.length ? "" : emptyState("Aún no tienes carteras en proceso", "Publica una cartera y aquí verás cada fase.", publishAction())}
       ${rows.map(r => `
         <div class="process-row clickable" role="button" tabindex="0" title="Abrir ${refOf(r.lot.id)}" onclick="${operationForLot(r.lot.id) ? `navigate(null,'cierre');openOperation('${operationForLot(r.lot.id).id}')` : `openDetail('${r.lot.id}')`}">
           <div class="process-info"><strong>${refOf(r.lot.id)}</strong><span>${escapeHtml(r.lot.title)}</span></div>
@@ -808,7 +879,8 @@ function renderObligationsDonut() {
 const HEAT_MORA = ["Al día", "1–90 días", "91–180 días", "181–360 días", "Más de 360"];
 
 function lotHeat(lot) {
-  if (lot.composition?.cells) return lot.composition; // modo real: viene de la base que subió el vendedor
+  if (lot.composition?.cells) return lot.composition; // viene de la base que subió el vendedor
+  if (appState.wiped) return null; // desde cero no se inventa la distribución
   const obligations = Number(profileOf(lot).obligations || 0);
   if (!obligations) return null;
   // Demo: reparte las obligaciones según la composición de ejemplo, distinta para cada cartera
@@ -840,7 +912,7 @@ function renderHeatmap() {
       <thead><tr><th>Ciudad</th>${HEAT_MORA.map(c => `<th>${c}</th>`).join("")}</tr></thead>
       <tbody>${rows.map(city => `<tr><th>${escapeHtml(city)}</th>${HEAT_MORA.map(col => cell(grid[`${city}|${col}`] || 0)).join("")}</tr>`).join("")}</tbody>
     </table></div>
-    <p class="heatmap-note">Carteras incluidas: ${sources.map(s => refOf(s.lot.id)).join(", ")}. ${appState.realMode ? "" : "En el demo la distribución es de ejemplo."}</p>`;
+    <p class="heatmap-note">Carteras incluidas: ${sources.map(s => refOf(s.lot.id)).join(", ")}. ${appState.realMode || appState.wiped ? "" : "En el demo la distribución es de ejemplo."}</p>`;
 }
 
 /* Antecedentes de ventas de la entidad vendedora */
@@ -898,8 +970,16 @@ function renderOriginatorCharts() {
 
 /* ----- Gráficas del comprador ----- */
 function renderDashboardCharts(role) {
-  const donut = [["Consumo", 34], ["Libranza", 27], ["Comercial", 23], ["Hipotecaria", 16]];
-  const statuses = [["Disponibles", 32, "active"], ["Con oferta", 14, "negotiation"], ["Adjudicadas", 8, "completed"]];
+  const wiped = appState.wiped;
+  const available = buyerOpportunities.filter(l => auctionState(l.id) !== "cerrada");
+  const byType = {};
+  available.forEach(l => { byType[l.type] = (byType[l.type] || 0) + 1; });
+  const donut = wiped
+    ? Object.entries(byType).map(([type, n]) => [type, Math.round(n / available.length * 100)])
+    : [["Consumo", 34], ["Libranza", 27], ["Comercial", 23], ["Hipotecaria", 16]];
+  const statuses = wiped
+    ? [["Disponibles", available.length, "active"], ["Con oferta", new Set((appState.offers || []).map(o => o.lotId)).size, "negotiation"], ["Adjudicadas", buyerAcquisitions().length, "completed"]]
+    : [["Disponibles", 32, "active"], ["Con oferta", 14, "negotiation"], ["Adjudicadas", 8, "completed"]];
   return `
     <div class="dashboard-chart-grid">
       <div class="dashboard-chart-card dashboard-chart-large">
@@ -907,11 +987,11 @@ function renderDashboardCharts(role) {
       </div>
       <div class="dashboard-chart-card">
         <div class="dashboard-chart-header"><div><div class="chart-kicker">MERCADO DISPONIBLE</div><h3>Tipos de oportunidad</h3></div><button class="chart-period" onclick="navigate(null,'mercado')">Ver mercado</button></div>
-        ${svgDonut(donut, "32", "oportunidades", "dc")}
+        ${donut.length ? svgDonut(donut, wiped ? String(available.length) : "32", "oportunidades", "dc") : emptyState("Aún no hay oportunidades", NO_LOTS_BUYER)}
       </div>
       <div class="dashboard-chart-card">
-        <div class="dashboard-chart-header"><div><div class="chart-kicker">ACTIVIDAD</div><h3>Actividad de compras</h3></div><div class="chart-period">Mar — Sep</div></div>
-        <div class="activity-chart">${renderActivityBars(role)}</div>
+        <div class="dashboard-chart-header"><div><div class="chart-kicker">ACTIVIDAD</div><h3>Actividad de compras</h3></div><div class="chart-period">${wiped ? "Últimos 7 meses" : "Mar — Sep"}</div></div>
+        ${wiped && !(appState.offers || []).length ? emptyState("Sin actividad todavía", "Tus ofertas aparecerán aquí por mes.") : `<div class="activity-chart">${renderActivityBars(role)}</div>`}
       </div>
       <div class="dashboard-chart-card">
         <div class="dashboard-chart-header"><div><div class="chart-kicker">SEGUIMIENTO</div><h3>Tu pipeline de compra</h3></div><button class="chart-period" onclick="navigate(null,'ofertas')">Mis ofertas</button></div>
@@ -938,11 +1018,22 @@ function renderStatusBars(statuses) {
 }
 
 function renderActivityBars(role) {
-  const values = role === "vendedor" ? [48, 55, 62, 70, 66, 81, 88] : [38, 46, 58, 52, 70, 64, 84];
-  const labels = ["Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep"];
+  let values = role === "vendedor" ? [48, 55, 62, 70, 66, 81, 88] : [38, 46, 58, 52, 70, 64, 84];
+  let labels = ["Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep"];
+  let scale = 1;
+  if (appState.wiped) { // desde cero: ofertas reales de los últimos 7 meses
+    const now = new Date();
+    const months = Array.from({ length: 7 }, (_, i) => new Date(now.getFullYear(), now.getMonth() - 6 + i, 1));
+    labels = months.map(m => m.toLocaleDateString("es-CO", { month: "short" }).replace(".", ""));
+    values = months.map(m => (appState.offers || []).filter(o => {
+      const at = new Date(o.at || 0);
+      return at.getFullYear() === m.getFullYear() && at.getMonth() === m.getMonth();
+    }).length);
+    scale = 100 / Math.max(1, ...values);
+  }
   return values.map((value, index) => `
     <div class="activity-column clickable ${index === values.length - 1 ? "current" : ""}" role="button" tabindex="0" title="Ver ofertas de ${labels[index]}" onclick="openActivityMonth('${labels[index]}', ${value})">
-      <div class="activity-value" style="height:${value}%"><b>${value}</b></div>
+      <div class="activity-value" style="height:${value * scale}%"><b>${value}</b></div>
       <span>${labels[index]}</span>
     </div>`).join("");
 }
@@ -950,6 +1041,9 @@ function renderActivityBars(role) {
 /* ----- Tabla de lotes ----- */
 function renderLotsCard() {
   if (currentRole === "vendedor") return renderOriginatorLotsCard();
+  if (!buyerOpportunities.length) {
+    return `<div class="card"><div class="card-header"><div><h3>Oportunidades disponibles</h3></div></div>${emptyState("Aún no hay carteras publicadas", NO_LOTS_BUYER)}</div>`;
+  }
 
   const fav = new Set(appState.favorites);
   const items = [...buyerOpportunities].sort((a, b) => (fav.has(b.id) - fav.has(a.id)) || endKey(a) - endKey(b));
@@ -978,6 +1072,9 @@ function renderLotsCard() {
 }
 
 function renderOriginatorLotsCard() {
+  if (!originatorLots.length) {
+    return `<div class="card"><div class="card-header"><div><h3>Mis portafolios y operaciones</h3></div></div>${emptyState("Aún no has publicado carteras", "Publica la primera para empezar la prueba.", publishAction())}</div>`;
+  }
   return `
     <div class="card">
       <div class="card-header"><div><h3>Mis portafolios y operaciones</h3><p>Abre cada cartera para ver el detalle completo</p></div>
@@ -1033,7 +1130,7 @@ function renderPage(page) {
   if (["cartera", "oportunidades", "mercado"].includes(page)) {
     const pool = isOrig ? originatorLots : buyerOpportunities;
     const items = pool.filter(passesFilters);
-    if (appState.realMode && !pool.length) {
+    if (!pool.length) {
       content.innerHTML = `<div class="card page-card"><div class="section-kicker">MIS CARTERAS</div><h2>Mis carteras</h2>
         <div class="page-placeholder"><strong>Aún no has publicado carteras</strong><span>Publica la primera y B²GC Brokers la llevará a las casas de cobranza aprobadas.</span>
         <button class="btn btn-navy btn-small" style="margin-top:12px" onclick="navigate(null,'publicar')">＋ Publicar cartera</button></div></div>`;
@@ -1069,7 +1166,11 @@ function renderPage(page) {
   }
 
   if (page === "negociaciones") {
-    const rows = !isOrig && appState.offers.length
+    const rows = appState.wiped
+      ? appState.offers
+        .filter(o => !isOrig || originatorLots.some(l => l.id === o.lotId))
+        .map(o => ({ ...o, counterparty: isOrig ? o.buyer : lotById(o.lotId)?.vendedor, status: appState.decisions?.[o.id] || o.status }))
+      : !isOrig && appState.offers.length
       ? appState.offers
       : isOrig
         ? [
@@ -1080,6 +1181,11 @@ function renderPage(page) {
           { id: "NEG-COMP-001", lotId: "LOTE-TEST-002", amount: "$2.754 M", status: "En revisión", date: "16 Sep 2026", counterparty: "Banco Demo S.A." },
           { id: "NEG-COMP-002", lotId: "LOTE-TEST-003", amount: "$5.017 M", status: "Contrapropuesta", date: "15 Sep 2026", counterparty: "Cooperativa Demo C" }
         ];
+
+    if (!rows.length) {
+      content.innerHTML = `<div class="card page-card"><h2>${current.title}</h2>${emptyState("Aún no hay negociaciones", "Aparecerán cuando se presente la primera oferta.")}</div>`;
+      return;
+    }
 
     content.innerHTML = `
       <div class="card page-card">
@@ -1196,7 +1302,8 @@ function handleDocumentUpload(event) {
       else appState.uploadedDocuments.unshift(uploaded);
       saveDemoState();
       showToast(`Archivo ${file.name} cargado correctamente.`);
-      renderPage(document.querySelector("#page-h1")?.textContent === "Data room" ? "dataroom" : "documentos");
+      if (currentDetail) renderDataRoom(currentDetail);
+      else renderPage(document.querySelector("#page-h1")?.textContent === "Data room" ? "dataroom" : "documentos");
     } catch (error) {
       console.error(error);
       showToast("No fue posible guardar el archivo. Prueba con un archivo más pequeño.");
@@ -1288,7 +1395,7 @@ function removeUploadedDocument(documentId) {
    ========================================================= */
 function renderAdjudicationsPage() {
   if (currentRole === "comprador") return renderBuyerAcquisitionsPage();
-  const adjudications = [
+  const adjudications = appState.wiped ? [] : [
     { id: "ADJ-ORIG-001", lot: "LOTE-TEST-001", buyer: "Casa de Cobranza Demo S.A.S.", value: "$3.977 M", status: "Adjudicada", date: "12 Sep 2026" },
     { id: "ADJ-ORIG-002", lot: "LOTE-TEST-002", buyer: "Cobranzas Demo Andina", value: "$2.754 M", status: "En cierre", date: "15 Sep 2026" },
     { id: "ADJ-ORIG-003", lot: "LOTE-TEST-003", buyer: "Recaudos Demo Capital", value: "$5.220 M", status: "Documental", date: "16 Sep 2026" }
@@ -1297,8 +1404,8 @@ function renderAdjudicationsPage() {
     <div class="card page-card">
       <h2>Cierres de mis portafolios</h2>
       <p>Operaciones de tus portafolios que avanzan hacia cierre.</p>
-      ${renderOpsMiniTable()}
-      <div class="table-wrap page-table"><table><thead><tr><th>Adjudicación</th><th>Referencia del proceso</th><th>Casa de cobranza</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
+      ${renderOpsMiniTable() || (adjudications.length ? "" : emptyState("Aún no hay adjudicaciones", "Adjudica una oferta para abrir el cierre."))}
+      <div class="table-wrap page-table" ${adjudications.length ? "" : "hidden"}><table><thead><tr><th>Adjudicación</th><th>Referencia del proceso</th><th>Casa de cobranza</th><th>Valor</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>
         ${adjudications.map(item => `<tr><td><strong>${item.id}</strong></td><td>${refOf(item.lot)}</td><td>${item.buyer}</td><td>${item.value}</td><td><span class="badge badge-green">${item.status}</span></td><td>${item.date}</td></tr>`).join("")}
       </tbody></table></div>
     </div>`;
@@ -1350,8 +1457,8 @@ function renderReportsPage() {
       <div class="report-kpi-grid">
         <div class="report-kpi"><span>${isOriginator ? "Valor de cartera propia" : "Valor de oportunidades"}</span><strong>${fmtM(totalNominal)}</strong><small>${items.length} registros demo</small></div>
         <div class="report-kpi"><span>${isOriginator ? "Portafolios activos" : "Oportunidades activas"}</span><strong>${active}</strong><small>Escenario actual</small></div>
-        <div class="report-kpi"><span>${isOriginator ? "Negociaciones" : "Ofertas"}</span><strong>${isOriginator ? negotiations : appState.offers.length}</strong><small>${isOriginator ? "Con casas de cobranza demo" : "Registradas en este navegador"}</small></div>
-        <div class="report-kpi"><span>${isOriginator ? "Casas de cobranza interesadas" : "Adjudicaciones"}</span><strong>${isOriginator ? "47" : "8"}</strong><small>Dato ficticio de prueba</small></div>
+        <div class="report-kpi"><span>${isOriginator ? "Negociaciones" : "Ofertas"}</span><strong>${isOriginator ? (appState.wiped ? originatorLots.reduce((s, l) => s + bidsFor(l.id).length, 0) : negotiations) : appState.offers.length}</strong><small>${isOriginator ? "Con casas de cobranza demo" : "Registradas en este navegador"}</small></div>
+        <div class="report-kpi"><span>${isOriginator ? "Casas de cobranza interesadas" : "Adjudicaciones"}</span><strong>${appState.wiped ? (isOriginator ? originatorLots.reduce((s, l) => s + viewsOf(l.id).viewers, 0) : buyerAcquisitions().length) : (isOriginator ? "47" : "8")}</strong><small>${appState.wiped ? "Según tus pruebas" : "Dato ficticio de prueba"}</small></div>
       </div>
       <div class="report-bars">
         ${items.map(lot => `<div class="report-bar-row"><span>${refOf(lot.id)}</span><div><i style="width:${Math.min(100, parseLotAmount(lot) / 89.5 * 100)}%"></i></div><strong>${lot.amount}</strong></div>`).join("")}
@@ -1411,7 +1518,8 @@ function renderSellerOffersPage() {
         <div class="report-kpi"><span>Pendientes de decisión</span><strong>${pending}</strong><small>Aceptar o rechazar</small></div>
       </div>
       ${renderOfferFilters()}
-      ${!groups.length ? `<div class="page-placeholder"><strong>Ninguna cartera cumple los filtros</strong><span>Cambia o quita alguno para ver más ofertas.</span></div>` : ""}
+      ${!originatorLots.length ? emptyState("Aún no has publicado carteras", "Publica una y aquí verás las ofertas que reciba.", publishAction())
+        : !groups.length ? `<div class="page-placeholder"><strong>Ninguna cartera cumple los filtros</strong><span>Cambia o quita alguno para ver más ofertas.</span></div>` : ""}
       ${groups.map(({ lot, bids, reserve, op = operationForLot(lot.id) }) => `
         <section class="offer-group">
           <div class="offer-group-head">
@@ -1490,7 +1598,7 @@ function renderTestCenter() {
     <div class="card page-card">
       <div class="section-kicker">QA · ENTORNO CONTROLADO</div>
       <h2>Centro de pruebas</h2>
-      <p>Todo lo que aparece aquí es información ficticia. Puedes crear ofertas, navegar por roles y restaurar el escenario inicial.</p>
+      <p>Todo lo que aparece aquí es información ficticia. Usa <strong>Eliminar todo</strong> para probar desde cero como vendedor y comprador, y <strong>Restablecer datos</strong> para volver a los datos de ejemplo.</p>
       <div class="test-banner">
         <div><strong>Modo demo activo</strong><span>Sin conexión a base de datos, pagos ni información real.</span></div>
         <span class="badge badge-gold">TEST DATA</span>
@@ -1498,7 +1606,8 @@ function renderTestCenter() {
       <div class="test-actions">
         <button class="btn btn-navy" onclick="runSelfTests(true)">Ejecutar pruebas</button>
         <button class="btn btn-gold" onclick="runClosingFlowTest(true)">Simular operación completa</button>
-        <button class="btn btn-ghost" onclick="resetDemoData()">Restaurar datos</button>
+        <button class="btn btn-danger-soft" onclick="wipeDemoData()">Eliminar todo</button>
+        <button class="btn btn-ghost" onclick="resetDemoData()">Restablecer datos</button>
         <button class="btn btn-ghost" onclick="showToast('Estado guardado en localStorage.')">Ver persistencia</button>
       </div>
       <div id="test-results" class="test-results"></div>
@@ -1513,15 +1622,19 @@ function runSelfTests(showFeedback = true) {
   const results = [];
   const assert = (name, condition) => results.push({ name, ok: Boolean(condition) });
 
-  assert("Existen las carteras y tramos de prueba de base", lots.filter(l => !l.id.startsWith("LOTE-DEMO-")).length === 7);
-  assert("Los tramos se subastan uno detrás del otro", lotProfiles["LOTE-TEST-006-B"].startsAt >= lotProfiles["LOTE-TEST-006-A"].endsAt);
+  if (appState.wiped) {
+    assert("Sin datos de ejemplo: solo quedan las carteras creadas en las pruebas", lots.every(l => l.id.startsWith("LOTE-DEMO-")));
+  } else {
+    assert("Existen las carteras y tramos de prueba de base", lots.filter(l => !l.id.startsWith("LOTE-DEMO-")).length === 7);
+    assert("Los tramos se subastan uno detrás del otro", lotProfiles["LOTE-TEST-006-B"].startsAt >= lotProfiles["LOTE-TEST-006-A"].endsAt);
+    assert("Existen documentos demo consultables", testDocuments.length >= 5);
+  }
   assert("Todas las carteras tienen referencia única", new Set(lots.map(lot => lot.id)).size === lots.length);
   assert("Todas las carteras tienen valor nominal", lots.every(lot => lot.amount.includes("$")));
   assert("Todas las carteras tienen modalidad", lots.every(lot => lot.modality));
-  assert("Simulador puede calcular un valor", Number.isFinite(parseLotAmount(lots[0])));
+  assert("Simulador puede calcular un valor", parseLotAmount({ amount: fmtM(1500) }) === 1500);
   assert("El estado de ofertas es un arreglo", Array.isArray(appState.offers));
   assert("Las cuentas demo están configuradas", Object.values(demoAccounts).every(account => account.password));
-  assert("Existen documentos demo consultables", testDocuments.length >= 5);
   assert("Los documentos demo tienen contenido", testDocuments.every(doc => doc.name && doc.content));
   assert("Los archivos cargados se manejan como arreglo", Array.isArray(appState.uploadedDocuments));
   assert("Cada cartera tiene obligaciones y cuenta regresiva", lots.every(lot => lotProfiles[lot.id]));
@@ -1580,8 +1693,8 @@ function renderDetailSummary(lot) {
   const debtors = Number(String(lot.debtors).replace(/\./g, ""));
   const c = composition;
 
-  if (lot.real) { // cartera real: sin composición ficticia
-    const mine = originatorLots.some(l => l.id === lot.id);
+  if (lot.real || appState.wiped) { // sin composición ficticia
+    const mine = currentRole === "vendedor" && originatorLots.some(l => l.id === lot.id);
     panel.innerHTML = `
       ${renderAuctionBanner(lot)}
       <div class="summary-metrics">
@@ -1838,7 +1951,7 @@ function renderDataRoom(lot) {
   const panel = $("#tab-dataroom");
   if (!panel) return;
 
-  const docs = testDocuments.filter(doc => !lot || doc.lotId === lot.id || doc.lotId === "LOTE-TEST-001");
+  const docs = [...testDocuments, ...(appState.uploadedDocuments || [])].filter(doc => !lot || doc.lotId === lot.id || doc.lotId === "LOTE-TEST-001");
   panel.innerHTML = `
     <div class="dataroom-panel-head">
       <div>
@@ -1853,6 +1966,7 @@ function renderDataRoom(lot) {
       </div>
     </div>
     <div class="document-list">
+      ${docs.length ? "" : emptyState("Aún no hay documentos", "Sube el primer archivo de esta cartera.")}
       ${docs.map(doc => `
         <div class="document-row document-row-enhanced">
           <div class="document-main">
@@ -2098,8 +2212,24 @@ document.addEventListener("keydown", event => {
   $("#modality-overlay")?.remove();
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+/* Dos pestañas (una por rol) se mantienen al día entre sí */
+window.addEventListener("storage", event => {
+  if (event.key !== DEMO_STORAGE_KEY || appState.realMode) return;
+  let saved = null;
+  try { saved = JSON.parse(event.newValue || "null"); } catch { }
+  if (!saved || (saved.wipedAt || 0) !== (appState.wipedAt || 0)) { reloadKeepingSession(); return; } // otra pestaña eliminó o restableció
+  loadDemoState();
   (appState.demoPortfolios || []).forEach(addDemoPortfolio);
+  syncLotStatuses();
+  const detailOpen = !$("#detail-overlay")?.classList.contains("hidden");
+  const busy = currentPage === "publicar" || detailOpen || $("#offer-overlay, #op-overlay, #op-confirm-overlay, #document-viewer-overlay");
+  if (appState.loggedIn && !busy) rerenderCurrent();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  applyDemoWipe();
+  (appState.demoPortfolios || []).forEach(addDemoPortfolio);
+  syncLotStatuses();
   buildSidebar();
   renderHeroChart(6);
   if (location.hash === "#admin" && typeof openAdminLogin === "function") openAdminLogin();
@@ -2110,4 +2240,5 @@ document.addEventListener("DOMContentLoaded", () => {
     $("#app-shell")?.classList.remove("hidden");
     setRole(currentRole);
   }
+  resumeDemoSession();
 });

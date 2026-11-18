@@ -68,7 +68,10 @@ function bidsFor(lotId) {
 const topBid = lotId => bidsFor(lotId).find(b => b.decision !== "Rechazada") || null;
 const bidderCount = lotId => new Set(bidsFor(lotId).map(b => b.buyer)).size;
 const popularity = lot => bidsFor(lot.id).length * 10 + profileOf(lot).favs * 2 + profileOf(lot).likes;
-const topSellerId = () => [...lots].sort((a, b) => popularity(b) - popularity(a))[0]?.id;
+const topSellerId = () => {
+  const top = [...lots].sort((a, b) => popularity(b) - popularity(a))[0];
+  return top && popularity(top) > 0 ? top.id : undefined; // sin actividad no hay "más vendida"
+};
 
 function endKey(lot) {
   const st = auctionState(lot.id);
@@ -253,6 +256,7 @@ function setMarketSort(sort) { marketSort = sort; rerenderCurrent(); }
 function spotlightCards(pool) {
   const topId = topSellerId();
   const soonId = soonestId(pool);
+  if (!topId && !soonId) return "";
   const card = (id, kicker, cls) => {
     const lot = lotById(id);
     if (!lot) return "";
@@ -270,6 +274,9 @@ function spotlightCards(pool) {
 }
 
 function renderMarketPage(title, description) {
+  if (!buyerOpportunities.length) {
+    return `<div class="card page-card"><div class="section-kicker">MERCADO · COMPRADOR</div><h2>${title}</h2>${emptyState("Aún no hay carteras publicadas", NO_LOTS_BUYER)}</div>`;
+  }
   const fav = new Set(appState.favorites || []);
   const topId = topSellerId();
   const soonId = soonestId(buyerOpportunities);
@@ -369,6 +376,7 @@ function renderAuctionsPage() {
       ${seller ? "" : spotlightCards(pool)}
       ${renderFilterBar(pool)}
       ${!groups.length && activeFilterCount() ? noMatches("subasta") : ""}
+      ${!pool.length ? emptyState("Aún no hay subastas", seller ? "Publica una cartera para abrir tu primera subasta." : NO_LOTS_BUYER, seller ? publishAction() : "") : ""}
       ${groups.map(g => `
         <div class="auction-group-head"><h3>${g.title}</h3><span>${g.items.length} · ${g.sub}</span></div>
         <div class="auction-grid">${g.items.map(l => auctionCard(l, seller)).join("")}</div>`).join("")}

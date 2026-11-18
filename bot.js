@@ -207,6 +207,10 @@ async function botRecommend() {
   await botTyping(700);
   const a = BOT.answers;
   const ranked = lots.map(l => scoreLot(l, a)).sort((x, y) => y.score - x.score).slice(0, 3);
+  if (!ranked.length) {
+    botSay("Todavía no hay carteras publicadas. Cuando una entidad vendedora publique la primera, podré recomendártela.");
+    return;
+  }
 
   const resumen = [
     a.type && a.type !== "any" ? a.type : "cualquier tipo",

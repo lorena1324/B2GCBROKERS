@@ -405,7 +405,12 @@ function runClosingFlowTest(show = true) {
   const role = currentRole;
   const results = [];
   const check = (name, ok) => results.push({ name, ok: Boolean(ok) });
+  // Sin carteras disponibles (por ejemplo tras "Eliminar todo") se usa una temporal que no queda guardada
+  const tempId = "LOTE-QA-TEMP";
+  const usesTemp = !originatorLots.some(l => !operationForLot(l.id));
+  appState.qaRunning = true;
   try {
+    if (usesTemp) addDemoPortfolio({ id: tempId, title: "Cartera de prueba automática", type: "Consumo", modality: "Subasta privada", nominal: 1000, debtors: 10, obligations: 10, reserve: 80, startsAt: Date.now() - HOUR, endsAt: Date.now() + HOUR });
     const lot = originatorLots.find(l => !operationForLot(l.id));
     check("Hay una cartera del vendedor disponible para adjudicar", lot);
     if (!lot) throw new Error("sin lote");
@@ -439,6 +444,14 @@ function runClosingFlowTest(show = true) {
     const s = JSON.parse(snapshot);
     appState.offers = s.offers; appState.decisions = s.decisions; appState.operations = s.operations || [];
     currentRole = role;
+    if (usesTemp) {
+      [lots, originatorLots, buyerOpportunities].forEach(list => {
+        const i = list.findIndex(l => l.id === tempId);
+        if (i >= 0) list.splice(i, 1);
+      });
+      delete lotProfiles[tempId]; delete lotReserve[tempId]; delete lotRefs[tempId];
+    }
+    appState.qaRunning = false;
     saveDemoState();
     syncLotStatuses();
   }

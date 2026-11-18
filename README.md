@@ -80,6 +80,15 @@ Si la contraparte es un comprador demo, el botón **Simular respuesta** completa
 
 El módulo incluye documentos ficticios de tipo PDF/XLSX/DOCX como registros de prueba. No son archivos reales de clientes y no contienen información personal real.
 
+## Probar desde cero
+
+Las cuentas demo de vendedor y comprador tienen dos botones en la barra superior y en **Pruebas**:
+
+- **Eliminar todo:** borra las carteras, ofertas, operaciones, documentos y solicitudes de este navegador. La plataforma queda vacía para ambos roles.
+- **Restablecer datos:** borra lo creado en las pruebas y devuelve los datos de ejemplo.
+
+Después de eliminar todo: entra como **vendedor**, publica una cartera, cambia a **comprador** con el selector de arriba (o abre otra pestaña con la otra cuenta) y presenta una oferta. Los datos se comparten entre pestañas del mismo navegador. Estos botones no tocan las cuentas reales de Supabase.
+
 ## Cómo ejecutar
 
 1. Abre `index.html` en Chrome, Edge o Firefox.
